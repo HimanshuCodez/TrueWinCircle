@@ -2,14 +2,28 @@ import { useState } from "react";
 import { ChevronDown, User, Menu, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import useAuthStore from "../store/authStore";
+import { getAuth, signOut } from "firebase/auth";
 
 export default function Navbar() {
   const [accountOpen, setAccountOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const user = useAuthStore((state) => state.user);
+  const setUser = useAuthStore((state) => state.setUser);
+  const auth = getAuth();
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      setUser(null);
+      setAccountOpen(false); // Close dropdown after logout
+      setMobileMenuOpen(false); // Close mobile menu after logout
+    } catch (error) {
+      console.error("Error logging out:", error);
+    }
+  };
 
   return (
-    <nav className="relative bg-[#042346] text-white px-4 md:px-8 py-3 flex justify-between items-center">
+    <div className="relative bg-[#042346] text-white px-4 md:px-8 py-3 flex justify-between items-center">
       {/* Logo */}
       <div className="flex items-center gap-2">
         <div className="w-6 h-6 border-2 border-yellow-500 rounded-full"></div>
@@ -21,9 +35,10 @@ export default function Navbar() {
       {/* Desktop Menu */}
       <div className="hidden md:flex items-center gap-6">
         <Link to="/" className="hover:text-yellow-500">Home</Link>
-        <a href="#" className="hover:text-yellow-500">Games</a>
-        <a href="#" className="hover:text-yellow-500">Results</a>
-        <a href="#" className="hover:text-yellow-500">How to Play</a>
+        <Link to="/" className="hover:text-yellow-500">Games</Link>
+        <Link to="/" className="hover:text-yellow-500">Results</Link>
+        <Link to="/" className="hover:text-yellow-500">How to Play</Link>
+       
 
         {user ? (
           <>
@@ -37,9 +52,10 @@ export default function Navbar() {
               </button>
               {accountOpen && (
                 <div className="absolute right-0 mt-2 w-40 bg-white text-black rounded-md shadow-lg z-10">
-                  <Link to="/Wallet" className="block px-4 py-2 hover:bg-gray-100">Wallet</Link>
+                  <Link to="/Wallet" className="block px-4 py-2 hover:bg-gray-100"><button>Wallet</button></Link>
                   <Link to="/Withdraw" className="block px-4 py-2 hover:bg-gray-100">Withdraw</Link>
                   <Link to="/AddCash" className="block px-4 py-2 hover:bg-gray-100">Add Cash</Link>
+                  <button onClick={handleLogout} className="block w-full text-left px-4 py-2 hover:bg-gray-100">Logout</button>
                 </div>
               )}
             </div>
@@ -47,7 +63,7 @@ export default function Navbar() {
           </>
         ) : (
           <Link
-            to="/phonesignup"
+            to="/testphonesignup"
             className="bg-yellow-500 text-black font-bold px-5 py-2 rounded-full hover:bg-yellow-600"
           >
             JOIN NOW
@@ -66,20 +82,22 @@ export default function Navbar() {
       {mobileMenuOpen && (
         <div className="absolute top-full left-0 w-full bg-[#042346] md:hidden flex flex-col items-center gap-4 py-4 z-50">
           <Link to="/" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>Home</Link>
-          <a href="#" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>Games</a>
-          <a href="#" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>Results</a>
-          <a href="#" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>How to Play</a>
+          <Link href="#" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>Games</Link>
+          <Link href="#" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>Results</Link>
+          <Link href="#" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>How to Play</Link>
           
           <div className="w-3/4 border-t border-gray-700 my-1"></div>
 
           {user ? (
             <>
-              <Link to="/login" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>Wallet</Link>
-              <Link to="/signup" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>Withdraw</Link>
+              <Link to="/Wallet" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>Wallet</Link>
+              <Link to="/Withdraw" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>Withdraw</Link>
+              <Link to="/AddCash" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>Add Cash</Link>
+              <button onClick={handleLogout} className="block w-full text-left px-4 py-2 hover:bg-gray-100">Logout</button>
             </>
           ) : (
             <Link
-              to="/phonesignup"
+              to="/testphonesignup"
               className="bg-yellow-500 text-black font-bold px-5 py-2 rounded-full hover:bg-yellow-600"
               onClick={() => setMobileMenuOpen(false)}
             >
@@ -88,6 +106,6 @@ export default function Navbar() {
           )}
         </div>
       )}
-    </nav>
+    </div>
   );
 }

@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-import Login from './Pages/Login';
 
 import SpinWheel from './Pages/SpinWheel';
 import FixNumber from './Pages/FixNumber';
@@ -30,17 +29,17 @@ const App = () => {
   return (
     <Router>
       <Navbar />
+    
       <Routes>
-        <Route path="/" element={<Home/>} />
-        <Route path="/login" element={<Login />} />
-      
+        <Route path="/" element={<Home />} />
+   
         <Route path="/spinwheel" element={<SpinWheel />} />
         <Route path="/fixnumber" element={<FixNumber />} />
         <Route path="/wingame" element={<WinGame />} />
-        <Route path="/phonesignup" element={<PhoneSignUp />} />
-        <Route path="/AddCash" element={<AddCash />} />
-        <Route path="/Pay" element={<Pay />} />
-        <Route path="/PayConfirm" element={<PaymentConfirmation />} />
+        <Route path="/testphonesignup" element={<PhoneSignUp />} />
+        <Route path="/addcash" element={<AddCash />} />
+        <Route path="/pay" element={<Pay />} />
+        <Route path="/payconfirm" element={<PaymentConfirmation />} />
         <Route path="/Wallet" element={<MyWallet />} />
       </Routes>
     </Router>

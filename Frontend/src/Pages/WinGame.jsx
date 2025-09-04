@@ -58,31 +58,34 @@ export default function WinGame() {
   };
 
   // Timer effect
-  useEffect(() => {
-    calculateNextResultTime(); // Initial calculation
+ // Run once on mount to set the first round
+useEffect(() => {
+  calculateNextResultTime();
+}, []);
 
-    timerIntervalRef.current = setInterval(() => {
-      const now = new Date();
-      if (nextResultTime) {
-        const diff = nextResultTime.getTime() - now.getTime();
+// Timer effect (only depends on nextResultTime)
+useEffect(() => {
+  if (!nextResultTime) return;
 
-        if (diff <= 0) {
-          // Time is up, trigger result calculation
-          clearInterval(timerIntervalRef.current);
-          setGamePhase('calculating');
-          handleResultCalculation(); // Call the result handler
-          // No need to calculate next result time here, it's done after result is shown
-        } else {
-          const hours = Math.floor(diff / (1000 * 60 * 60));
-          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-          const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-          setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
-        }
-      }
-    }, 1000);
+  timerIntervalRef.current = setInterval(() => {
+    const now = new Date();
+    const diff = nextResultTime.getTime() - now.getTime();
 
-    return () => clearInterval(timerIntervalRef.current);
-  }, [nextResultTime]); // Recalculate timer when nextResultTime changes
+    if (diff <= 0) {
+      clearInterval(timerIntervalRef.current);
+      setGamePhase('calculating');
+      handleResultCalculation();
+    } else {
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
+    }
+  }, 1000);
+
+  return () => clearInterval(timerIntervalRef.current);
+}, [nextResultTime]);
+ // Recalculate timer when nextResultTime changes
 
   const handleBet = async () => {
     if (!user) {

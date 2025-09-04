@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, getAdditionalUserInfo } from "firebase/auth";
 import { getFirestore, doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useNavigate } from 'react-router-dom';
@@ -13,21 +13,29 @@ const PhoneSignUp = () => {
     const auth = getAuth();
     const navigate = useNavigate();
 
+    useEffect(() => {
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+            'size': 'invisible',
+            'callback': (response) => {
+                // reCAPTCHA solved, allow signInWithPhoneNumber.
+            },
+            'expired-callback': () => {
+                // Response expired. Ask user to solve reCAPTcha again.
+                // ...
+            }
+        });
+    }, [auth]);
+
     const sendOtp = async () => {
         setLoading(true);
         setError('');
         try {
-            const recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-                'size': 'normal',
-                'callback': (response) => {
-                    // reCAPTCHA solved, allow signInWithPhoneNumber.
-                }
-            });
             let phoneNumber = phone;
             if (!phoneNumber.startsWith('+')) {
                 phoneNumber = '+91' + phoneNumber;
             }
-            const confirmation = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
+            const appVerifier = window.recaptchaVerifier;
+            const confirmation = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
             setResult(confirmation);
             setStep(2);
         } catch (error) {
@@ -45,11 +53,30 @@ const PhoneSignUp = () => {
             const additionalUserInfo = getAdditionalUserInfo(confirmationResult);
 
             if (additionalUserInfo?.isNewUser) {
-                const db = getFirestore();
-                await setDoc(doc(db, "users", confirmationResult.user.uid), {
-                    phoneNumber: confirmationResult.user.phoneNumber,
-                    createdAt: serverTimestamp(),
-                });
+                // Send user data to your backend
+                try {
+                    const response = await fetch('http://localhost:5000/api/registerUser', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            uid: confirmationResult.user.uid,
+                            phoneNumber: confirmationResult.user.phoneNumber,
+                        }),
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.message || 'Failed to register user with backend');
+                    }
+
+                    console.log('User registered with backend successfully!');
+                } catch (backendError) {
+                    console.error('Error sending user data to backend:', backendError);
+                    setError('Failed to save user data to backend: ' + backendError.message);
+                    // Optionally, you might want to revert Firebase signup or show a critical error
+                }
             }
             navigate('/');
         } catch (error) {
