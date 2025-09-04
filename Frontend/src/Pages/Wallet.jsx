@@ -1,9 +1,7 @@
 
 import { useNavigate } from "react-router-dom";
-
 import { useEffect, useState } from "react";
-
-
+import { getAuth } from "firebase/auth";
 
 export function MyWallet() {
   const navigate = useNavigate();
@@ -28,7 +26,7 @@ export function MyWallet() {
 
   return (
     <div className="font-roboto min-h-screen bg-gradient-to-br from-yellow-50 via-red-50 to-green-100">
-      <Header />
+ 
 
       {/* Back & Wallet History */}
       <div className="px-4 pt-2 pb-1 flex items-center justify-between">
@@ -36,20 +34,18 @@ export function MyWallet() {
           onClick={() => navigate("/")}
           className="rounded-full bg-primary p-1"
         >
-          <img src={arrowL} alt="Back" className="w-8 h-8" />
+          
         </button>
-        <button className="bg-gradient-to-r from-yellow-400 to-red-400 text-white font-semibold px-4 py-1 rounded-lg shadow">
-          Wallet History
-        </button>
+      
       </div>
 
       {/* Verified Status */}
-      <div className="mx-4 bg-gradient-to-r from-green-200 to-green-400 rounded-md px-4 py-2 flex justify-between items-center text-sm font-medium text-green-900 shadow-sm">
+      {/* <div className="mx-4 bg-gradient-to-r from-green-200 to-green-400 rounded-md px-4 py-2 flex justify-between items-center text-sm font-medium text-green-900 shadow-sm">
         <span>✔ Verified</span>
         <span className="bg-green-700 text-white text-xs px-2 py-1 rounded">
           Verification Completed
         </span>
-      </div>
+      </div> */}
 
       {/* Wallet Sections */}
       <div className="mx-4 mt-4 space-y-4">
@@ -64,9 +60,9 @@ export function MyWallet() {
           </div>
           <div className="flex justify-center py-4 bg-gradient-to-br from-yellow-200 to-red-200">
             <div className="bg-white rounded-lg px-6 py-3 shadow text-center space-y-1">
-              <img src={rupeeLogo} alt="" className="w-6 h-6 mx-auto" />
+    
               <div className="flex justify-center items-center gap-1 text-xl font-bold">
-                <img src={rupee2Logo} alt="" className="w-4 h-4" />
+           
                 <span>{depositChips.toFixed(2)}</span>
               </div>
               <div className="text-gray-600 text-sm">Chips</div>
@@ -91,9 +87,9 @@ export function MyWallet() {
           </div>
           <div className="flex justify-center py-4 bg-gradient-to-br from-orange-100 to-yellow-200">
             <div className="bg-white rounded-lg px-6 py-3 shadow text-center space-y-1">
-              <img src={rupeeLogo} alt="" className="w-6 h-6 mx-auto" />
+        
               <div className="flex justify-center items-center gap-1 text-xl font-bold">
-                <img src={rupee2Logo} alt="" className="w-4 h-4" />
+          
                 <span>{winningChips.toFixed(2)}</span>
               </div>
               <div className="text-gray-600 text-sm">Money</div>
@@ -112,7 +108,7 @@ export function MyWallet() {
         </div>
       </div>
 
-      <Footer />
+   
     </div>
   );
 }

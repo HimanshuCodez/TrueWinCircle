@@ -37,8 +37,8 @@ export default function Navbar() {
               </button>
               {accountOpen && (
                 <div className="absolute right-0 mt-2 w-40 bg-white text-black rounded-md shadow-lg z-10">
-                  <Link to="/login" className="block px-4 py-2 hover:bg-gray-100">Wallet</Link>
-                  <Link to="/signup" className="block px-4 py-2 hover:bg-gray-100">Withdraw</Link>
+                  <Link to="/Wallet" className="block px-4 py-2 hover:bg-gray-100">Wallet</Link>
+                  <Link to="/Withdraw" className="block px-4 py-2 hover:bg-gray-100">Withdraw</Link>
                   <Link to="/AddCash" className="block px-4 py-2 hover:bg-gray-100">Add Cash</Link>
                 </div>
               )}
