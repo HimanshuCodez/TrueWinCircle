@@ -173,11 +173,7 @@ export default function FixNumber() {
 
   return (
     <div className="px-8 py-6">
-      {/* User Balance Display */}
-      <div className="mb-6 p-4 bg-blue-900 text-white rounded-lg shadow-md flex justify-between items-center">
-        <span className="text-lg font-semibold">Your Balance:</span>
-        <span className="text-2xl font-bold">₹{balance.toFixed(2)}</span>
-      </div>
+     
 
       {/* Section Title */}
       <h2 className="text-xl font-bold mb-2">Fixed Number Result Games</h2>

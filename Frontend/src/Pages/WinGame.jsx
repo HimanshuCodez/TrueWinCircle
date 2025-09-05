@@ -252,11 +252,7 @@ useEffect(() => {
       <h2 className="text-3xl font-bold mb-6 text-center text-yellow-400">1 to 12 Win Game</h2>
       <hr className="border-gray-700 mb-6" />
 
-      {/* User Balance Display */}
-      <div className="mb-6 p-4 bg-blue-900 text-white rounded-lg shadow-md flex justify-between items-center">
-        <span className="text-lg font-semibold">Your Balance:</span>
-        <span className="text-2xl font-bold">₹{balance.toFixed(2)}</span>
-      </div>
+     
 
       {/* Game grid & rules */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
