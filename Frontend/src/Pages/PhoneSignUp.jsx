@@ -99,8 +99,8 @@ const PhoneSignUp = () => {
             </button>
           </div>
         )}
+        <div id="recaptcha-container"></div>
       </div>
-      <div id="recaptcha-container"></div>
     </div>
   );
 };
