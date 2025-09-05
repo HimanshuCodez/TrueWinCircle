@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import connectDB from './db.js';
 import User from './models/User.js';
+import admin from './firebaseAdmin.js'; // Import Firebase Admin
 
 dotenv.config();
 
@@ -13,21 +14,42 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-app.post('/api/registerUser', async (req, res) => {
-    const { uid, phoneNumber } = req.body;
-    console.log('Received registration request:', { uid, phoneNumber });
+// Middleware to verify Firebase ID token
+const protect = async (req, res, next) => {
+    console.log('\n[Middleware] Entering protect middleware...'); // New log
+    let token;
+
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+        try {
+            token = req.headers.authorization.split(' ')[1];
+            const decodedToken = await admin.auth().verifyIdToken(token);
+            req.user = decodedToken;
+            next();
+        } catch (error) {
+            console.error('Error while verifying token:', error);
+            res.status(401).json({ message: 'Not authorized, token failed' });
+        }
+    } else {
+        res.status(401).json({ message: 'Not authorized, no token' });
+    }
+};
+
+app.post('/api/registerUser', protect, async (req, res) => {
+    // Now get uid and phoneNumber from the verified token (req.user)
+    const { uid, phone_number } = req.user;
+    console.log('Received registration request for uid:', uid);
 
     try {
         const userExists = await User.findOne({ uid });
 
         if (userExists) {
             console.log('User already exists:', userExists);
-            return res.status(200).json({ message: 'User already registered' });
+            return res.status(200).json({ message: 'User already registered', user: userExists });
         }
 
         const user = await User.create({
             uid,
-            phoneNumber,
+            phoneNumber: phone_number, // Use phone_number from decoded token
         });
 
         if (user) {
@@ -38,7 +60,6 @@ app.post('/api/registerUser', async (req, res) => {
                 phoneNumber: user.phoneNumber,
             });
         } else {
-            console.log('Invalid user data received.');
             res.status(400).json({ message: 'Invalid user data' });
         }
     } catch (error) {

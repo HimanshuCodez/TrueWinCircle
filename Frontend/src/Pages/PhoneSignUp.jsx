@@ -46,7 +46,30 @@ const PhoneSignUp = () => {
     if (!otp) return alert("Enter OTP");
     try {
       const result = await confirmationResult.confirm(otp);
-      console.log("User signed in:", result.user);
+      const user = result.user;
+      console.log("User signed in:", user);
+
+      // Get the Firebase ID token
+      const idToken = await user.getIdToken();
+
+      // After successful sign-in, register the user in the backend
+      const response = await fetch("http://localhost:5000/api/registerUser", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        console.log("User registered in backend:", data);
+      } else {
+        console.error("Backend registration error:", data.message);
+        // You might want to handle this error, e.g., show a message to the user
+      }
+
       navigate("/");
     } catch (err) {
       console.error("OTP verify error:", err);
