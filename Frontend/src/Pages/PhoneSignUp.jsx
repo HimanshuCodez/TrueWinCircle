@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import { auth } from "../firebase";
 
 const PhoneSignUp = () => {
@@ -8,6 +9,7 @@ const PhoneSignUp = () => {
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState(1);
   const [confirmationResult, setConfirmationResult] = useState(null);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   // ✅ Create reCAPTCHA only once
@@ -26,7 +28,8 @@ const PhoneSignUp = () => {
   }, []);
 
   const sendOtp = async () => {
-    if (!phone) return alert("Enter phone number");
+    if (!phone) return toast.error("Enter phone number");
+    setLoading(true);
     try {
       const formattedPhone = phone.startsWith("+") ? phone : `+91${phone}`;
       const result = await signInWithPhoneNumber(
@@ -36,14 +39,18 @@ const PhoneSignUp = () => {
       );
       setConfirmationResult(result);
       setStep(2);
+      toast.success("OTP Sent Successfully!");
     } catch (err) {
       console.error("OTP send error:", err);
-      alert(err.message);
+      toast.error(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   const verifyOtp = async () => {
-    if (!otp) return alert("Enter OTP");
+    if (!otp) return toast.error("Enter OTP");
+    setLoading(true);
     try {
       const result = await confirmationResult.confirm(otp);
       const user = result.user;
@@ -65,15 +72,19 @@ const PhoneSignUp = () => {
 
       if (response.ok) {
         console.log("User registered in backend:", data);
+        toast.success("Sign in successful!");
       } else {
         console.error("Backend registration error:", data.message);
+        toast.error("Failed to register user.");
         // You might want to handle this error, e.g., show a message to the user
       }
 
       navigate("/");
     } catch (err) {
       console.error("OTP verify error:", err);
-      alert(err.message);
+      toast.error(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -100,9 +111,10 @@ const PhoneSignUp = () => {
             />
             <button
               onClick={sendOtp}
-              className="w-full bg-yellow-500 text-black font-bold px-5 py-3 rounded-full hover:bg-yellow-600 transition-colors duration-300"
+              disabled={loading}
+              className="w-full bg-yellow-500 text-black font-bold px-5 py-3 rounded-full hover:bg-yellow-600 transition-colors duration-300 disabled:bg-gray-400"
             >
-              Send OTP
+              {loading ? "Sending..." : "Send OTP"}
             </button>
           </div>
         ) : (

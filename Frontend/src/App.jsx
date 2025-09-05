@@ -13,6 +13,8 @@ import { AddCash } from './Pages/AddCash';
 import Pay from './Pages/Pay';
 import { MyWallet } from './Pages/Wallet';
 import PaymentConfirmation from './Pages/PaymentConfirmation';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const App = () => {
   const setUser = useAuthStore((state) => state.setUser);
@@ -29,6 +31,18 @@ const App = () => {
   return (
     <Router>
       <Navbar />
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark"
+      />
     
       <Routes>
         <Route path="/" element={<Home />} />
