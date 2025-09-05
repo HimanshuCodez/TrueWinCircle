@@ -2,113 +2,121 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getAuth } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../firebase";
+import { ArrowLeft, Wallet as WalletIcon, IndianRupee } from "lucide-react";
 
 export function MyWallet() {
   const navigate = useNavigate();
   const auth = getAuth();
   const user = auth.currentUser;
-  const [depositChips, setDepositChips] = useState(0);
-  const [winningChips, setWinningChips] = useState(0);
+  const [walletBalance, setWalletBalance] = useState(0); // Renamed from depositChips for clarity
+  const [winningMoney, setWinningMoney] = useState(0); // Renamed from winningChips for clarity
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchWallet = async () => {
       if (user) {
-        const userRef = doc(db, "users", user.uid);
-        const userSnap = await getDoc(userRef);
-        if (userSnap.exists()) {
-          setDepositChips(parseFloat(userSnap.data().depositChips) || 0);
-          setWinningChips(parseFloat(userSnap.data().winningChips) || 0);
+        try {
+          const userRef = doc(db, "users", user.uid);
+          const userSnap = await getDoc(userRef);
+          if (userSnap.exists()) {
+            setWalletBalance(parseFloat(userSnap.data().balance) || 0); // Assuming 'balance' is the field for wallet balance
+            setWinningMoney(parseFloat(userSnap.data().winningMoney) || 0); // Assuming 'winningMoney' is the field for winning money
+          } else {
+            setError("User data not found.");
+          }
+        } catch (err) {
+          console.error("Error fetching wallet data:", err);
+          setError("Failed to load wallet data.");
+        } finally {
+          setLoading(false);
         }
+      } else {
+        setLoading(false);
+        setError("Please log in to view your wallet.");
       }
     };
     fetchWallet();
   }, [user]);
 
-  return (
-    <div className="font-roboto min-h-screen bg-gradient-to-br from-yellow-50 via-red-50 to-green-100">
- 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#042346] text-white flex items-center justify-center">
+        <p>Loading Wallet...</p>
+      </div>
+    );
+  }
 
-      {/* Back & Wallet History */}
-      <div className="px-4 pt-2 pb-1 flex items-center justify-between">
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#042346] text-white flex items-center justify-center">
+        <p className="text-red-500">Error: {error}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="font-roboto min-h-screen bg-[#042346] text-white p-4">
+      {/* Back Button */}
+      <div className="flex items-center mb-6">
         <button
           onClick={() => navigate("/")}
-          className="rounded-full bg-primary p-1"
+          className="p-2 rounded-full hover:bg-white/10 transition-colors"
         >
-          
+          <ArrowLeft className="w-6 h-6 text-yellow-500" />
         </button>
-      
+        <h1 className="text-2xl font-bold ml-4">My Wallet</h1>
       </div>
 
-      {/* Verified Status */}
-      {/* <div className="mx-4 bg-gradient-to-r from-green-200 to-green-400 rounded-md px-4 py-2 flex justify-between items-center text-sm font-medium text-green-900 shadow-sm">
-        <span>✔ Verified</span>
-        <span className="bg-green-700 text-white text-xs px-2 py-1 rounded">
-          Verification Completed
-        </span>
-      </div> */}
-
-      {/* Wallet Sections */}
-      <div className="mx-4 mt-4 space-y-4">
-        {/* Deposit Chips */}
-        <div className="rounded-xl overflow-hidden shadow-md bg-white">
-          <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-center py-1 font-semibold">
-            Deposit Chips
+      {/* Wallet Summary */}
+      <div className="bg-[#0a2d55] rounded-xl p-6 mb-6 shadow-lg">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-3">
+            <WalletIcon className="w-8 h-8 text-yellow-500" />
+            <h2 className="text-xl font-semibold">Total Balance</h2>
           </div>
-          <div className="bg-blue-50 text-[11px] text-center text-blue-600 px-2 py-1">
-            यह चिप्स Win अवं Buy की गई चिप्स है। इनसे सिर्फ गेम खेले जा सकते
-            हैं, बैंक या UPI से निकाला नहीं जा सकता है।
-          </div>
-          <div className="flex justify-center py-4 bg-gradient-to-br from-yellow-200 to-red-200">
-            <div className="bg-white rounded-lg px-6 py-3 shadow text-center space-y-1">
-    
-              <div className="flex justify-center items-center gap-1 text-xl font-bold">
-           
-                <span>{depositChips.toFixed(2)}</span>
-              </div>
-              <div className="text-gray-600 text-sm">Chips</div>
-            </div>
-          </div>
-          <button
-            onClick={() => navigate("/AddCash")}
-            className="w-full bg-green-600 text-white py-2 font-semibold rounded-b-lg hover:bg-green-700 transition"
-          >
-            Add
-          </button>
+          <p className="text-3xl font-bold text-yellow-500">
+            <IndianRupee className="inline-block w-6 h-6 mr-1" />
+            {(walletBalance + winningMoney).toFixed(2)}
+          </p>
         </div>
 
-        {/* Winning Chips (Static for now) */}
-        <div className="rounded-xl overflow-hidden shadow-md bg-white">
-          <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-center py-1 font-semibold">
-            Winning Money
+        <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-white/10">
+          {/* Wallet Balance */}
+          <div className="bg-[#042346] rounded-lg p-4 shadow-md">
+            <p className="text-sm text-gray-400">Wallet Balance</p>
+            <p className="text-2xl font-bold mt-1">
+              <IndianRupee className="inline-block w-5 h-5 mr-1" />
+              {walletBalance.toFixed(2)}
+            </p>
+            <button
+              onClick={() => navigate("/AddCash")}
+              className="mt-3 w-full bg-green-600 text-white py-2 rounded-lg font-semibold hover:bg-green-700 transition-colors"
+            >
+              Add Cash
+            </button>
           </div>
-          <div className="bg-red-50 text-[11px] text-center text-red-600 px-2 py-1">
-            यह चिप्स Win अवं Buy की गई चिप्स है। इनसे सिर्फ गेम खेले जा सकते
-            हैं, बैंक या UPI से निकाला नहीं जा सकता है।
-          </div>
-          <div className="flex justify-center py-4 bg-gradient-to-br from-orange-100 to-yellow-200">
-            <div className="bg-white rounded-lg px-6 py-3 shadow text-center space-y-1">
-        
-              <div className="flex justify-center items-center gap-1 text-xl font-bold">
-          
-                <span>{winningChips.toFixed(2)}</span>
-              </div>
-              <div className="text-gray-600 text-sm">Money</div>
-            </div>
-          </div>
-          <li className="p-[4px] bg-primary">
+
+          {/* Winning Money */}
+          <div className="bg-[#042346] rounded-lg p-4 shadow-md">
+            <p className="text-sm text-gray-400">Winning Money</p>
+            <p className="text-2xl font-bold mt-1">
+              <IndianRupee className="inline-block w-5 h-5 mr-1" />
+              {winningMoney.toFixed(2)}
+            </p>
             <button
               onClick={() => navigate("/Withdraw")}
-              className="text-black font-roboto text-[17px] w-full"
+              className="mt-3 w-full bg-red-600 text-white py-2 rounded-lg font-semibold hover:bg-red-700 transition-colors"
             >
-              <div className="flex   items-center gap-2 pl-16">
-                <span className="pl-20">Withdraw</span>
-              </div>
+              Withdraw
             </button>
-          </li>
+          </div>
         </div>
       </div>
 
-   
+      {/* Additional sections can go here */}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 
@@ -15,18 +15,29 @@ import { MyWallet } from './Pages/Wallet';
 import PaymentConfirmation from './Pages/PaymentConfirmation';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import Withdraw from './Pages/Withdraw';
 
 const App = () => {
   const setUser = useAuthStore((state) => state.setUser);
   const auth = getAuth();
+  const [loadingAuth, setLoadingAuth] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
+      setLoadingAuth(false); // Auth state determined
     });
 
     return () => unsubscribe();
   }, [auth, setUser]);
+
+  if (loadingAuth) {
+    return (
+      <div className="min-h-screen bg-[#042346] text-white flex items-center justify-center">
+        <p>Loading authentication...</p>
+      </div>
+    );
+  }
 
   return (
     <Router>
@@ -53,6 +64,7 @@ const App = () => {
         <Route path="/testphonesignup" element={<PhoneSignUp />} />
         <Route path="/addcash" element={<AddCash />} />
         <Route path="/pay" element={<Pay />} />
+        <Route path="/Withdraw" element={<Withdraw />} />
         <Route path="/payconfirm" element={<PaymentConfirmation />} />
         <Route path="/Wallet" element={<MyWallet />} />
       </Routes>

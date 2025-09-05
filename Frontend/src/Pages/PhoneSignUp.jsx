@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { auth } from "../firebase";
+import { auth, db } from "../firebase";
 
 const PhoneSignUp = () => {
   const [phone, setPhone] = useState("");
@@ -56,6 +57,16 @@ const PhoneSignUp = () => {
       const user = result.user;
       console.log("User signed in:", user);
 
+      // Create user document in Firestore if it doesn't exist
+      const userDocRef = doc(db, "users", user.uid);
+      await setDoc(userDocRef, {
+        phoneNumber: user.phoneNumber,
+        balance: 0,
+        winningMoney: 0,
+        createdAt: new Date(),
+      }, { merge: true }); // Use merge: true to avoid overwriting existing data if any
+
+      toast.success("Sign in successful!");
       navigate("/");
     } catch (err) {
       console.error("OTP verify error:", err);
