@@ -1,21 +1,39 @@
 import { useState, useEffect, useRef } from "react";
-import { getFirestore, collection, addDoc, query, where, getDocs, serverTimestamp } from "firebase/firestore";
-import useAuthStore from "../store/authStore"; // Assuming this path
+import { collection, addDoc, query, where, getDocs, serverTimestamp, doc, runTransaction, onSnapshot } from "firebase/firestore";
+import useAuthStore from "../store/authStore";
 import { toast } from "react-toastify";
-import { formatDistanceToNowStrict } from 'date-fns'; // For time formatting
+import { formatDistanceToNowStrict } from 'date-fns';
+import { db } from '../firebase'; // Import db from firebase.js
 
 export default function WinGame() {
   const [selected, setSelected] = useState(null);
-  const [betAmount, setBetAmount] = useState(10); // Default bet amount
+  const [betAmount, setBetAmount] = useState(10);
   const [nextResultTime, setNextResultTime] = useState(null);
   const [timeLeft, setTimeLeft] = useState('');
-  const [gamePhase, setGamePhase] = useState('betting'); // 'betting', 'calculating', 'showingResult'
+  const [gamePhase, setGamePhase] = useState('betting');
   const [winningNumber, setWinningNumber] = useState(null);
-  const [winningUserName, setWinningUserName] = useState(null); // Placeholder for user name
-  const [currentRoundId, setCurrentRoundId] = useState(null); // ID for the current game round
-  const { user } = useAuthStore(); // Get current user from Zustand store
-  const db = getFirestore();
-  const timerIntervalRef = useRef(null); // Ref for the timer interval
+  const [winningUserName, setWinningUserName] = useState(null);
+  const [currentRoundId, setCurrentRoundId] = useState(null);
+  const { user } = useAuthStore();
+  const [balance, setBalance] = useState(0); // User's balance
+  const [bettingLoading, setBettingLoading] = useState(false); // Loading state for bet submission
+
+  const timerIntervalRef = useRef(null);
+
+  // Fetch user balance
+  useEffect(() => {
+    if (user) {
+      const userDocRef = doc(db, 'users', user.uid);
+      const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+          setBalance(docSnap.data().balance || 0);
+        } else {
+          setBalance(0);
+        }
+      });
+      return () => unsubscribe();
+    }
+  }, [user]);
 
   const numbers = [
     { num: 1, amount: 3586 }, // These amounts are static, will be replaced by fetched data
@@ -96,7 +114,8 @@ useEffect(() => {
       toast.error("Please select a number.");
       return;
     }
-    if (betAmount < 10) {
+    const parsedBetAmount = parseFloat(betAmount);
+    if (isNaN(parsedBetAmount) || parsedBetAmount < 10) {
       toast.error("Minimum bet amount is ₹10.");
       return;
     }
@@ -104,22 +123,51 @@ useEffect(() => {
       toast.info("Betting is closed for this round.");
       return;
     }
+    if (parsedBetAmount > balance) {
+      toast.error("Insufficient balance.");
+      return;
+    }
+
+    setBettingLoading(true);
 
     try {
-      await addDoc(collection(db, "bets"), {
-        userId: user.uid,
-        userName: user.displayName || user.email || "Anonymous", // Use display name or email
-        number: selected,
-        amount: betAmount,
-        roundId: currentRoundId,
-        timestamp: serverTimestamp(),
+      await runTransaction(db, async (transaction) => {
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDoc = await transaction.get(userDocRef);
+
+        if (!userDoc.exists()) {
+          throw "User document does not exist!";
+        }
+
+        const currentBalance = userDoc.data().balance || 0;
+
+        if (currentBalance < parsedBetAmount) {
+          throw "Insufficient balance in transaction.";
+        }
+
+        // Deduct balance
+        transaction.update(userDocRef, { balance: currentBalance - parsedBetAmount });
+
+        // Add bet record
+        const betsCollectionRef = collection(db, "bets");
+        transaction.set(doc(betsCollectionRef), {
+          userId: user.uid,
+          userName: user.displayName || user.email || "Anonymous",
+          number: selected,
+          amount: parsedBetAmount,
+          roundId: currentRoundId,
+          timestamp: serverTimestamp(),
+        });
       });
-      toast.success(`Bet placed: ₹${betAmount} on number ${selected}`);
-      setSelected(null); // Clear selection after bet
-      setBetAmount(10); // Reset bet amount
+
+      toast.success(`Bet placed: ₹${parsedBetAmount} on number ${selected}`);
+      setSelected(null);
+      setBetAmount(10);
     } catch (error) {
       console.error("Error placing bet:", error);
-      toast.error("Failed to place bet. Please try again.");
+      toast.error(`Failed to place bet: ${error.message || error}`);
+    } finally {
+      setBettingLoading(false);
     }
   };
 
@@ -204,6 +252,12 @@ useEffect(() => {
       <h2 className="text-3xl font-bold mb-6 text-center text-yellow-400">1 to 12 Win Game</h2>
       <hr className="border-gray-700 mb-6" />
 
+      {/* User Balance Display */}
+      <div className="mb-6 p-4 bg-blue-900 text-white rounded-lg shadow-md flex justify-between items-center">
+        <span className="text-lg font-semibold">Your Balance:</span>
+        <span className="text-2xl font-bold">₹{balance.toFixed(2)}</span>
+      </div>
+
       {/* Game grid & rules */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {/* Number boxes */}
@@ -283,9 +337,9 @@ useEffect(() => {
           <button
             onClick={handleBet}
             className="bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-semibold px-6 py-2 rounded-md shadow-lg transition-colors w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={gamePhase !== 'betting' || !selected || betAmount < 10}
+            disabled={gamePhase !== 'betting' || !selected || betAmount < 10 || bettingLoading}
           >
-            Bet Now
+            {bettingLoading ? 'Placing Bet...' : 'Bet Now'}
           </button>
         </div>
       </div>
