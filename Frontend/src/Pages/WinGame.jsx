@@ -247,7 +247,7 @@ useEffect(() => {
   };
 
   return (
-    <div className="p-6  min-h-screen text-white font-roboto">
+    <div className="p-6 bg-sky-800  min-h-screen text-white font-roboto">
       {/* Title */}
       <h2 className="text-3xl font-bold mb-6 text-center text-yellow-400">1 to 12 Win Game</h2>
       <hr className="border-gray-700 mb-6" />

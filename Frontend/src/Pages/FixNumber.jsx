@@ -172,7 +172,7 @@ export default function FixNumber() {
   };
 
   return (
-    <div className="px-8 py-6">
+    <div className="px-8 bg-red-800 py-6">
      
 
       {/* Section Title */}

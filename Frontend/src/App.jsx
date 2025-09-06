@@ -16,6 +16,7 @@ import PaymentConfirmation from './Pages/PaymentConfirmation';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Withdraw from './Pages/Withdraw';
+import AdminDashboard from './Admin/Admin';
 
 const App = () => {
   const setUser = useAuthStore((state) => state.setUser);
@@ -67,6 +68,7 @@ const App = () => {
         <Route path="/Withdraw" element={<Withdraw />} />
         <Route path="/payconfirm" element={<PaymentConfirmation />} />
         <Route path="/Wallet" element={<MyWallet />} />
+        <Route path="/Admin" element={<AdminDashboard />} />
       </Routes>
     </Router>
   );

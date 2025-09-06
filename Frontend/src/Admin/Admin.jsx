@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Users, 
   CreditCard, 
@@ -20,17 +20,57 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Sample data
+  const [payments, setPayments] = useState([]);
+  const [withdrawals, setWithdrawals] = useState([]);
+  const [totalUsers, setTotalUsers] = useState(0);
+
+  // Fetch payments (top-ups) from Firestore
+  useEffect(() => {
+    if (!isAdmin) return;
+    const q = query(collection(db, 'top-ups'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetchedPayments = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        date: doc.data().createdAt ? new Date(doc.data().createdAt).toLocaleDateString() : 'N/A',
+        user: doc.data().userId, // Placeholder, will fetch user details later
+      }));
+      setPayments(fetchedPayments);
+    });
+    return () => unsubscribe();
+  }, [isAdmin]);
+
+  // Fetch withdrawals from Firestore
+  useEffect(() => {
+    if (!isAdmin) return;
+    const q = query(collection(db, 'withdrawals'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetchedWithdrawals = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        date: doc.data().createdAt ? new Date(doc.data().createdAt).toLocaleDateString() : 'N/A',
+        user: doc.data().userId, // Placeholder, will fetch user details later
+      }));
+      setWithdrawals(fetchedWithdrawals);
+    });
+    return () => unsubscribe();
+  }, [isAdmin]);
+
+  // Fetch total users count
+  useEffect(() => {
+    if (!isAdmin) return;
+    const q = query(collection(db, 'users'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setTotalUsers(snapshot.size);
+    });
+    return () => unsubscribe();
+  }, [isAdmin]);
+
+  // Sample data (remove or replace with actual data fetching for barcodes and winners)
   const [barcodes, setBarcodes] = useState([
     { id: 1, code: 'BC001', product: 'Product A', status: 'active', created: '2024-01-15' },
     { id: 2, code: 'BC002', product: 'Product B', status: 'inactive', created: '2024-01-16' },
     { id: 3, code: 'BC003', product: 'Product C', status: 'active', created: '2024-01-17' }
-  ]);
-
-  const [payments, setPayments] = useState([
-    { id: 1, user: 'John Doe', amount: 500, method: 'UPI', status: 'pending', date: '2024-01-15' },
-    { id: 2, user: 'Jane Smith', amount: 1000, method: 'Bank Transfer', status: 'pending', date: '2024-01-16' },
-    { id: 3, user: 'Mike Johnson', amount: 250, method: 'Credit Card', status: 'approved', date: '2024-01-17' }
   ]);
 
   const [winners, setWinners] = useState([
@@ -39,17 +79,39 @@ const AdminDashboard = () => {
     { id: 3, user: 'Carol Davis', prize: 'Laptop', status: 'announced', date: '2024-01-17' }
   ]);
 
-  const [withdrawals, setWithdrawals] = useState([
-    { id: 1, user: 'David Lee', amount: 2000, method: 'Bank Transfer', status: 'pending', date: '2024-01-15' },
-    { id: 2, user: 'Eva Martinez', amount: 1500, method: 'UPI', status: 'pending', date: '2024-01-16' },
-    { id: 3, user: 'Frank Taylor', amount: 800, method: 'PayPal', status: 'approved', date: '2024-01-17' }
-  ]);
+  // Helper to fetch user details (e.g., phone number) for display
+  const fetchUserDetails = async (userId) => {
+    const userDoc = await getDocs(query(collection(db, 'users'), where('uid', '==', userId)));
+    if (!userDoc.empty) {
+      return userDoc.docs[0].data().phoneNumber || 'N/A';
+    }
+    return 'User Not Found';
+  };
 
   // Action handlers
-  const handlePaymentApproval = (id, action) => {
-    setPayments(payments.map(payment => 
-      payment.id === id ? { ...payment, status: action } : payment
-    ));
+  const handlePaymentApproval = async (paymentId, action, userId, amount) => {
+    try {
+      await runTransaction(db, async (transaction) => {
+        const paymentRef = doc(db, 'top-ups', paymentId);
+        transaction.update(paymentRef, { status: action });
+
+        if (action === 'approved') {
+          const userRef = doc(db, 'users', userId);
+          const userSnap = await transaction.get(userRef);
+          if (userSnap.exists()) {
+            const currentBalance = userSnap.data().balance || 0;
+            transaction.update(userRef, { balance: currentBalance + amount });
+          } else {
+            // If user document doesn't exist, create it with the new balance
+            transaction.set(userRef, { balance: amount, winningMoney: 0, createdAt: new Date() });
+          }
+        }
+      });
+      toast.success(`Payment ${action} successfully!`);
+    } catch (error) {
+      console.error(`Error ${action} payment:`, error);
+      toast.error(`Failed to ${action} payment.`);
+    }
   };
 
   const handleWinnerAnnouncement = (id) => {
@@ -58,10 +120,27 @@ const AdminDashboard = () => {
     ));
   };
 
-  const handleWithdrawalApproval = (id, action) => {
-    setWithdrawals(withdrawals.map(withdrawal => 
-      withdrawal.id === id ? { ...withdrawal, status: action } : withdrawal
-    ));
+  const handleWithdrawalApproval = async (withdrawalId, action, userId, amount) => {
+    try {
+      await runTransaction(db, async (transaction) => {
+        const withdrawalRef = doc(db, 'withdrawals', withdrawalId);
+        transaction.update(withdrawalRef, { status: action });
+
+        if (action === 'rejected') {
+          // If withdrawal is rejected, return money to winningMoney balance
+          const userRef = doc(db, 'users', userId);
+          const userSnap = await transaction.get(userRef);
+          if (userSnap.exists()) {
+            const currentWinningMoney = userSnap.data().winningMoney || 0;
+            transaction.update(userRef, { winningMoney: currentWinningMoney + amount });
+          }
+        }
+      });
+      toast.success(`Withdrawal ${action} successfully!`);
+    } catch (error) {
+      console.error(`Error ${action} withdrawal:`, error);
+      toast.error(`Failed to ${action} withdrawal.`);
+    }
   };
 
   const handleBarcodeUpdate = (id, status) => {
@@ -71,7 +150,7 @@ const AdminDashboard = () => {
   };
 
   const stats = [
-    { title: 'Total Users', value: '2,345', icon: Users, color: 'bg-blue-500' },
+    { title: 'Total Users', value: totalUsers.toString(), icon: Users, color: 'bg-blue-500' },
     { title: 'Pending Payments', value: payments.filter(p => p.status === 'pending').length.toString(), icon: CreditCard, color: 'bg-yellow-500' },
     { title: 'Winners Announced', value: winners.filter(w => w.status === 'announced').length.toString(), icon: Trophy, color: 'bg-green-500' },
     { title: 'Pending Withdrawals', value: withdrawals.filter(w => w.status === 'pending').length.toString(), icon: DollarSign, color: 'bg-red-500' }
