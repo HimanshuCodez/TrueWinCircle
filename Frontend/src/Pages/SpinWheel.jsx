@@ -248,7 +248,7 @@ export default function CasinoRoulette() {
       <div className="w-full max-w-5xl p-4 bg-gray-800 rounded-lg shadow-lg flex flex-col items-center space-y-4">
         <h3 className="text-xl font-bold text-yellow-400">Place Your Bet</h3>
         
-        <BettingGrid onSelectBet={setSelectedBetType} selectedBet={selectedBetType} />
+     
 
         {/* Outside Bets */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 w-full max-w-3xl">
