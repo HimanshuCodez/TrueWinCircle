@@ -15,6 +15,11 @@ import {
   Settings,
   LogOut
 } from 'lucide-react';
+import { db } from '../firebase';
+import { collection, query, onSnapshot, doc, runTransaction, getDocs, where } from 'firebase/firestore';
+import useAuthStore from '../store/authStore';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -23,6 +28,8 @@ const AdminDashboard = () => {
   const [payments, setPayments] = useState([]);
   const [withdrawals, setWithdrawals] = useState([]);
   const [totalUsers, setTotalUsers] = useState(0);
+  const { user } = useAuthStore();
+  const isAdmin = user?.role === 'admin';
 
   // Fetch payments (top-ups) from Firestore
   useEffect(() => {
@@ -375,13 +382,13 @@ const AdminDashboard = () => {
                     {payment.status === 'pending' && (
                       <div className="flex space-x-2">
                         <button 
-                          onClick={() => handlePaymentApproval(payment.id, 'approved')}
+                          onClick={() => handlePaymentApproval(payment.id, 'approved', payment.userId, payment.amount)}
                           className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
                         >
                           <Check className="h-4 w-4" />
                         </button>
                         <button 
-                          onClick={() => handlePaymentApproval(payment.id, 'rejected')}
+                          onClick={() => handlePaymentApproval(payment.id, 'rejected', payment.userId, payment.amount)}
                           className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
                         >
                           <X className="h-4 w-4" />
@@ -489,13 +496,13 @@ const AdminDashboard = () => {
                     {withdrawal.status === 'pending' && (
                       <div className="flex space-x-2">
                         <button 
-                          onClick={() => handleWithdrawalApproval(withdrawal.id, 'approved')}
+                          onClick={() => handleWithdrawalApproval(withdrawal.id, 'approved', withdrawal.userId, withdrawal.amount)}
                           className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
                         >
                           <Check className="h-4 w-4" />
                         </button>
                         <button 
-                          onClick={() => handleWithdrawalApproval(withdrawal.id, 'rejected')}
+                          onClick={() => handleWithdrawalApproval(withdrawal.id, 'rejected', withdrawal.userId, withdrawal.amount)}
                           className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
                         >
                           <X className="h-4 w-4" />
@@ -525,6 +532,7 @@ const AdminDashboard = () => {
 
   return (
     <div className="flex h-screen bg-gray-100">
+      <ToastContainer />
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header />

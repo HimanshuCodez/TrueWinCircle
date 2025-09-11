@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from './firebase';
 
 import SpinWheel from './Pages/SpinWheel';
 import FixNumber from './Pages/FixNumber';
@@ -18,14 +20,26 @@ import 'react-toastify/dist/ReactToastify.css';
 import Withdraw from './Pages/Withdraw';
 import AdminDashboard from './Admin/Admin';
 
+import AdminRoute from './Admin/AdminRoute';
+
 const App = () => {
-  const setUser = useAuthStore((state) => state.setUser);
+  const { user, setUser } = useAuthStore();
   const auth = getAuth();
   const [loadingAuth, setLoadingAuth] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+    const unsubscribe = onAuthStateChanged(auth, async (userAuth) => {
+      if (userAuth) {
+        const userRef = doc(db, "users", userAuth.uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          setUser({ ...userAuth, ...userSnap.data() });
+        } else {
+          setUser(userAuth);
+        }
+      } else {
+        setUser(null);
+      }
       setLoadingAuth(false); // Auth state determined
     });
 
@@ -35,7 +49,7 @@ const App = () => {
   if (loadingAuth) {
     return (
       <div className="min-h-screen bg-[#042346] text-white flex items-center justify-center">
-        <p>Loading authentication...</p>
+        <p>Loading ...</p>
       </div>
     );
   }
@@ -68,7 +82,7 @@ const App = () => {
         <Route path="/Withdraw" element={<Withdraw />} />
         <Route path="/payconfirm" element={<PaymentConfirmation />} />
         <Route path="/Wallet" element={<MyWallet />} />
-        <Route path="/Admin" element={<AdminDashboard />} />
+        <Route path="/Admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
       </Routes>
     </Router>
   );
