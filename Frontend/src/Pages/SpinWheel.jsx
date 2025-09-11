@@ -74,48 +74,7 @@ const RouletteWheel = ({ wheelRef, rotation, spinning }) => {
 };
 
 
-// --- BettingGrid Component ---
-const BettingGrid = ({ onSelectBet, selectedBet }) => {
-    const rows = [
-        [3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36],
-        [2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35],
-        [1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34]
-    ];
 
-    const NumberButton = ({ num }) => {
-        const color = getNumberColor(num);
-        return (
-            <div className="flex justify-center">
-                <button
-                    onClick={() => onSelectBet(num)}
-                    className={`w-10 h-10 text-white font-bold rounded-full transition-transform transform hover:scale-110 flex items-center justify-center ${color} ${selectedBet === num ? 'ring-4 ring-yellow-400' : 'ring-2 ring-transparent'}`}
-                >
-                    {num}
-                </button>
-            </div>
-        );
-    };
-
-    return (
-        <div className="bg-[#062d55] p-2 rounded-lg w-full max-w-3xl">
-            <div className="grid grid-cols-[auto_1fr] gap-2 items-center">
-                {/* 0 and 00 */}
-                <div className="flex flex-col gap-1">
-                    <NumberButton num={0} />
-                    <NumberButton num={'00'} />
-                </div>
-                {/* Number grid */}
-                <div className="grid grid-rows-3 gap-1">
-                    {rows.map((row, i) => (
-                        <div key={i} className="grid grid-cols-12 gap-1">
-                            {row.map(num => <NumberButton key={num} num={num} />)}
-                        </div>
-                    ))}
-                </div>
-            </div>
-        </div>
-    );
-};
 
 
 export default function CasinoRoulette() {
