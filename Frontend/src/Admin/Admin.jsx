@@ -22,16 +22,52 @@ import useAuthStore from '../store/authStore';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
+import { storage } from '../firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [searchTerm, setSearchTerm] = useState('');
   const [isSidebarOpen, setSidebarOpen] = useState(false);
+  const [barcodeFile, setBarcodeFile] = useState(null);
+  const [barcodeUrl, setBarcodeUrl] = useState('');
 
   const [payments, setPayments] = useState([]);
   const [withdrawals, setWithdrawals] = useState([]);
   const [totalUsers, setTotalUsers] = useState(0);
   const { user } = useAuthStore();
   const isAdmin = user?.role === 'admin';
+
+  const handleBarcodeUpload = async () => {
+    if (!barcodeFile) {
+      toast.error('Please select a file to upload.');
+      return;
+    }
+    const barcodeRef = ref(storage, 'barcodes/qr.jpg');
+    try {
+      await uploadBytes(barcodeRef, barcodeFile);
+      const url = await getDownloadURL(barcodeRef);
+      setBarcodeUrl(url);
+      toast.success('Barcode uploaded successfully!');
+    } catch (error) {
+      console.error("Error uploading barcode:", error);
+      toast.error('Failed to upload barcode.');
+    }
+  };
+
+  useEffect(() => {
+    const fetchBarcodeUrl = async () => {
+        try {
+            const barcodeRef = ref(storage, 'barcodes/qr.jpg');
+            const url = await getDownloadURL(barcodeRef);
+            setBarcodeUrl(url);
+        } catch (error) {
+            console.log("QR code not found, admin needs to upload one.")
+        }
+    };
+
+    fetchBarcodeUrl();
+  }, []);
 
   // Fetch payments (top-ups) from Firestore
   useEffect(() => {
@@ -297,14 +333,29 @@ const AdminDashboard = () => {
 
   const BarcodeView = () => (
     <div className="p-6">
-      <div className="bg-white rounded-lg shadow-sm">
+      <div className="bg-white rounded-lg shadow-sm p-6 border-b">
+        <h3 className="text-lg font-semibold">Barcode Management</h3>
+        <div className="mt-4">
+            <h4 className="text-md font-semibold">Current QR Code</h4>
+            {barcodeUrl ? (
+                <img src={barcodeUrl} alt="Current QR Code" className="w-48 h-48 mt-2" />
+            ) : (
+                <p className="text-gray-500 mt-2">No QR code uploaded yet.</p>
+            )}
+        </div>
+        <div className="mt-4">
+            <h4 className="text-md font-semibold">Upload New Barcode</h4>
+            <input type="file" onChange={(e) => setBarcodeFile(e.target.files[0])} className="mt-2" />
+            <button onClick={handleBarcodeUpload} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2 mt-2">
+              <Plus className="h-4 w-4" />
+              <span>Upload Barcode</span>
+            </button>
+        </div>
+      </div>
+      <div className="bg-white rounded-lg shadow-sm mt-6">
         <div className="p-6 border-b">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">Barcode Management</h3>
-            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2">
-              <Plus className="h-4 w-4" />
-              <span>Add Barcode</span>
-            </button>
+            <h3 className="text-lg font-semibold">Barcode History (Sample)</h3>
           </div>
         </div>
         <div className="overflow-x-auto">

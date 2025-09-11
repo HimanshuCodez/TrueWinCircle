@@ -1,11 +1,29 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { storage } from '../firebase';
+import { ref, getDownloadURL } from 'firebase/storage';
 
 const Pay = () => {
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
+  const [qrCodeUrl, setQrCodeUrl] = useState('');
   const navigate = useNavigate();
   const amount = window.localStorage.getItem('Amount');
   const isExpired = timeLeft === 0;
+
+  useEffect(() => {
+    const fetchQrCode = async () => {
+      try {
+        const qrCodeRef = ref(storage, 'barcodes/qr.jpg');
+        const url = await getDownloadURL(qrCodeRef);
+        setQrCodeUrl(url);
+      } catch (error) {
+        console.error("Error fetching QR code:", error);
+        // Handle error, e.g., show a placeholder or an error message
+      }
+    };
+
+    fetchQrCode();
+  }, []);
 
   useEffect(() => {
     if (timeLeft > 0) {
@@ -42,7 +60,13 @@ const Pay = () => {
               <h2 className="text-2xl font-bold text-yellow-400 mb-2">Scan & Pay</h2>
               <p className="text-5xl font-bold mb-4">₹{amount}</p>
               <div className="bg-white p-4 rounded-lg inline-block">
-                <img src="/qr.jpg" alt="QR Code to pay" className="w-48 h-48" />
+                {qrCodeUrl ? (
+                  <img src={qrCodeUrl} alt="QR Code to pay" className="w-48 h-48" />
+                ) : (
+                  <div className="w-48 h-48 bg-gray-300 flex items-center justify-center">
+                    <p className="text-gray-500">Loading QR...</p>
+                  </div>
+                )}
               </div>
               <p className="mt-4 text-gray-400">Scan using any UPI app</p>
               <div className="mt-4 text-5xl font-mono font-bold text-red-500" aria-live="polite">

@@ -5,6 +5,119 @@ import useAuthStore from '../store/authStore';
 import { toast } from 'react-toastify';
 import { IndianRupee } from 'lucide-react';
 
+// --- Helper Functions and Data ---
+
+const wheelNumbers = [0, 28, 9, 26, 30, 11, 7, 20, 32, 17, 5, 22, 34, 15, 3, 24, 36, 13, 1, '00', 27, 10, 25, 29, 12, 8, 19, 31, 18, 6, 21, 33, 16, 4, 23, 35, 14, 2];
+const redNumbers = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
+
+const getNumberColor = (num) => {
+  if (num === 0 || num === '00') return 'bg-green-600';
+  if (redNumbers.includes(num)) return 'bg-red-600';
+  return 'bg-black';
+};
+
+// --- RouletteWheel Component ---
+
+const RouletteWheel = ({ wheelRef, rotation, spinning }) => {
+  const getNumberColorStyle = (num) => {
+    if (num === 0 || num === '00') return { backgroundColor: '#16a34a' }; // green-600
+    if (redNumbers.includes(num)) return { backgroundColor: '#dc2626' }; // red-600
+    return { backgroundColor: '#171717' }; // neutral-900
+  };
+
+  const gradientParts = wheelNumbers.map((num, i) => {
+    const color = getNumberColorStyle(num).backgroundColor;
+    const start = i * (100 / 38);
+    const end = (i + 1) * (100 / 38);
+    return `${color} ${start}% ${end}%`;
+  });
+  const conicGradient = `conic-gradient(from 94.7deg, ${gradientParts.join(', ')})`;
+
+  return (
+    <div className="relative w-80 h-80 md:w-96 md:h-96">
+      {/* Marker */}
+      <div className="absolute top-[-4px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[15px] border-t-white z-20 drop-shadow-lg"></div>
+      
+      <div
+        ref={wheelRef}
+        className="w-full h-full rounded-full border-8 border-yellow-400 bg-gray-900 relative shadow-inner"
+        style={{
+          background: conicGradient,
+          transform: `rotate(${rotation}deg)`,
+          transition: spinning ? 'transform 5s cubic-bezier(0.33, 1, 0.68, 1)' : 'none',
+        }}
+      >
+        {wheelNumbers.map((num, i) => {
+          const angle = i * (360 / 38) + (360 / 38 / 2);
+          const radius = 110; // in pixels
+          const x = Math.cos(angle * Math.PI / 180) * radius;
+          const y = Math.sin(angle * Math.PI / 180) * radius;
+          return (
+            <div
+              key={i}
+              className="absolute top-1/2 left-1/2 w-8 h-8 flex items-center justify-center text-white font-bold text-sm"
+              style={{
+                transform: `translate(-50%, -50%) translate(${x}px, ${y}px) rotate(${angle + 90}deg)`
+              }}
+            >
+              {num}
+            </div>
+          );
+        })}
+      </div>
+      {/* Center Hub */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 bg-gray-800 rounded-full border-4 border-yellow-500 flex items-center justify-center">
+         <div className="w-12 h-12 bg-gray-900 rounded-full border-2 border-yellow-600"></div>
+      </div>
+    </div>
+  );
+};
+
+
+// --- BettingGrid Component ---
+const BettingGrid = ({ onSelectBet, selectedBet }) => {
+    const rows = [
+        [3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36],
+        [2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35],
+        [1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34]
+    ];
+
+    const NumberButton = ({ num }) => {
+        const color = getNumberColor(num);
+        return (
+            <div className="flex justify-center">
+                <button
+                    onClick={() => onSelectBet(num)}
+                    className={`w-10 h-10 text-white font-bold rounded-full transition-transform transform hover:scale-110 flex items-center justify-center ${color} ${selectedBet === num ? 'ring-4 ring-yellow-400' : 'ring-2 ring-transparent'}`}
+                >
+                    {num}
+                </button>
+            </div>
+        );
+    };
+
+    return (
+        <div className="bg-[#062d55] p-2 rounded-lg w-full max-w-3xl">
+            <div className="grid grid-cols-[auto_1fr] gap-2 items-center">
+                {/* 0 and 00 */}
+                <div className="flex flex-col gap-1">
+                    <NumberButton num={0} />
+                    <NumberButton num={'00'} />
+                </div>
+                {/* Number grid */}
+                <div className="grid grid-rows-3 gap-1">
+                    {rows.map((row, i) => (
+                        <div key={i} className="grid grid-cols-12 gap-1">
+                            {row.map(num => <NumberButton key={num} num={num} />)}
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
 export default function CasinoRoulette() {
   const [recent, setRecent] = useState([7, 24, 12, 0, 19]);
   const [spinning, setSpinning] = useState(false);
@@ -14,12 +127,11 @@ export default function CasinoRoulette() {
 
   const [balance, setBalance] = useState(0);
   const [betAmount, setBetAmount] = useState("");
-  const [selectedBetType, setSelectedBetType] = useState(null); // e.g., 'red', 'black', 'even', 'odd', '1-18', '19-36', or a specific number
+  const [selectedBetType, setSelectedBetType] = useState(null);
   const [bettingLoading, setBettingLoading] = useState(false);
 
   const { user } = useAuthStore();
 
-  // Fetch user balance
   useEffect(() => {
     if (user) {
       const userDocRef = doc(db, 'users', user.uid);
@@ -37,115 +149,81 @@ export default function CasinoRoulette() {
   const spinWheel = () => {
     if (spinning) return;
 
-    // --- Bet Validation and Deduction (New Logic) ---
     const parsedBetAmount = parseFloat(betAmount);
 
-    if (!user) {
-      toast.error("Please log in to place a bet.");
-      return;
-    }
-    if (!selectedBetType) {
-      toast.error("Please select a bet type.");
-      return;
-    }
-    if (isNaN(parsedBetAmount) || parsedBetAmount <= 0) {
-      toast.error("Please enter a valid bet amount.");
-      return;
-    }
-    if (parsedBetAmount > balance) {
-      toast.error("Insufficient balance.");
-      return;
-    }
+    if (!user) return toast.error("Please log in to place a bet.");
+    if (selectedBetType === null) return toast.error("Please select a bet type.");
+    if (isNaN(parsedBetAmount) || parsedBetAmount <= 0) return toast.error("Please enter a valid bet amount.");
+    if (parsedBetAmount > balance) return toast.error("Insufficient balance.");
 
     setBettingLoading(true);
 
-    try {
-      runTransaction(db, async (transaction) => {
-        const userDocRef = doc(db, 'users', user.uid);
-        const userDoc = await transaction.get(userDocRef);
+    runTransaction(db, async (transaction) => {
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDoc = await transaction.get(userDocRef);
+      if (!userDoc.exists()) throw "User document does not exist!";
+      
+      const currentBalance = userDoc.data().balance || 0;
+      if (currentBalance < parsedBetAmount) throw "Insufficient balance in transaction.";
 
-        if (!userDoc.exists()) {
-          throw "User document does not exist!";
-        }
-
-        const currentBalance = userDoc.data().balance || 0;
-
-        if (currentBalance < parsedBetAmount) {
-          throw "Insufficient balance in transaction.";
-        }
-
-        // Deduct balance
-        transaction.update(userDocRef, { balance: currentBalance - parsedBetAmount });
-
-        // Record bet
-        const betsCollectionRef = collection(db, 'rouletteBets');
-        transaction.set(doc(betsCollectionRef), {
-          userId: user.uid,
-          betType: selectedBetType,
-          betAmount: parsedBetAmount,
-          timestamp: new Date(),
-          status: 'pending',
-          winningNumber: null, // Will be updated after spin
-          payout: 0,
-        });
+      transaction.update(userDocRef, { balance: currentBalance - parsedBetAmount });
+      const betsCollectionRef = collection(db, 'rouletteBets');
+      transaction.set(doc(betsCollectionRef), {
+        userId: user.uid,
+        betType: selectedBetType,
+        betAmount: parsedBetAmount,
+        timestamp: new Date(),
+        status: 'pending',
       });
-
+    }).then(() => {
       toast.success("Bet placed! Spinning the wheel...");
       setBettingLoading(false);
       setSpinning(true);
       setWinningNumber(null);
 
-      const newWinningNumber = Math.floor(Math.random() * 37); // 0-36
-      const randomFullRotations = Math.floor(Math.random() * 6) + 5; // 5-10 rotations
-      const randomStopAngle = Math.floor(Math.random() * 360); // Random angle within 360 degrees
+      const winningIndex = Math.floor(Math.random() * 38);
+      const newWinningNumber = wheelNumbers[winningIndex];
+      
+      const randomFullRotations = Math.floor(Math.random() * 4) + 5; // 5-8 rotations
+      const anglePerNumber = 360 / 38;
+      const targetAngle = (360 - (winningIndex * anglePerNumber)) - (anglePerNumber / 2);
 
-      // Calculate the exact angle for the winning number
-      // Assuming 37 numbers (0-36) evenly spaced on the wheel
-      const anglePerNumber = 360 / 37;
-      const targetAngle = newWinningNumber * anglePerNumber;
-
-      // Adjust final rotation to land on the target angle
-      const finalRotation = rotation + randomFullRotations * 360 + (360 - targetAngle);
+      const finalRotation = rotation + (randomFullRotations * 360) + targetAngle;
 
       setRotation(finalRotation);
 
       setTimeout(() => {
         setSpinning(false);
         setWinningNumber(newWinningNumber);
-        setRecent((prevRecent) => [newWinningNumber, ...prevRecent].slice(0, 5));
-
-        // --- Payout Logic (New Logic) ---
+        setRecent((prev) => [newWinningNumber, ...prev].slice(0, 10));
         handlePayout(newWinningNumber, selectedBetType, parsedBetAmount);
-
-        // Reset bet inputs
         setBetAmount("");
         setSelectedBetType(null);
-      }, 5000); // Spin duration
+      }, 5500); // Spin duration + 0.5s buffer
 
-    } catch (e) {
+    }).catch((e) => {
       console.error("Bet placement failed: ", e);
       toast.error(`Failed to place bet: ${e.message || e}`);
       setBettingLoading(false);
-    }
+    });
   };
 
   const handlePayout = async (resultNumber, betType, betAmount) => {
     let payoutMultiplier = 0;
     let isWinner = false;
 
-    // Determine if the bet wins and calculate multiplier
-    const isRed = (num) => [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36].includes(num);
-    const isBlack = (num) => [2, 4, 6, 8, 10, 11, 13, 15, 17, 20, 22, 24, 26, 28, 29, 31, 33, 35].includes(num);
-    const isEven = (num) => num !== 0 && num % 2 === 0;
-    const isOdd = (num) => num !== 0 && num % 2 !== 0;
+    const isRed = (num) => redNumbers.includes(num);
+    const isBlack = (num) => typeof num === 'number' && num !== 0 && !redNumbers.includes(num);
+    const isEven = (num) => typeof num === 'number' && num !== 0 && num % 2 === 0;
+    const isOdd = (num) => typeof num === 'number' && num % 2 !== 0;
 
-    if (betType === 'red' && isRed(resultNumber)) { isWinner = true; payoutMultiplier = 2; }
+    if (betType === resultNumber) { isWinner = true; payoutMultiplier = 36; }
+    else if (betType === 'red' && isRed(resultNumber)) { isWinner = true; payoutMultiplier = 2; }
     else if (betType === 'black' && isBlack(resultNumber)) { isWinner = true; payoutMultiplier = 2; }
     else if (betType === 'even' && isEven(resultNumber)) { isWinner = true; payoutMultiplier = 2; }
     else if (betType === 'odd' && isOdd(resultNumber)) { isWinner = true; payoutMultiplier = 2; }
     else if (betType === '1-18' && resultNumber >= 1 && resultNumber <= 18) { isWinner = true; payoutMultiplier = 2; }
     else if (betType === '19-36' && resultNumber >= 19 && resultNumber <= 36) { isWinner = true; payoutMultiplier = 2; }
-    else if (parseInt(betType) === resultNumber) { isWinner = true; payoutMultiplier = 35; } // Direct number bet
 
     if (isWinner) {
       const winnings = betAmount * payoutMultiplier;
@@ -153,11 +231,8 @@ export default function CasinoRoulette() {
         await runTransaction(db, async (transaction) => {
           const userDocRef = doc(db, 'users', user.uid);
           const userDoc = await transaction.get(userDocRef);
-
-          if (!userDoc.exists()) {
-            throw "User document does not exist for payout!";
-          }
-
+          if (!userDoc.exists()) throw "User document does not exist for payout!";
+          
           const currentWinningMoney = userDoc.data().winningMoney || 0;
           transaction.update(userDocRef, { winningMoney: currentWinningMoney + winnings });
         });
@@ -172,83 +247,61 @@ export default function CasinoRoulette() {
   };
 
   return (
-    <div className="p-6 bg-[#042346] min-h-screen text-white font-roboto flex flex-col items-center">
-      <h2 className="text-3xl font-bold mb-6 text-center text-yellow-400">
-        Spin Wheel Game
+    <div className="p-4 md:p-6 bg-[#042346] min-h-screen text-white font-roboto flex flex-col items-center space-y-6">
+      <h2 className="text-3xl font-bold text-center text-yellow-400">
+        Roulette Game
       </h2>
 
-      {/* User Balance Display */}
-      <div className="mb-6 p-4 bg-[#0a2d55] text-white rounded-lg shadow-md flex justify-between items-center w-full max-w-5xl">
-        <span className="text-lg font-semibold">Your Balance:</span>
+      <div className="w-full max-w-5xl p-4 bg-[#0a2d55] rounded-lg shadow-md flex justify-between items-center">
+        <span className="text-lg font-semibold">Balance:</span>
         <span className="text-2xl font-bold flex items-center">
           <IndianRupee className="w-6 h-6 mr-1" />{balance.toFixed(2)}
         </span>
       </div>
 
-      {/* Centered container */}
-      <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left - Roulette Table */}
-        <div className="bg-gray-800 rounded-lg p-6 flex flex-col items-center justify-center shadow-lg space-y-8">
-          {/* Wheel */}
-          <div
-            ref={wheelRef}
-            className="w-40 h-40 rounded-full bg-black flex items-center justify-center relative"
-            style={{
-              transform: `rotate(${rotation}deg)`,
-              transition: spinning ? "transform 5s ease-out" : "none",
-            }}
-          >
-            {/* Red/Black Sections */}
-            <div className="absolute w-full h-1/2 bg-red-600 top-0 left-0 rounded-t-full"></div>
-            <div className="absolute w-full h-1/2 bg-black bottom-0 left-0 rounded-b-full"></div>
-            {/* Winning Number Display */}
-            <div className="w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center font-bold text-black relative z-10 text-xl">
-              {winningNumber !== null ? winningNumber : "0"}
+      <div className="w-full max-w-5xl flex flex-col lg:flex-row items-center justify-center gap-6">
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <RouletteWheel wheelRef={wheelRef} rotation={rotation} spinning={spinning} />
+          {winningNumber !== null && !spinning && (
+            <div className="p-4 bg-gray-900 rounded-lg text-center animate-pulse">
+                <span className="text-lg text-yellow-400">Winning Number</span>
+                <div className={`mt-2 w-16 h-16 mx-auto rounded-full flex items-center justify-center text-3xl font-bold ${getNumberColor(winningNumber)} text-white`}>
+                    {winningNumber}
+                </div>
             </div>
-          </div>
+          )}
+        </div>
+      </div>
+      
+      {/* Recent Numbers */}
+      <div className="w-full max-w-5xl">
+        <h4 className="font-semibold text-xl text-yellow-400 mb-2">Recent Numbers</h4>
+        <div className="flex flex-wrap gap-2 bg-[#0a2d55] p-2 rounded-lg">
+          {recent.map((num, i) => (
+            <span key={i} className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${getNumberColor(num)} text-white`}>
+              {num}
+            </span>
+          ))}
+        </div>
+      </div>
 
-          {/* Bet Options */}
-          <div className="grid grid-cols-3 gap-3 w-full">
-            <button
-              onClick={() => setSelectedBetType('1-18')}
-              className={`bg-[#0a2d55] text-white font-bold py-2 px-4 rounded hover:bg-[#1a3d65] transition-colors ${selectedBetType === '1-18' ? 'ring-2 ring-yellow-500' : ''}`}
-            >
-              1-18
-            </button>
-            <button
-              onClick={() => setSelectedBetType('even')}
-              className={`bg-[#0a2d55] text-white font-bold py-2 px-4 rounded hover:bg-[#1a3d65] transition-colors ${selectedBetType === 'even' ? 'ring-2 ring-yellow-500' : ''}`}
-            >
-              EVEN
-            </button>
-            <button
-              onClick={() => setSelectedBetType('red')}
-              className={`bg-red-600 text-white font-bold py-2 px-4 rounded hover:bg-red-700 transition-colors ${selectedBetType === 'red' ? 'ring-2 ring-yellow-500' : ''}`}
-            >
-              RED
-            </button>
-            <button
-              onClick={() => setSelectedBetType('odd')}
-              className={`bg-[#0a2d55] text-white font-bold py-2 px-4 rounded hover:bg-[#1a3d65] transition-colors ${selectedBetType === 'odd' ? 'ring-2 ring-yellow-500' : ''}`}
-            >
-              ODD
-            </button>
-            <button
-              onClick={() => setSelectedBetType('19-36')}
-              className={`bg-[#0a2d55] text-white font-bold py-2 px-4 rounded hover:bg-[#1a3d65] transition-colors ${selectedBetType === '19-36' ? 'ring-2 ring-yellow-500' : ''}`}
-            >
-              19-36
-            </button>
-            <button
-              onClick={() => setSelectedBetType('black')}
-              className={`bg-black text-white font-bold py-2 px-4 rounded hover:bg-gray-900 transition-colors ${selectedBetType === 'black' ? 'ring-2 ring-yellow-500' : ''}`}
-            >
-              BLACK
-            </button>
-          </div>
+      {/* Betting Interface */}
+      <div className="w-full max-w-5xl p-4 bg-gray-800 rounded-lg shadow-lg flex flex-col items-center space-y-4">
+        <h3 className="text-xl font-bold text-yellow-400">Place Your Bet</h3>
+        
+        <BettingGrid onSelectBet={setSelectedBetType} selectedBet={selectedBetType} />
 
-          {/* Bet Amount Input */}
-          <div className="w-full">
+        {/* Outside Bets */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 w-full max-w-3xl">
+            <button onClick={() => setSelectedBetType('1-18')} className={`py-2 px-4 rounded font-bold bg-[#0a2d55] hover:bg-[#1a3d65] ${selectedBetType === '1-18' ? 'ring-2 ring-yellow-500' : ''}`}>1-18</button>
+            <button onClick={() => setSelectedBetType('even')} className={`py-2 px-4 rounded font-bold bg-[#0a2d55] hover:bg-[#1a3d65] ${selectedBetType === 'even' ? 'ring-2 ring-yellow-500' : ''}`}>EVEN</button>
+            <button onClick={() => setSelectedBetType('red')} className={`py-2 px-4 rounded font-bold bg-red-600 hover:bg-red-700 ${selectedBetType === 'red' ? 'ring-2 ring-yellow-500' : ''}`}>RED</button>
+            <button onClick={() => setSelectedBetType('black')} className={`py-2 px-4 rounded font-bold bg-black hover:bg-gray-900 ${selectedBetType === 'black' ? 'ring-2 ring-yellow-500' : ''}`}>BLACK</button>
+            <button onClick={() => setSelectedBetType('odd')} className={`py-2 px-4 rounded font-bold bg-[#0a2d55] hover:bg-[#1a3d65] ${selectedBetType === 'odd' ? 'ring-2 ring-yellow-500' : ''}`}>ODD</button>
+            <button onClick={() => setSelectedBetType('19-36')} className={`py-2 px-4 rounded font-bold bg-[#0a2d55] hover:bg-[#1a3d65] ${selectedBetType === '19-36' ? 'ring-2 ring-yellow-500' : ''}`}>19-36</button>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center gap-4 w-full max-w-sm">
             <input
               type="number"
               placeholder="Bet Amount"
@@ -257,55 +310,13 @@ export default function CasinoRoulette() {
               className="w-full bg-[#042346] border border-gray-600 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
               min="1"
             />
-          </div>
-
-          {/* Spin Button */}
-          <button
-            onClick={spinWheel}
-            disabled={spinning || bettingLoading || !selectedBetType || !betAmount}
-            className="bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-semibold px-8 py-3 rounded-full shadow-lg shadow-yellow-500/30 transition-colors text-lg disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {bettingLoading ? "Placing Bet..." : spinning ? "Spinning..." : "Place Bet & Spin"}
-          </button>
-        </div>
-
-        {/* Right - Rules & Recent Numbers */}
-        <div className="bg-gray-800 text-white rounded-lg p-6 flex flex-col justify-between shadow-lg">
-          <div>
-            <h3 className="font-semibold text-xl mb-4 text-yellow-400">
-              Roulette Rules
-            </h3>
-            <ul className="space-y-2 text-sm text-gray-300">
-              <li>🟡 Bet on number, colors or ranges</li>
-              <li>🟡 Minimum bet amount ₹50</li>
-              <li>🟡 Number with lowest total bet wins</li>
-              <li>🟡 Results every 15 minutes</li>
-              <li>🟡 Payouts up to 35x</li>
-            </ul>
-          </div>
-
-          {/* Recent Numbers */}
-          <div className="mt-6 pt-4 border-t border-white/20">
-            <h4 className="font-semibold text-xl text-yellow-400">
-              Recent Numbers
-            </h4>
-            <div className="flex flex-wrap gap-2">
-              {recent.map((num, i) => (
-                <span
-                  key={i}
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${
-                    num === 0
-                      ? "bg-yellow-400 text-black"
-                      : num % 2 === 0
-                      ? "bg-black text-white"
-                      : "bg-red-600 text-white"
-                  }`}
-                >
-                  {num}
-                </span>
-              ))}
-            </div>
-          </div>
+            <button
+              onClick={spinWheel}
+              disabled={spinning || bettingLoading || selectedBetType === null || !betAmount}
+              className="w-full sm:w-auto bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-semibold px-8 py-3 rounded-full shadow-lg shadow-yellow-500/30 transition-all text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+            >
+              {bettingLoading ? "Placing..." : spinning ? "Spinning..." : "Spin"}
+            </button>
         </div>
       </div>
     </div>
