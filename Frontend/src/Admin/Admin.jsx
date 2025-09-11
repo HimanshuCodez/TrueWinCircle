@@ -13,7 +13,8 @@ import {
   Search,
   Bell,
   Settings,
-  LogOut
+  LogOut,
+  Menu
 } from 'lucide-react';
 import { db } from '../firebase';
 import { collection, query, onSnapshot, doc, runTransaction, getDocs, where } from 'firebase/firestore';
@@ -24,6 +25,7 @@ import 'react-toastify/dist/ReactToastify.css';
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [searchTerm, setSearchTerm] = useState('');
+  const [isSidebarOpen, setSidebarOpen] = useState(false);
 
   const [payments, setPayments] = useState([]);
   const [withdrawals, setWithdrawals] = useState([]);
@@ -164,10 +166,15 @@ const AdminDashboard = () => {
   ];
 
   const Sidebar = () => (
-    <div className="w-64 bg-gray-900 text-white min-h-screen p-4">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-center">True Win Circle</h1>
-        <p className="text-gray-400 text-center text-sm">Admin Dashboard</p>
+    <div className={`fixed inset-y-0 left-0 z-30 w-64 bg-gray-900 text-white p-4 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out md:relative md:translate-x-0 md:w-64`}>
+      <div className="mb-8 flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-center">True Win Circle</h1>
+          <p className="text-gray-400 text-center text-sm">Admin Dashboard</p>
+        </div>
+        <button onClick={() => setSidebarOpen(false)} className="md:hidden p-2">
+            <X className="h-6 w-6" />
+        </button>
       </div>
       
       <nav className="space-y-2">
@@ -180,7 +187,10 @@ const AdminDashboard = () => {
         ].map(item => (
           <button
             key={item.id}
-            onClick={() => setActiveTab(item.id)}
+            onClick={() => {
+                setActiveTab(item.id);
+                setSidebarOpen(false);
+            }}
             className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors ${
               activeTab === item.id ? 'bg-blue-600' : 'hover:bg-gray-800'
             }`}
@@ -203,6 +213,9 @@ const AdminDashboard = () => {
   const Header = () => (
     <div className="bg-white shadow-sm border-b p-4 flex items-center justify-between">
       <div className="flex items-center space-x-4">
+        <button onClick={() => setSidebarOpen(true)} className="md:hidden p-2">
+            <Menu className="h-6 w-6" />
+        </button>
         <h2 className="text-2xl font-semibold capitalize">{activeTab}</h2>
       </div>
       <div className="flex items-center space-x-4">
