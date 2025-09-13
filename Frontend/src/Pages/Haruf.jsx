@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { doc, onSnapshot, runTransaction, collection } from 'firebase/firestore';
-import { db } from '../firebase';
-import useAuthStore from '../store/authStore';
-import { toast } from 'react-toastify';
+import { doc, onSnapshot, runTransaction, collection } from "firebase/firestore";
+import { db } from "../firebase";
+import useAuthStore from "../store/authStore";
+import { toast } from "react-toastify";
 
 const HarufGrid = () => {
-  const [selected, setSelected] = useState(null);
-  const [betAmount, setBetAmount] = useState("");
+  const [bets, setBets] = useState({}); // store { number: amount }
   const [bettingLoading, setBettingLoading] = useState(false);
   const [balance, setBalance] = useState(0);
 
@@ -14,7 +13,7 @@ const HarufGrid = () => {
 
   useEffect(() => {
     if (user) {
-      const userDocRef = doc(db, 'users', user.uid);
+      const userDocRef = doc(db, "users", user.uid);
       const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
         if (docSnap.exists()) {
           setBalance(docSnap.data().balance || 0);
@@ -26,25 +25,30 @@ const HarufGrid = () => {
     }
   }, [user]);
 
+  const handleInputChange = (num, value) => {
+    setBets((prev) => ({
+      ...prev,
+      [num]: value ? parseInt(value) : "",
+    }));
+  };
+
   const handlePlaceBet = async () => {
     if (!user) {
       toast.error("You must be logged in to place a bet.");
       return;
     }
 
-    if (!selected) {
-      toast.error("Please select a number to bet on.");
+    // Filter out only numbers with >0 bet
+    const placedBets = Object.entries(bets).filter(([_, amount]) => amount > 0);
+
+    if (placedBets.length === 0) {
+      toast.error("Please enter at least one bet.");
       return;
     }
 
-    const parsedBetAmount = parseFloat(betAmount);
+    const totalBetAmount = placedBets.reduce((acc, [_, amount]) => acc + amount, 0);
 
-    if (isNaN(parsedBetAmount) || parsedBetAmount <= 0) {
-      toast.error("Please enter a valid bet amount.");
-      return;
-    }
-
-    if (parsedBetAmount > balance) {
+    if (totalBetAmount > balance) {
       toast.error("Insufficient balance.");
       return;
     }
@@ -53,37 +57,34 @@ const HarufGrid = () => {
 
     try {
       await runTransaction(db, async (transaction) => {
-        const userDocRef = doc(db, 'users', user.uid);
+        const userDocRef = doc(db, "users", user.uid);
         const userDoc = await transaction.get(userDocRef);
 
-        if (!userDoc.exists()) {
-          throw "User document does not exist!";
-        }
+        if (!userDoc.exists()) throw "User does not exist!";
 
         const currentBalance = userDoc.data().balance || 0;
 
-        if (currentBalance < parsedBetAmount) {
-          throw "Insufficient balance in transaction.";
-        }
+        if (currentBalance < totalBetAmount) throw "Insufficient balance.";
 
-        // Deduct balance
-        transaction.update(userDocRef, { balance: currentBalance - parsedBetAmount });
+        // Deduct total
+        transaction.update(userDocRef, { balance: currentBalance - totalBetAmount });
 
-        // Add bet record
-        const betsCollectionRef = collection(db, 'harufBets'); // New collection for Haruf bets
-        transaction.set(doc(betsCollectionRef), {
-          userId: user.uid,
-          betType: 'Haruf',
-          selectedNumber: selected,
-          betAmount: parsedBetAmount,
-          timestamp: new Date(),
-          status: 'pending',
+        const betsCollectionRef = collection(db, "harufBets");
+
+        placedBets.forEach(([num, amount]) => {
+          transaction.set(doc(betsCollectionRef), {
+            userId: user.uid,
+            betType: "Haruf",
+            selectedNumber: num,
+            betAmount: amount,
+            timestamp: new Date(),
+            status: "pending",
+          });
         });
       });
 
-      toast.success("Bet placed successfully!");
-      setBetAmount(""); // Clear bet amount after successful bet
-      setSelected(null); // Clear selected number
+      toast.success("Bets placed successfully!");
+      setBets({});
     } catch (e) {
       console.error("Bet placement failed: ", e);
       toast.error(`Failed to place bet: ${e.message || e}`);
@@ -92,63 +93,89 @@ const HarufGrid = () => {
     }
   };
 
-  return (
-    <div className="flex flex-col items-center p-4">
-      {/* Numbers Grid */}
-      <p>Andar Haruf Bahar Haruf</p>
+  // ✅ Small reusable bet box
+  const BetBox = ({ num }) => (
+    <div className="flex flex-col items-center">
+      <div className="h-8 w-8 flex items-center justify-center bg-red-600 text-white text-xs font-bold rounded-sm">
+        {num.toString().padStart(2, "0")}
+      </div>
+      <input
+        type="number"
+        min="0"
+        value={bets[num] || ""}
+        onChange={(e) => handleInputChange(num, e.target.value)}
+        className="mt-1 w-8 h-10 text-xs border border-gray-300 rounded-sm text-center"
+      />
+    </div>
+  );
 
-      <div className="grid grid-cols-10 gap-2">
-        {Array.from({ length: 100 }, (_, i) => i + 1).map((num) => (
-          <button
-            key={num}
-            onClick={() => setSelected(num)}
-            className={`w-10 h-10 flex items-center justify-center rounded-md text-white font-medium
-              ${selected === num ? "bg-yellow-500" : "bg-red-600 hover:bg-[#1a3d65]"}
-            `}
-          >
-            {num}
-          </button>
+  return (
+    <div className="flex flex-col items-center w-full pb-20">
+      {/* Numbers 00–99 */}
+      <div className="grid grid-cols-10 gap-2 p-2">
+        {Array.from({ length: 100 }, (_, i) => (
+          <BetBox key={i} num={i} />
         ))}
       </div>
 
-      {/* Bet Amount Input */}
-      <div className="mt-6 w-full max-w-xs">
-        <label htmlFor="betAmount" className="block text-sm font-medium text-gray-300 mb-2">Bet Amount:</label>
+      {/* Andar Haruf */}
+    <div className="w-full mt-4 px-2">
+  <p className="font-semibold text-red-600 text-center mb-2">Andar Haruf</p>
+  <div className="grid grid-cols-10 gap-2">
+    {Array.from({ length: 10 }, (_, i) => (
+      <div key={`bahar-${i}`} className="flex flex-col items-center">
+        {/* Number Box */}
+        <div className="h-8 w-8 flex items-center justify-center bg-red-600 text-white text-sm font-bold rounded-sm">
+          {i}
+        </div>
+        {/* Input Box */}
         <input
           type="number"
-          id="betAmount"
-          min="1"
-          value={betAmount}
-          onChange={(e) => setBetAmount(e.target.value)}
-          className="w-full bg-[#042346] border border-gray-600 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+          min="0"
+          value={bets[`B${i}`] || ""}
+          onChange={(e) => handleInputChange(`B${i}`, e.target.value)}
+          className="mt-1 w-8 h-10 text-xs border border-gray-300 rounded-sm text-center"
         />
       </div>
+    ))}
+  </div>
+</div>
 
-      {/* Place Bet Button */}
-      <button
-        onClick={handlePlaceBet}
-        disabled={bettingLoading || !selected || !betAmount}
-        className="mt-4 w-full max-w-xs bg-yellow-500 text-black font-bold py-3 rounded-full hover:bg-yellow-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-      >
-        {bettingLoading ? "Placing Bet..." : "Place Bet"}
-      </button>
 
-      {/* Andar / Haruf Buttons */}
-      <div className="flex gap-4 mt-6">
-        <button className="px-6 py-2 bg-blue-500 text-white rounded-xl shadow hover:bg-blue-600">
-          Andar
-        </button>
-        <button className="px-6 py-2 bg-purple-500 text-white rounded-xl shadow hover:bg-purple-600">
-          Haruf
+      {/* Bahar Haruf */}
+<div className="w-full mt-4 px-2">
+  <p className="font-semibold text-red-600 text-center mb-2">Bahar Haruf</p>
+  <div className="grid grid-cols-10 gap-2">
+    {Array.from({ length: 10 }, (_, i) => (
+      <div key={`bahar-${i}`} className="flex flex-col items-center">
+        {/* Number Box */}
+        <div className="h-8 w-8 flex items-center justify-center bg-red-600 text-white text-sm font-bold rounded-sm">
+          {i}
+        </div>
+        {/* Input Box */}
+        <input
+          type="number"
+          min="0"
+          value={bets[`B${i}`] || ""}
+          onChange={(e) => handleInputChange(`B${i}`, e.target.value)}
+          className="mt-1 w-8 h-10 text-xs border border-gray-300 rounded-sm text-center"
+        />
+      </div>
+    ))}
+  </div>
+</div>
+
+
+      {/* Sticky Place Bet */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white p-3 shadow-lg">
+        <button
+          onClick={handlePlaceBet}
+          disabled={bettingLoading}
+          className="w-full bg-red-600 text-white font-bold py-3 rounded-md hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+        >
+          {bettingLoading ? "Placing Bets..." : `Place bid for ₹${Object.values(bets).reduce((a, b) => a + (parseInt(b) || 0), 0)}`}
         </button>
       </div>
-
-      {/* Show Selected */}
-      {selected && (
-        <p className="mt-4 text-lg font-semibold text-black">
-          Selected Number: <span className="text-yellow-500">{selected}</span>
-        </p>
-      )}
     </div>
   );
 };

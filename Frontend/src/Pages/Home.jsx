@@ -8,16 +8,21 @@ import CasinoRoulette from './SpinWheel'
 import Footer from '../components/Footer'
 
 import HarufGrid from './Haruf'
+import MarketCard from '../components/MarketCard'
 
 const Home = () => {
   return (
     <div>
       <NextResultTimer/>
+
       <LiveBettingHighlights/>
+      <div className='mb-10'>   <MarketCard/></div>
+    
+   
         <FixNumber/>
         <WinGame/>
 <CasinoRoulette/>
-<HarufGrid/>
+
 <Footer/>
     </div>
   )
