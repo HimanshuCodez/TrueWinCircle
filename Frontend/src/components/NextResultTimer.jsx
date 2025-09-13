@@ -25,7 +25,7 @@ export default function NextResultTimer() {
   }, []);
 
   return (  
-    <div className="bg-gradient-to-r mt-8  from-[#042346]                      to-[#1d2d44] text-white rounded-lg p-6 flex justify-between items-center">
+    <div className="bg-gradient-to-r mt-20 from-[#042346]                      to-[#1d2d44] text-white rounded-lg p-6 flex justify-between items-center">
       {/* Left Side - Countdown */}
       <div>
         <h3 className="font-semibold mb-2">Next Result Countdown</h3>
