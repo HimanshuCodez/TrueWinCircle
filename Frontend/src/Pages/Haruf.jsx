@@ -4,6 +4,22 @@ import { db } from "../firebase";
 import useAuthStore from "../store/authStore";
 import { toast } from "react-toastify";
 
+// BetBox component moved outside of HarufGrid to prevent re-rendering on every state change, which fixes the input focus issue.
+const BetBox = ({ num, value, onChange }) => (
+    <div className="flex flex-col items-center">
+      <div className="h-8 w-8 flex items-center justify-center bg-red-600 text-white text-xs font-bold rounded-sm">
+        {num.toString().padStart(2, "0")}
+      </div>
+      <input
+        type="number"
+        min="0"
+        value={value || ""}
+        onChange={(e) => onChange(num, e.target.value)}
+        className="mt-1 w-8 h-10 text-xs border border-gray-300 rounded-sm text-center"
+      />
+    </div>
+  );
+
 const HarufGrid = () => {
   const [bets, setBets] = useState({}); // store { number: amount }
   const [bettingLoading, setBettingLoading] = useState(false);
@@ -38,8 +54,36 @@ const HarufGrid = () => {
       return;
     }
 
-    // Filter out only numbers with >0 bet
-    const placedBets = Object.entries(bets).filter(([_, amount]) => amount > 0);
+    const finalBets = {};
+
+    // Process direct, Andar, and Bahar bets from the 'bets' state
+    for (const key in bets) {
+      const amount = parseInt(bets[key]) || 0;
+      if (amount > 0) {
+        if (key.startsWith('A')) {
+          const andarDigit = parseInt(key.substring(1));
+          const betPerNumber = amount / 10;
+          for (let j = 0; j < 10; j++) {
+            const num = andarDigit * 10 + j;
+            finalBets[num.toString()] = (finalBets[num.toString()] || 0) + betPerNumber;
+          }
+        } else if (key.startsWith('B')) {
+          const baharDigit = parseInt(key.substring(1));
+          const betPerNumber = amount / 10;
+          for (let j = 0; j < 10; j++) {
+            const num = j * 10 + baharDigit;
+            finalBets[num.toString()] = (finalBets[num.toString()] || 0) + betPerNumber;
+          }
+        } else {
+          const num = parseInt(key);
+          if (!isNaN(num)) {
+            finalBets[num.toString()] = (finalBets[num.toString()] || 0) + amount;
+          }
+        }
+      }
+    }
+
+    const placedBets = Object.entries(finalBets).filter(([_, amount]) => amount > 0);
 
     if (placedBets.length === 0) {
       toast.error("Please enter at least one bet.");
@@ -66,20 +110,23 @@ const HarufGrid = () => {
 
         if (currentBalance < totalBetAmount) throw "Insufficient balance.";
 
-        // Deduct total
-        transaction.update(userDocRef, { balance: currentBalance - totalBetAmount });
+        const newBalance = Math.round((currentBalance - totalBetAmount) * 100) / 100;
+        transaction.update(userDocRef, { balance: newBalance });
 
         const betsCollectionRef = collection(db, "harufBets");
 
         placedBets.forEach(([num, amount]) => {
-          transaction.set(doc(betsCollectionRef), {
-            userId: user.uid,
-            betType: "Haruf",
-            selectedNumber: num,
-            betAmount: amount,
-            timestamp: new Date(),
-            status: "pending",
-          });
+          const roundedAmount = Math.round(amount * 100) / 100;
+          if (roundedAmount > 0) {
+            transaction.set(doc(betsCollectionRef), {
+              userId: user.uid,
+              betType: "Haruf",
+              selectedNumber: num,
+              betAmount: roundedAmount,
+              timestamp: new Date(),
+              status: "pending",
+            });
+          }
         });
       });
 
@@ -93,78 +140,56 @@ const HarufGrid = () => {
     }
   };
 
-  // ✅ Small reusable bet box
-  const BetBox = ({ num }) => (
-    <div className="flex flex-col items-center">
-      <div className="h-8 w-8 flex items-center justify-center bg-red-600 text-white text-xs font-bold rounded-sm">
-        {num.toString().padStart(2, "0")}
-      </div>
-      <input
-        type="number"
-        min="0"
-        value={bets[num] || ""}
-        onChange={(e) => handleInputChange(num, e.target.value)}
-        className="mt-1 w-8 h-10 text-xs border border-gray-300 rounded-sm text-center"
-      />
-    </div>
-  );
-
   return (
     <div className="flex flex-col items-center w-full pb-20">
       {/* Numbers 00–99 */}
       <div className="grid grid-cols-10 gap-2 p-2">
         {Array.from({ length: 100 }, (_, i) => (
-          <BetBox key={i} num={i} />
+          <BetBox key={i} num={i} value={bets[i]} onChange={handleInputChange} />
         ))}
       </div>
 
       {/* Andar Haruf */}
-    <div className="w-full mt-4 px-2">
-  <p className="font-semibold text-red-600 text-center mb-2">Andar Haruf</p>
-  <div className="grid grid-cols-10 gap-2">
-    {Array.from({ length: 10 }, (_, i) => (
-      <div key={`bahar-${i}`} className="flex flex-col items-center">
-        {/* Number Box */}
-        <div className="h-8 w-8 flex items-center justify-center bg-red-600 text-white text-sm font-bold rounded-sm">
-          {i}
+      <div className="w-full mt-4 px-2">
+        <p className="font-semibold text-red-600 text-center mb-2">Andar Haruf</p>
+        <div className="grid grid-cols-10 gap-2">
+          {Array.from({ length: 10 }, (_, i) => (
+            <div key={`andar-${i}`} className="flex flex-col items-center">
+              <div className="h-8 w-8 flex items-center justify-center bg-red-600 text-white text-sm font-bold rounded-sm">
+                {i}
+              </div>
+              <input
+                type="number"
+                min="0"
+                value={bets[`A${i}`] || ""}
+                onChange={(e) => handleInputChange(`A${i}`, e.target.value)}
+                className="mt-1 w-8 h-10 text-xs border border-gray-300 rounded-sm text-center"
+              />
+            </div>
+          ))}
         </div>
-        {/* Input Box */}
-        <input
-          type="number"
-          min="0"
-          value={bets[`B${i}`] || ""}
-          onChange={(e) => handleInputChange(`B${i}`, e.target.value)}
-          className="mt-1 w-8 h-10 text-xs border border-gray-300 rounded-sm text-center"
-        />
       </div>
-    ))}
-  </div>
-</div>
-
 
       {/* Bahar Haruf */}
-<div className="w-full mt-4 px-2">
-  <p className="font-semibold text-red-600 text-center mb-2">Bahar Haruf</p>
-  <div className="grid grid-cols-10 gap-2">
-    {Array.from({ length: 10 }, (_, i) => (
-      <div key={`bahar-${i}`} className="flex flex-col items-center">
-        {/* Number Box */}
-        <div className="h-8 w-8 flex items-center justify-center bg-red-600 text-white text-sm font-bold rounded-sm">
-          {i}
+      <div className="w-full mt-4 px-2">
+        <p className="font-semibold text-red-600 text-center mb-2">Bahar Haruf</p>
+        <div className="grid grid-cols-10 gap-2">
+          {Array.from({ length: 10 }, (_, i) => (
+            <div key={`bahar-${i}`} className="flex flex-col items-center">
+              <div className="h-8 w-8 flex items-center justify-center bg-red-600 text-white text-sm font-bold rounded-sm">
+                {i}
+              </div>
+              <input
+                type="number"
+                min="0"
+                value={bets[`B${i}`] || ""}
+                onChange={(e) => handleInputChange(`B${i}`, e.target.value)}
+                className="mt-1 w-8 h-10 text-xs border border-gray-300 rounded-sm text-center"
+              />
+            </div>
+          ))}
         </div>
-        {/* Input Box */}
-        <input
-          type="number"
-          min="0"
-          value={bets[`B${i}`] || ""}
-          onChange={(e) => handleInputChange(`B${i}`, e.target.value)}
-          className="mt-1 w-8 h-10 text-xs border border-gray-300 rounded-sm text-center"
-        />
       </div>
-    ))}
-  </div>
-</div>
-
 
       {/* Sticky Place Bet */}
       <div className="fixed bottom-0 left-0 right-0 bg-white p-3 shadow-lg">
