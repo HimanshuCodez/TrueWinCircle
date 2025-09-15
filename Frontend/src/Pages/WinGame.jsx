@@ -294,7 +294,7 @@ useEffect(() => {
           </div>
           <div className="mt-4 pt-4 border-t border-gray-700">
             <h4 className="font-semibold text-xl text-yellow-400">Next Result</h4>
-            <p className="text-sm mt-1">
+            <p className="  text-2xl mt-1">
               Time Left: <span className="font-bold text-green-400">{timeLeft}</span>
             </p>
             {gamePhase === 'calculating' && (

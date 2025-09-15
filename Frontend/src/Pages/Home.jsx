@@ -12,6 +12,7 @@ import DisawarCard from '../components/Cards.jsx/Disawar'
 import DhanKuberCard from '../components/Cards.jsx/DhanKuber'
 import ShreeGaneshCard from '../components/Cards.jsx/ShreeGanesh'
 import FaridabadCard from '../components/Cards.jsx/Faridabad'
+import DelhiBazaarCard from '../components/Cards.jsx/DelhiBazaar'
 
 
 
@@ -24,6 +25,8 @@ const Home = () => {
 
       <LiveBettingHighlights/>
       <div className='mb-5'>   <MarketCard/></div>
+      <div className='mb-5'>   <DelhiBazaarCard/></div>
+
       <div className='mb-5'>   <GaliCard/></div>
       <div className='mb-5'>   <DisawarCard/></div>
       <div className='mb-5'>   <DhanKuberCard/></div>
@@ -31,7 +34,6 @@ const Home = () => {
       <div className='mb-5'>   <FaridabadCard/></div>
     
    
-        <FixNumber/>
         <WinGame/>
 <CasinoRoulette/>
 
