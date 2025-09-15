@@ -29,10 +29,11 @@ export default function Navbar() {
     <div className="fixed top-0 left-0 w-full bg-[#042346] text-white px-4 md:px-8 py-3 flex justify-between items-center shadow-md z-50">
       {/* Logo */}
       <div className="flex items-center gap-2">
+        <Link to={"/"} className="flex items-center gap-2">
         <div className="w-6 h-6 border-2 border-yellow-500 rounded-full"></div>
         <span className="font-bold text-lg">
           TrueWin<span className="text-yellow-500">Circle</span>
-        </span>
+        </span></Link>
       </div>
 
       {/* Desktop Menu */}
@@ -63,6 +64,7 @@ export default function Navbar() {
                   <Link to="/Wallet" className="block px-4 py-2 hover:bg-gray-100">Wallet</Link>
                   <Link to="/Withdraw" className="block px-4 py-2 hover:bg-gray-100">Withdraw</Link>
                   <Link to="/AddCash" className="block px-4 py-2 hover:bg-gray-100">Add Cash</Link>
+                  <Link to="/History" className="block px-4 py-2 hover:bg-gray-100">History</Link>
                   <button onClick={handleLogout} className="block w-full text-left px-4 py-2 hover:bg-gray-100">Logout</button>
                 </div>
               )}

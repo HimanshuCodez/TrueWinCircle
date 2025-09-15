@@ -1,12 +1,24 @@
 import React, { useState } from "react";
-import HarufGrid from "../Pages/Haruf"; // your betting component
-import { Play, BarChart2 } from "lucide-react"; // icons
+import HarufGrid from "../../Pages/Haruf"; // your betting component
+import { Play, BarChart2, X } from "lucide-react"; // icons
 
-const MarketCard = () => {
+const ShreeGaneshCard = () => {
   const [open, setOpen] = useState(false);
 
   if (open) {
-    return <HarufGrid />;
+    return (
+      <div>
+        <div className="bg-sky-800 p-2 flex justify-end">
+          <button
+            onClick={() => setOpen(false)}
+            className="bg-red-500 text-white p-2 rounded-full shadow-lg hover:bg-red-600 transition-colors"
+          >
+            <X size={24} />
+          </button>
+        </div>
+        <HarufGrid />
+      </div>
+    );
   }
 
   return (
@@ -17,15 +29,15 @@ const MarketCard = () => {
         className="cursor-pointer rounded-xl border-2 border-red-500 bg-white shadow-md overflow-hidden"
       >
         {/* Header */}
-        <div className="bg-red-500 text-white font-bold text-center py-2">
-          GHAZIABAD
+        <div className="bg-yellow-500 text-black font-bold text-center py-2">
+       SHREE GANESH
         </div>
 
         {/* Body */}
         <div className="flex flex-col items-center justify-center gap-2 py-4 px-3">
           {/* Status line */}
           <div className="flex items-center gap-2 text-red-600 text-lg font-bold">
-            <span>{`{ ** }`}</span>
+            <span>{`{ 23 }`}</span>
             <span className="text-black">{`→`}</span>
             <span>{`[ ** ]`}</span>
           </div>
@@ -39,7 +51,7 @@ const MarketCard = () => {
           <div className="flex justify-between items-center w-full mt-2 px-2">
             {/* Left icon */}
             <div className="flex items-center gap-1 text-red-500">
-              <BarChart2 size={20} />
+              <BarChart2 size={35} />
             </div>
 
             {/* Right play button */}
@@ -63,4 +75,4 @@ const MarketCard = () => {
   );
 };
 
-export default MarketCard;
+export default ShreeGaneshCard;

@@ -6,7 +6,7 @@ export default function LiveBettingHighlights() {
       </h3>
 
       {/* Marquee Container */}
-      <div className="relative w-full mt-6 overflow-hidden">
+      <div className="relative w-full mt-2 overflow-hidden">
         <div className="flex whitespace-nowrap animate-marquee">
           {/* Block 1 */}
           <div className="flex items-center space-x-6 px-4">

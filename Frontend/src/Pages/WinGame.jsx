@@ -249,10 +249,15 @@ useEffect(() => {
   return (
     <div className="p-6 bg-sky-800  min-h-screen text-white font-roboto">
       {/* Title */}
-      <h2 className="text-3xl font-bold mb-6 text-center text-yellow-400">1 to 12 Win Game</h2>
+      <h2 className="text-3xl font-bold mb-2 text-center text-yellow-400">1 to 12 Win Game</h2>
+      <div className="text-center mb-6">
+        <p className="inline-block bg-yellow-500 text-gray-900 font-bold text-base px-4 py-2 rounded-full shadow-lg animate-pulse">
+          Play and win 10 times of the amount!
+        </p>
+      </div>
       <hr className="border-gray-700 mb-6" />
 
-     
+
 
       {/* Game grid & rules */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -270,7 +275,7 @@ useEffect(() => {
                 }`}
             >
               <span className="text-2xl font-bold">{item.num}</span>
-              <span className="text-sm mt-1 text-gray-300">₹{item.amount}</span>
+      
             </div>
           ))}
         </div>
@@ -296,9 +301,9 @@ useEffect(() => {
               <p className="text-sm mt-2 text-blue-400 animate-pulse">Calculating result...</p>
             )}
             {gamePhase === 'showingResult' && (
-              <div className="mt-2 p-2 bg-green-700 rounded-md text-center">
-                <p className="text-lg font-bold">Winning Number: {winningNumber}</p>
-                <p className="text-sm">Winner: {winningUserName}</p>
+              <div className="mt-2 p-6 bg-green-600 rounded-lg text-center animate-pulse">
+                <p className="text-5xl font-extrabold text-white">Winning Number: {winningNumber}</p>
+                <p className="text-2xl font-medium text-yellow-300 mt-2">Winner: {winningUserName}</p>
               </div>
             )}
           </div>
@@ -308,28 +313,34 @@ useEffect(() => {
       {/* Bet form */}
       <div className="bg-gray-800 rounded-lg p-4 mt-6 shadow-lg">
         <h3 className="font-medium text-xl mb-3 text-yellow-400">Place Your Bet</h3>
-        <div className="flex flex-col sm:flex-row gap-4 items-center">
-          <select
-            className="border border-gray-600 rounded-md px-3 py-2 w-full sm:w-40 bg-gray-700 text-white focus:ring-yellow-500 focus:border-yellow-500"
-            value={selected || ""}
-            onChange={(e) => setSelected(Number(e.target.value))}
-            disabled={gamePhase !== 'betting'}
-          >
-            <option value="">Choose number</option>
-            {numbers.map((item) => (
-              <option key={item.num} value={item.num}>
-                {item.num}
-              </option>
-            ))}
-          </select>
-          <input
-            type="number"
-            value={betAmount}
-            onChange={(e) => setBetAmount(Number(e.target.value))}
-            className="border border-gray-600 rounded-md px-3 py-2 w-full sm:w-40 bg-gray-700 text-white focus:ring-yellow-500 focus:border-yellow-500"
-            min="10"
-            disabled={gamePhase !== 'betting'}
-          />
+        <div className="flex flex-col sm:flex-row gap-4 items-end">
+          <div className="w-full sm:w-40">
+            <h3 className="font-medium text-lg mb-2 text-yellow-400">Choose Number</h3>
+            <select
+              className="border border-gray-600 rounded-md px-3 py-2 w-full bg-gray-700 text-white focus:ring-yellow-500 focus:border-yellow-500"
+              value={selected || ""}
+              onChange={(e) => setSelected(Number(e.target.value))}
+              disabled={gamePhase !== 'betting'}
+            >
+              <option value="">Choose number</option>
+              {numbers.map((item) => (
+                <option key={item.num} value={item.num}>
+                  {item.num}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="w-full sm:w-40">
+            <h3 className="font-medium text-lg mb-2 text-yellow-400">Enter Amount</h3>
+            <input
+              type="number"
+              value={betAmount}
+              onChange={(e) => setBetAmount(Number(e.target.value))}
+              className="border border-gray-600 rounded-md px-3 py-2 w-full bg-gray-700 text-white focus:ring-yellow-500 focus:border-yellow-500"
+              min="10"
+              disabled={gamePhase !== 'betting'}
+            />
+          </div>
           <button
             onClick={handleBet}
             className="bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-semibold px-6 py-2 rounded-md shadow-lg transition-colors w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
