@@ -25,7 +25,7 @@ const DelhiBazaarCard = () => {
     <div className="w-full max-w-md mx-auto">
       {/* Card */}
       <div
-        onClick={() => setOpen(true)}
+       
         className="cursor-pointer rounded-xl border-2 border-red-500 text-black shadow-md overflow-hidden"
       >
         {/* Header */}
@@ -55,8 +55,8 @@ const DelhiBazaarCard = () => {
             </div>
 
             {/* Right play button */}
-            <button className="bg-green-500 p-3 rounded-full hover:bg-green-600">
-              <Play className="text-white" size={24} />
+            <button   className="bg-green-500 p-3 rounded-full hover:bg-green-600">
+              <Play onClick={() => setOpen(true)} className="text-white" size={24} />
             </button>
           </div>
 

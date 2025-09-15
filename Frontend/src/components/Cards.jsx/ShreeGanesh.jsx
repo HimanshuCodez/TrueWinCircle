@@ -56,7 +56,7 @@ const ShreeGaneshCard = () => {
 
             {/* Right play button */}
             <button className="bg-green-500 p-3 rounded-full hover:bg-green-600">
-              <Play className="text-white" size={24} />
+              <Play onClick={() => setOpen(true)} className="text-white" size={24} />
             </button>
           </div>
 

@@ -21,6 +21,8 @@ import Withdraw from './Pages/Withdraw';
 import AdminDashboard from './Admin/Admin';
 
 import AdminRoute from './Admin/AdminRoute';
+import Loader from './components/Loader';
+import Spinner from './components/Loader';
 
 const App = () => {
   const { user, setUser } = useAuthStore();
@@ -49,7 +51,7 @@ const App = () => {
   if (loadingAuth) {
     return (
       <div className="min-h-screen bg-[#042346] text-white flex items-center justify-center">
-        <p>Loading ...</p>
+        <Spinner/>
       </div>
     );
   }
