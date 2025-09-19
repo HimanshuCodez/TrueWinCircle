@@ -1,0 +1,26 @@
+.marquee-container {
+  background-color: #042346; /* amber-500 */
+  color: white;
+  overflow: hidden;
+  position: relative;
+  height: 2.5rem; /* h-10 */
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+}
+
+.marquee-text {
+  display: inline-block;
+  white-space: nowrap;
+  animation: marquee 30s linear infinite;
+  padding-left: 100%;
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-200%); /* Adjust based on content repetition */
+  }
+}

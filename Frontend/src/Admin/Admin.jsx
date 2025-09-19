@@ -26,6 +26,7 @@ import PaymentApproval from './components/PaymentApproval';
 import WinnerApprove from './components/WinnerApprove';
 import WithdrawApproval from './components/WithdrawApproval';
 import DashboardView from './components/DashboardView';
+import MarqueeUpdate from './components/MarqueeUpdate';
 
 // Import Child Components
 
@@ -166,7 +167,8 @@ const AdminDashboard = () => {
           { id: 'barcodes', label: 'Barcode Management', icon: QrCode },
           { id: 'payments', label: 'Payment Approval', icon: CreditCard },
           { id: 'winners', label: 'Winner Announcement', icon: Trophy },
-          { id: 'withdrawals', label: 'Withdrawal Approval', icon: DollarSign }
+          { id: 'withdrawals', label: 'Withdrawal Approval', icon: DollarSign },
+          { id: 'marquee', label: 'Screen Text', icon: Edit }
         ].map(item => (
           <button
             key={item.id}
@@ -229,6 +231,8 @@ const AdminDashboard = () => {
                   userDetails={userDetails}
                   handleWithdrawalApproval={handleWithdrawalApproval}
                 />;
+      case 'marquee':
+        return <MarqueeUpdate />;
       default: 
         return <DashboardView stats={stats} />;
     }

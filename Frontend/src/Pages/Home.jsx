@@ -14,6 +14,7 @@ import ShreeGaneshCard from '../components/Cards.jsx/ShreeGanesh'
 import FaridabadCard from '../components/Cards.jsx/Faridabad'
 import DelhiBazaarCard from '../components/Cards.jsx/DelhiBazaar'
 import Carousel from '../components/Carousel'
+import Marquee from '../components/Marquee'
 
 
 
@@ -22,6 +23,7 @@ import Carousel from '../components/Carousel'
 const Home = () => {
   return (
     <div className='pt-20'>
+      <Marquee/>
 <Carousel/>
       <NextResultTimer/>
       <LiveBettingHighlights/>
