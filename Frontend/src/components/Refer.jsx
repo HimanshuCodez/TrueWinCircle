@@ -1,6 +1,7 @@
 import React from "react";
 import { ArrowLeft, Megaphone, Copy } from "lucide-react";
 import { FaWhatsapp, FaFacebookF, FaTwitter, FaInstagram } from 'react-icons/fa';
+import { toast } from "react-toastify";
 
 export default function ReferralScreen() {
   const referralCode = "RUJ2S";
@@ -8,9 +9,9 @@ export default function ReferralScreen() {
   const copyCode = async () => {
     try {
       await navigator.clipboard.writeText(referralCode);
-      alert("Referral code copied!");
+      toast.sucess("Referral code copied!");
     } catch (e) {
-      alert("Copy failed — please copy manually: " + referralCode);
+      toast.error("Copy failed — please copy manually: " + referralCode);
     }
   };
 
@@ -39,7 +40,7 @@ export default function ReferralScreen() {
   return (
     <div className="min-h-screen bg-[#042346] text-white flex flex-col">
       {/* Header */}
-      <header className="bg-red-600 px-4 py-4 flex items-center gap-3">
+      <header className="bg-yellow-600 px-4 py-4 flex items-center gap-3">
         <button aria-label="back" className="text-white">
           <ArrowLeft size={20} />
         </button>
@@ -49,7 +50,7 @@ export default function ReferralScreen() {
       <main className="flex-grow p-4 sm:p-6 md:p-8">
         <div className="max-w-4xl mx-auto">
           {/* Hero Section */}
-          <div className="bg-red-500 rounded-lg p-4 flex items-center gap-4 mb-6">
+          <div className="bg-yellow-600 rounded-lg p-4 flex items-center gap-4 mb-6">
             <div className="bg-white/10 rounded-md p-3">
               <Megaphone size={40} className="text-white" />
             </div>

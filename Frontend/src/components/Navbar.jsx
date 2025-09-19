@@ -110,7 +110,7 @@ export default function Navbar() {
               <Link to="/Wallet" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>Wallet</Link>
               <Link to="/Withdraw" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>Withdraw</Link>
               <Link to="/AddCash" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>Add Cash</Link>
-              <button onClick={handleLogout} className="block w-full text-left px-4 py-2 hover:bg-gray-100">Logout</button>
+              <button onClick={handleLogout} className="hover:text-yellow-500">Logout</button>
             </>
           ) : (
             <Link
