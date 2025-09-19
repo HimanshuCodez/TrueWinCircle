@@ -65,6 +65,7 @@ export default function Navbar() {
                   <Link to="/Withdraw" className="block px-4 py-2 hover:bg-gray-100">Withdraw</Link>
                   <Link to="/AddCash" className="block px-4 py-2 hover:bg-gray-100">Add Cash</Link>
                   <Link to="/History" className="block px-4 py-2 hover:bg-gray-100">History</Link>
+                  <Link to="/Reffer" className="block px-4 py-2 hover:bg-gray-100">Reffer & Earn</Link>
                   <button onClick={handleLogout} className="block w-full text-left px-4 py-2 hover:bg-gray-100">Logout</button>
                 </div>
               )}

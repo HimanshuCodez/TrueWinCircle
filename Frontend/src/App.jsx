@@ -23,6 +23,7 @@ import AdminDashboard from './Admin/Admin';
 import AdminRoute from './Admin/AdminRoute';
 import Loader from './components/Loader';
 import Spinner from './components/Loader';
+import ReferralScreen from './components/Refer';
 
 const App = () => {
   const { user, setUser } = useAuthStore();
@@ -84,6 +85,7 @@ const App = () => {
         <Route path="/Withdraw" element={<Withdraw />} />
         <Route path="/payconfirm" element={<PaymentConfirmation />} />
         <Route path="/Wallet" element={<MyWallet />} />
+        <Route path="/Reffer" element={<ReferralScreen />} />
         <Route path="/Admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
       </Routes>
     </Router>
