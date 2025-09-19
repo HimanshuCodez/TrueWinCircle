@@ -13,6 +13,7 @@ import DhanKuberCard from '../components/Cards.jsx/DhanKuber'
 import ShreeGaneshCard from '../components/Cards.jsx/ShreeGanesh'
 import FaridabadCard from '../components/Cards.jsx/Faridabad'
 import DelhiBazaarCard from '../components/Cards.jsx/DelhiBazaar'
+import Carousel from '../components/Carousel'
 
 
 
@@ -20,9 +21,9 @@ import DelhiBazaarCard from '../components/Cards.jsx/DelhiBazaar'
 
 const Home = () => {
   return (
-    <div>
+    <div className='pt-20'>
+<Carousel/>
       <NextResultTimer/>
-
       <LiveBettingHighlights/>
       <div className='mb-5'>   <MarketCard/></div>
       <div className='mb-5'>   <DelhiBazaarCard/></div>
