@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from './firebase';
@@ -21,12 +21,51 @@ import Withdraw from './Pages/Withdraw';
 import AdminDashboard from './Admin/Admin';
 
 import AdminRoute from './Admin/AdminRoute';
-import Loader from './components/Loader';
 import Spinner from './components/Loader';
 import ReferralScreen from './components/Refer';
 
+const AppContent = () => {
+  const location = useLocation();
+  // The Navbar will not be shown on the /Admin route
+  const showNavbar = location.pathname.toLowerCase() !== '/admin';
+
+  return (
+    <>
+      {showNavbar && <Navbar />}
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark"
+      />
+    
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/spinwheel" element={<SpinWheel />} />
+        <Route path="/fixnumber" element={<FixNumber />} />
+        <Route path="/wingame" element={<WinGame />} />
+        <Route path="/testphonesignup" element={<PhoneSignUp />} />
+        <Route path="/addcash" element={<AddCash />} />
+        <Route path="/pay" element={<Pay />} />
+        <Route path="/Withdraw" element={<Withdraw />} />
+        <Route path="/payconfirm" element={<PaymentConfirmation />} />
+        <Route path="/Wallet" element={<MyWallet />} />
+        <Route path="/Reffer" element={<ReferralScreen />} />
+        <Route path="/Admin" element={<AdminDashboard />} />
+        {/* <AdminRoute></AdminRoute> */}
+      </Routes>
+    </>
+  );
+}
+
 const App = () => {
-  const { user, setUser } = useAuthStore();
+  const { setUser } = useAuthStore();
   const auth = getAuth();
   const [loadingAuth, setLoadingAuth] = useState(true);
 
@@ -59,36 +98,7 @@ const App = () => {
 
   return (
     <Router>
-      <Navbar />
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="dark"
-      />
-    
-      <Routes>
-        <Route path="/" element={<Home />} />
-   
-        <Route path="/spinwheel" element={<SpinWheel />} />
-        <Route path="/fixnumber" element={<FixNumber />} />
-        <Route path="/wingame" element={<WinGame />} />
-        <Route path="/testphonesignup" element={<PhoneSignUp />} />
-        <Route path="/addcash" element={<AddCash />} />
-        <Route path="/pay" element={<Pay />} />
-        <Route path="/Withdraw" element={<Withdraw />} />
-        <Route path="/payconfirm" element={<PaymentConfirmation />} />
-        <Route path="/Wallet" element={<MyWallet />} />
-        <Route path="/Reffer" element={<ReferralScreen />} />
-        <Route path="/Admin" element={<AdminDashboard />} />
-        {/* <AdminRoute></AdminRoute> */}
-      </Routes>
+      <AppContent />
     </Router>
   );
 };
