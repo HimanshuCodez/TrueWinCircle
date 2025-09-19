@@ -26,7 +26,7 @@ const DhanKuberCard = () => {
       {/* Card */}
       <div
         onClick={() => setOpen(true)}
-        className="cursor-pointer rounded-xl border-2 border-red-500 text-black shadow-md overflow-hidden"
+        className="cursor-pointer rounded-xl border-2 border-blue-950  text-black shadow-md overflow-hidden"
       >
         {/* Header */}
         <div className="bg-yellow-500 text-black font-bold text-center py-2">
@@ -55,7 +55,7 @@ const DhanKuberCard = () => {
             </div>
 
             {/* Right play button */}
-            <button className="bg-green-500 p-3 rounded-full hover:bg-green-600">
+            <button className="bg-[#042346]  p-3 rounded-full hover:bg-yellow-600">
               <Play onClick={() => setOpen(true)} className="text-white" size={24} />
             </button>
           </div>
