@@ -86,7 +86,8 @@ const App = () => {
         <Route path="/payconfirm" element={<PaymentConfirmation />} />
         <Route path="/Wallet" element={<MyWallet />} />
         <Route path="/Reffer" element={<ReferralScreen />} />
-        <Route path="/Admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+        <Route path="/Admin" element={<AdminDashboard />} />
+        {/* <AdminRoute></AdminRoute> */}
       </Routes>
     </Router>
   );

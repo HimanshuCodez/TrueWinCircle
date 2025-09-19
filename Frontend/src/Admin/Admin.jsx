@@ -31,6 +31,7 @@ const AdminDashboard = () => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [barcodeFile, setBarcodeFile] = useState(null);
   const [barcodeUrl, setBarcodeUrl] = useState('');
+  const [userDetails, setUserDetails] = useState({});
 
   const [payments, setPayments] = useState([]);
   const [withdrawals, setWithdrawals] = useState([]);
@@ -78,9 +79,21 @@ const AdminDashboard = () => {
         id: doc.id,
         ...doc.data(),
         date: doc.data().createdAt ? new Date(doc.data().createdAt).toLocaleDateString() : 'N/A',
-        user: doc.data().userId, // Placeholder, will fetch user details later
+        user: doc.data().userId,
       }));
       setPayments(fetchedPayments);
+
+      // Fetch user details for payments
+      const userIds = [...new Set(fetchedPayments.map(p => p.userId))];
+      userIds.forEach(async (userId) => {
+        if (!userDetails[userId]) {
+          const userQuery = query(collection(db, 'users'), where('uid', '==', userId));
+          const userSnap = await getDocs(userQuery);
+          if (!userSnap.empty) {
+            setUserDetails(prev => ({ ...prev, [userId]: userSnap.docs[0].data() }));
+          }
+        }
+      });
     });
     return () => unsubscribe();
   }, [isAdmin]);
@@ -94,9 +107,21 @@ const AdminDashboard = () => {
         id: doc.id,
         ...doc.data(),
         date: doc.data().createdAt ? new Date(doc.data().createdAt).toLocaleDateString() : 'N/A',
-        user: doc.data().userId, // Placeholder, will fetch user details later
+        user: doc.data().userId, // This is just userId
       }));
       setWithdrawals(fetchedWithdrawals);
+
+      // Fetch user details
+      const userIds = [...new Set(fetchedWithdrawals.map(w => w.userId))];
+      userIds.forEach(async (userId) => {
+        if (!userDetails[userId]) {
+          const userQuery = query(collection(db, 'users'), where('uid', '==', userId));
+          const userSnap = await getDocs(userQuery);
+          if (!userSnap.empty) {
+            setUserDetails(prev => ({ ...prev, [userId]: userSnap.docs[0].data() }));
+          }
+        }
+      });
     });
     return () => unsubscribe();
   }, [isAdmin]);
@@ -418,7 +443,7 @@ const AdminDashboard = () => {
               <tr>
                 <th className="text-left p-4 font-medium">User</th>
                 <th className="text-left p-4 font-medium">Amount</th>
-                <th className="text-left p-4 font-medium">Method</th>
+                <th className="text-left p-4 font-medium">Proof</th>
                 <th className="text-left p-4 font-medium">Status</th>
                 <th className="text-left p-4 font-medium">Date</th>
                 <th className="text-left p-4 font-medium">Actions</th>
@@ -427,9 +452,13 @@ const AdminDashboard = () => {
             <tbody>
               {payments.map(payment => (
                 <tr key={payment.id} className="border-b hover:bg-gray-50">
-                  <td className="p-4">{payment.user}</td>
+                  <td className="p-4">{userDetails[payment.user]?.phoneNumber || payment.user}</td>
                   <td className="p-4 font-medium">₹{payment.amount}</td>
-                  <td className="p-4">{payment.method}</td>
+                  <td className="p-4">
+                    <a href={payment.paymentProof} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                      View Proof
+                    </a>
+                  </td>
                   <td className="p-4">
                     <span className={`px-2 py-1 rounded-full text-xs ${
                       payment.status === 'pending' 
@@ -541,7 +570,7 @@ const AdminDashboard = () => {
             <tbody>
               {withdrawals.map(withdrawal => (
                 <tr key={withdrawal.id} className="border-b hover:bg-gray-50">
-                  <td className="p-4">{withdrawal.user}</td>
+                  <td className="p-4">{userDetails[withdrawal.user]?.phoneNumber || withdrawal.user}</td>
                   <td className="p-4 font-medium">₹{withdrawal.amount}</td>
                   <td className="p-4">{withdrawal.method}</td>
                   <td className="p-4">

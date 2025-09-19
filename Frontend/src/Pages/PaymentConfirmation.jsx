@@ -40,37 +40,22 @@ export default function PaymentConfirmation() {
         switch (data.status) {
           case 'approved':
             setPaymentStatus('approved');
-            // Add balance to user's account
-            runTransaction(db, async (transaction) => {
-              const userDocRef = doc(db, 'users', user.uid);
-              const userDoc = await transaction.get(userDocRef);
-              if (userDoc.exists()) {
-                const currentBalance = userDoc.data().balance || 0;
-                transaction.update(userDocRef, { balance: currentBalance + amount });
-              } else {
-                // If user document doesn't exist, create it with the new balance
-                transaction.set(userDocRef, { balance: amount, winningMoney: 0, createdAt: new Date() });
-              }
-            }).then(() => {
-              toast.success("Payment approved and balance added!");
-              setTimeout(() => navigate('/Wallet'), 3000);
-            }).catch((err) => {
-              console.error("Balance update failed:", err);
-              toast.error("Failed to update balance.");
-            });
+            toast.success("Payment approved! Your balance has been updated.");
+            setTimeout(() => navigate('/Wallet'), 3000);
             break;
           case 'rejected':
             setPaymentStatus('rejected');
             setRejectionComment(data.adminComment || 'Your payment could not be verified.');
             break;
           default:
+            // 'pending' status, do nothing and wait
             break;
         }
       }
     });
 
     return () => unsubscribe();
-  }, [topUpId, navigate, user, amount]);
+  }, [topUpId, navigate]);
 
   const handleConfirmPayment = async () => {
     if (!paymentProof) {
