@@ -48,8 +48,9 @@ const AppContent = () => {
         theme="dark"
       />
     
-      <Routes>
-        <Route path="/" element={<Home />} />
+      <main className="p-4 md:p-6 mt-16 md:mt-20 flex justify-center md:justify-start">
+        <Routes>
+          <Route path="/" element={<Home />} />
         <Route path="/spinwheel" element={<SpinWheel />} />
         <Route path="/fixnumber" element={<FixNumber />} />
         <Route path="/wingame" element={<WinGame />} />
@@ -66,6 +67,7 @@ const AppContent = () => {
         <Route path="/Admin" element={<AdminDashboard />} />
         {/* <AdminRoute></AdminRoute> */}
       </Routes>
+      </main>
     </>
   );
 }
