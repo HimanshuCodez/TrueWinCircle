@@ -25,6 +25,7 @@ import Spinner from './components/Loader';
 import ReferralScreen from './components/Refer';
 import Profile from './Pages/Profile';
 import Support from './Pages/Support';
+import ProfileCard from './Pages/Profile';
 
 const AppContent = () => {
   const location = useLocation();
@@ -60,6 +61,7 @@ const AppContent = () => {
         <Route path="/payconfirm" element={<PaymentConfirmation />} />
         <Route path="/Wallet" element={<MyWallet />} />
         <Route path="/Support" element={<Support />} />
+        <Route path="/Profile" element={<ProfileCard />} />
         <Route path="/Reffer" element={<ReferralScreen />} />
         <Route path="/Admin" element={<AdminDashboard />} />
         {/* <AdminRoute></AdminRoute> */}
