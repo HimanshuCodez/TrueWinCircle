@@ -14,7 +14,7 @@ const Marquee = () => {
         setText(doc.data().text);
       } else {
         // Set a default message if not configured in admin
-        setText('Welcome to True Win Circle! Results are declared every 15 minutes.');
+        setText('Auto fund lene ke liye Auto Qr ka use kre.');
       }
     });
 

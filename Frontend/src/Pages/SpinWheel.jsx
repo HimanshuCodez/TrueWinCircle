@@ -4,6 +4,8 @@ import { db } from '../firebase';
 import useAuthStore from '../store/authStore';
 import { toast } from 'react-toastify';
 import { IndianRupee } from 'lucide-react';
+import RouletteBoard from '../components/RouletteBoard';
+import BettingPanel from '../components/BettingPanel';
 
 // --- Helper Functions and Data ---
 
@@ -139,6 +141,12 @@ export default function CasinoRoulette() {
     const isEven = (num) => typeof num === 'number' && num !== 0 && num % 2 === 0;
     const isOdd = (num) => typeof num === 'number' && num % 2 !== 0;
 
+    // Helper for column bets
+    const isCol1 = (num) => [3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36].includes(num);
+    const isCol2 = (num) => [2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35].includes(num);
+    const isCol3 = (num) => [1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34].includes(num);
+
+
     if (betType === resultNumber) { isWinner = true; payoutMultiplier = 36; }
     else if (betType === 'red' && isRed(resultNumber)) { isWinner = true; payoutMultiplier = 2; }
     else if (betType === 'black' && isBlack(resultNumber)) { isWinner = true; payoutMultiplier = 2; }
@@ -146,6 +154,14 @@ export default function CasinoRoulette() {
     else if (betType === 'odd' && isOdd(resultNumber)) { isWinner = true; payoutMultiplier = 2; }
     else if (betType === '1-18' && resultNumber >= 1 && resultNumber <= 18) { isWinner = true; payoutMultiplier = 2; }
     else if (betType === '19-36' && resultNumber >= 19 && resultNumber <= 36) { isWinner = true; payoutMultiplier = 2; }
+    // New bet types
+    else if (betType === '1st12' && resultNumber >= 1 && resultNumber <= 12) { isWinner = true; payoutMultiplier = 3; } // Payout for dozens is 3x
+    else if (betType === '2nd12' && resultNumber >= 13 && resultNumber <= 24) { isWinner = true; payoutMultiplier = 3; }
+    else if (betType === '3rd12' && resultNumber >= 25 && resultNumber <= 36) { isWinner = true; payoutMultiplier = 3; }
+    else if (betType === 'col1' && isCol1(resultNumber)) { isWinner = true; payoutMultiplier = 3; } // Payout for columns is 3x
+    else if (betType === 'col2' && isCol2(resultNumber)) { isWinner = true; payoutMultiplier = 3; }
+    else if (betType === 'col3' && isCol3(resultNumber)) { isWinner = true; payoutMultiplier = 3; }
+
 
     if (isWinner) {
       const winnings = betAmount * payoutMultiplier;
@@ -207,40 +223,17 @@ export default function CasinoRoulette() {
         </div>
       </div>
 
-      {/* Betting Interface */}
-      <div className="w-full max-w-5xl p-4 bg-gray-800 rounded-lg shadow-lg flex flex-col items-center space-y-4">
-        <h3 className="text-xl font-bold text-yellow-400">Place Your Bet</h3>
-        
-     
+      <RouletteBoard setSelectedBetType={setSelectedBetType} selectedBetType={selectedBetType} />
 
-        {/* Outside Bets */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 w-full max-w-3xl">
-            <button onClick={() => setSelectedBetType('1-18')} className={`py-2 px-4 rounded font-bold bg-[#0a2d55] hover:bg-[#1a3d65] ${selectedBetType === '1-18' ? 'ring-2 ring-yellow-500' : ''}`}>1-18</button>
-            <button onClick={() => setSelectedBetType('even')} className={`py-2 px-4 rounded font-bold bg-[#0a2d55] hover:bg-[#1a3d65] ${selectedBetType === 'even' ? 'ring-2 ring-yellow-500' : ''}`}>EVEN</button>
-            <button onClick={() => setSelectedBetType('red')} className={`py-2 px-4 rounded font-bold bg-red-600 hover:bg-red-700 ${selectedBetType === 'red' ? 'ring-2 ring-yellow-500' : ''}`}>RED</button>
-            <button onClick={() => setSelectedBetType('black')} className={`py-2 px-4 rounded font-bold bg-black hover:bg-gray-900 ${selectedBetType === 'black' ? 'ring-2 ring-yellow-500' : ''}`}>BLACK</button>
-            <button onClick={() => setSelectedBetType('odd')} className={`py-2 px-4 rounded font-bold bg-[#0a2d55] hover:bg-[#1a3d65] ${selectedBetType === 'odd' ? 'ring-2 ring-yellow-500' : ''}`}>ODD</button>
-            <button onClick={() => setSelectedBetType('19-36')} className={`py-2 px-4 rounded font-bold bg-[#0a2d55] hover:bg-[#1a3d65] ${selectedBetType === '19-36' ? 'ring-2 ring-yellow-500' : ''}`}>19-36</button>
-        </div>
-
-        <div className="flex flex-col sm:flex-row items-center gap-4 w-full max-w-sm">
-            <input
-              type="number"
-              placeholder="Bet Amount"
-              value={betAmount}
-              onChange={(e) => setBetAmount(e.target.value)}
-              className="w-full bg-[#042346] border border-gray-600 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-              min="1"
-            />
-            <button
-              onClick={spinWheel}
-              disabled={spinning || bettingLoading || selectedBetType === null || !betAmount}
-              className="w-full sm:w-auto bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-semibold px-8 py-3 rounded-full shadow-lg shadow-yellow-500/30 transition-all text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
-            >
-              {bettingLoading ? "Placing..." : spinning ? "Spinning..." : "Spin"}
-            </button>
-        </div>
-      </div>
+      <BettingPanel
+        betAmount={betAmount}
+        setBetAmount={setBetAmount}
+        spinWheel={spinWheel}
+        spinning={spinning}
+        bettingLoading={bettingLoading}
+        balance={balance}
+        selectedBetType={selectedBetType}
+      />
     </div>
   );
 }
