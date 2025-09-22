@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { app } from '../firebase';
-import { ref, getDownloadURL } from 'firebase/storage';
+import { ref, getDownloadURL, getStorage } from 'firebase/storage';
 
 const Pay = () => {
   const storage = getStorage(app);
