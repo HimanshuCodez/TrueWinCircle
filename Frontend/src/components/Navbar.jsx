@@ -12,7 +12,7 @@ export default function Navbar() {
   const auth = getAuth();
 
   // Example wallet amount (replace with API/store value)
-  const walletAmount = user?.walletBalance || 0;
+  const walletAmount = (user?.balance || 0) + (user?.winningMoney || 0);
 
   const handleLogout = async () => {
     try {
