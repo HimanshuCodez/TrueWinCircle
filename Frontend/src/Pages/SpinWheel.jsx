@@ -34,10 +34,10 @@ const RouletteWheel = ({ spinning }) => {
   }, [spinning]);
 
   return (
-    <div className="relative w-80 h-80 md:w-96 md:h-96">
+    <div className="relative w-full aspect-video max-w-md md:max-w-lg lg:max-w-xl">
       <video
         ref={videoRef}
-        className="w-full h-full  object-cover"
+        className="w-full h-full object-cover rounded-lg"
         loop
         muted
         playsInline
@@ -58,7 +58,7 @@ export default function CasinoRoulette() {
   const [winningNumber, setWinningNumber] = useState(null);
 
   const [balance, setBalance] = useState(0);
-  const [betAmount, setBetAmount] = useState("");
+  const [betAmount, setBetAmount] = useState(0);
   const [selectedBetType, setSelectedBetType] = useState(null);
   const [bettingLoading, setBettingLoading] = useState(false);
 

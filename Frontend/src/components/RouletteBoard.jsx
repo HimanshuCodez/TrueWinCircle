@@ -18,7 +18,7 @@ export default function RouletteBoard({ setSelectedBetType, selectedBetType }) {
   return (
     <div className="p-2 md:p-6 bg-green-900 min-h-screen flex flex-col items-center">
       {/* Top grid */}
-      <div className="flex flex-col md:flex-row">
+      <div className="flex flex-col md:flex-row items-start md:items-center">
         {/* Left side: 0 and 00 */}
         <div className="flex flex-row md:flex-col">
           <div
@@ -36,7 +36,7 @@ export default function RouletteBoard({ setSelectedBetType, selectedBetType }) {
         </div>
 
         {/* Number grid */}
-        <div className="grid grid-cols-3 md:grid-cols-12 border border-white">
+        <div className="grid grid-cols-12 border border-white overflow-x-auto">
           {numbers.map((row, rIdx) =>
             row.map((num, cIdx) => (
               <div
