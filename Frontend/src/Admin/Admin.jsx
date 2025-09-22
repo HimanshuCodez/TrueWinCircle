@@ -104,16 +104,24 @@ const AdminDashboard = () => {
     try {
       await runTransaction(db, async (transaction) => {
         const paymentRef = doc(db, 'top-ups', paymentId);
-        transaction.update(paymentRef, { status: action });
+        const userRef = doc(db, 'users', userId);
+
+        // --- ALL READS FIRST ---
+        let userSnap;
+        if (action === 'approved') {
+          userSnap = await transaction.get(userRef); // READ 1
+        }
+        // --- END ALL READS ---
+
+        // --- ALL WRITES AFTER ALL READS ---
+        transaction.update(paymentRef, { status: action }); // WRITE 1
 
         if (action === 'approved') {
-          const userRef = doc(db, 'users', userId);
-          const userSnap = await transaction.get(userRef);
           if (userSnap.exists()) {
             const currentBalance = userSnap.data().balance || 0;
-            transaction.update(userRef, { balance: currentBalance + amount });
+            transaction.update(userRef, { balance: currentBalance + amount }); // WRITE 2
           } else {
-            transaction.set(userRef, { balance: amount, winningMoney: 0, createdAt: new Date() });
+            transaction.set(userRef, { balance: amount, winningMoney: 0, createdAt: new Date() }); // WRITE 3
           }
         }
       });
