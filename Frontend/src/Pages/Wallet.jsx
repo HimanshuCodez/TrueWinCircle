@@ -33,7 +33,8 @@ export function MyWallet() {
         } finally {
           setLoading(false);
         }
-      } else {
+      }
+      else {
         setLoading(false);
         setError("Please log in to view your wallet.");
       }
@@ -58,9 +59,9 @@ export function MyWallet() {
   }
 
   return (
-    <div className="font-roboto min-h-screen bg-[#042346] text-white p-4">
-      {/* Back Button */}
-      <div className="flex items-center mb-6">
+    <div className="font-roboto bg-[#042346] text-white">
+      {/* Header Section */}
+      <div className="max-w-md md:max-w-full mx-auto flex items-center mb-6">
         <button
           onClick={() => navigate("/")}
           className="p-2 rounded-full hover:bg-white/10 transition-colors"
@@ -71,7 +72,7 @@ export function MyWallet() {
       </div>
 
       {/* Wallet Summary */}
-      <div className="bg-[#0a2d55] rounded-xl p-6 mb-6 shadow-lg">
+      <div className="max-w-md md:max-w-full mx-auto bg-[#0a2d55] rounded-xl p-4 md:p-6 mb-6 shadow-lg">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
             <WalletIcon className="w-8 h-8 text-yellow-500" />
