@@ -61,11 +61,13 @@ export default function Navbar() {
               </button>
               {accountOpen && (
                 <div className="absolute right-0 mt-2 w-40 bg-white text-black rounded-md shadow-lg z-10">
+                  <Link to="/Profile" className="block px-4 py-2 hover:bg-gray-100">Profile</Link>
                   <Link to="/Wallet" className="block px-4 py-2 hover:bg-gray-100">Wallet</Link>
                   <Link to="/Withdraw" className="block px-4 py-2 hover:bg-gray-100">Withdraw</Link>
                   <Link to="/Reffer" className="block px-4 py-2 hover:bg-gray-100">Reffer & Earn</Link>
                   <Link to="/AddCash" className="block px-4 py-2 hover:bg-gray-100">Add Cash</Link>
                   <Link to="/History" className="block px-4 py-2 hover:bg-gray-100">History</Link>
+                  <Link to="/Support" className="block px-4 py-2 hover:bg-gray-100">Support</Link>
                   <button onClick={handleLogout} className="block w-full text-left px-4 py-2 hover:bg-gray-100">Logout</button>
                 </div>
               )}

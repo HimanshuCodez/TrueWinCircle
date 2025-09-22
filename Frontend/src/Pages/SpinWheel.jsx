@@ -18,71 +18,42 @@ const getNumberColor = (num) => {
 
 // --- RouletteWheel Component ---
 
-const RouletteWheel = ({ wheelRef, rotation, spinning }) => {
-  const getNumberColorStyle = (num) => {
-    if (num === 0 || num === '00') return { backgroundColor: '#16a34a' }; // green-600
-    if (redNumbers.includes(num)) return { backgroundColor: '#dc2626' }; // red-600
-    return { backgroundColor: '#171717' }; // neutral-900
-  };
+const RouletteWheel = ({ spinning }) => {
+  const videoRef = useRef(null);
 
-  const gradientParts = wheelNumbers.map((num, i) => {
-    const color = getNumberColorStyle(num).backgroundColor;
-    const start = i * (100 / 38);
-    const end = (i + 1) * (100 / 38);
-    return `${color} ${start}% ${end}%`;
-  });
-  const conicGradient = `conic-gradient(from 94.7deg, ${gradientParts.join(', ')})`;
+  useEffect(() => {
+    if (spinning) {
+      videoRef.current.play();
+    } else {
+      if (videoRef.current) {
+        videoRef.current.pause();
+      }
+    }
+  }, [spinning]);
 
   return (
     <div className="relative w-80 h-80 md:w-96 md:h-96">
-      {/* Marker */}
-      <div className="absolute top-[-4px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[15px] border-t-white z-20 drop-shadow-lg"></div>
-      
-      <div
-        ref={wheelRef}
-        className="w-full h-full rounded-full border-8 border-yellow-400 bg-gray-900 relative shadow-inner"
-        style={{
-          background: conicGradient,
-          transform: `rotate(${rotation}deg)`,
-          transition: spinning ? 'transform 5s cubic-bezier(0.33, 1, 0.68, 1)' : 'none',
-        }}
+      <video
+        ref={videoRef}
+        className="w-full h-full  object-cover"
+        loop
+        muted
+        playsInline
+        autoplay
+        // Make sure you have a roulette video in your /public folder
+        src="/roulet.mp4" 
       >
-        {wheelNumbers.map((num, i) => {
-          const angle = i * (360 / 38) + (360 / 38 / 2);
-          const radius = 110; // in pixels
-          const x = Math.cos(angle * Math.PI / 180) * radius;
-          const y = Math.sin(angle * Math.PI / 180) * radius;
-          return (
-            <div
-              key={i}
-              className="absolute top-1/2 left-1/2 w-8 h-8 flex items-center justify-center text-white font-bold text-sm"
-              style={{
-                transform: `translate(-50%, -50%) translate(${x}px, ${y}px) rotate(${angle + 90}deg)`
-              }}
-            >
-              {num}
-            </div>
-          );
-        })}
-      </div>
-      {/* Center Hub */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 bg-gray-800 rounded-full border-4 border-yellow-500 flex items-center justify-center">
-         <div className="w-12 h-12 bg-gray-900 rounded-full border-2 border-yellow-600"></div>
-      </div>
+        Your browser does not support the video tag.
+      </video>
     </div>
   );
 };
-
-
-
 
 
 export default function CasinoRoulette() {
   const [recent, setRecent] = useState([7, 24, 12, 0, 19]);
   const [spinning, setSpinning] = useState(false);
   const [winningNumber, setWinningNumber] = useState(null);
-  const [rotation, setRotation] = useState(0);
-  const wheelRef = useRef(null);
 
   const [balance, setBalance] = useState(0);
   const [betAmount, setBetAmount] = useState("");
@@ -142,14 +113,6 @@ export default function CasinoRoulette() {
 
       const winningIndex = Math.floor(Math.random() * 38);
       const newWinningNumber = wheelNumbers[winningIndex];
-      
-      const randomFullRotations = Math.floor(Math.random() * 4) + 5; // 5-8 rotations
-      const anglePerNumber = 360 / 38;
-      const targetAngle = (360 - (winningIndex * anglePerNumber)) - (anglePerNumber / 2);
-
-      const finalRotation = rotation + (randomFullRotations * 360) + targetAngle;
-
-      setRotation(finalRotation);
 
       setTimeout(() => {
         setSpinning(false);
@@ -220,7 +183,7 @@ export default function CasinoRoulette() {
 
       <div className="w-full max-w-5xl flex flex-col lg:flex-row items-center justify-center gap-6">
         <div className="flex flex-col items-center justify-center space-y-4">
-          <RouletteWheel wheelRef={wheelRef} rotation={rotation} spinning={spinning} />
+          <RouletteWheel spinning={spinning} />
           {winningNumber !== null && !spinning && (
             <div className="p-4 bg-gray-900 rounded-lg text-center animate-pulse">
                 <span className="text-lg text-yellow-400">Winning Number</span>

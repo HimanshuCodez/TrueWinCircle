@@ -23,6 +23,8 @@ import AdminDashboard from './Admin/Admin';
 import AdminRoute from './Admin/AdminRoute';
 import Spinner from './components/Loader';
 import ReferralScreen from './components/Refer';
+import Profile from './Pages/Profile';
+import Support from './Pages/Support';
 
 const AppContent = () => {
   const location = useLocation();
@@ -52,10 +54,12 @@ const AppContent = () => {
         <Route path="/wingame" element={<WinGame />} />
         <Route path="/testphonesignup" element={<PhoneSignUp />} />
         <Route path="/addcash" element={<AddCash />} />
+        <Route path="/Profile" element={<Profile />} />
         <Route path="/pay" element={<Pay />} />
         <Route path="/Withdraw" element={<Withdraw />} />
         <Route path="/payconfirm" element={<PaymentConfirmation />} />
         <Route path="/Wallet" element={<MyWallet />} />
+        <Route path="/Support" element={<Support />} />
         <Route path="/Reffer" element={<ReferralScreen />} />
         <Route path="/Admin" element={<AdminDashboard />} />
         {/* <AdminRoute></AdminRoute> */}
