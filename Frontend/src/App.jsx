@@ -48,7 +48,7 @@ const AppContent = () => {
         theme="dark"
       />
     
-      <main className="p-4 md:p-6 mt-16 md:mt-20 flex justify-center md:justify-start">
+    
         <Routes>
           <Route path="/" element={<Home />} />
         <Route path="/spinwheel" element={<SpinWheel />} />
@@ -67,7 +67,7 @@ const AppContent = () => {
         <Route path="/Admin" element={<AdminDashboard />} />
         {/* <AdminRoute></AdminRoute> */}
       </Routes>
-      </main>
+    
     </>
   );
 }

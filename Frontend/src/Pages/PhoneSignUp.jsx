@@ -8,6 +8,10 @@ import { auth, db } from "../firebase";
 const PhoneSignUp = () => {
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [referralCodeInput, setReferralCodeInput] = useState("");
+  const [generatedReferralCode, setGeneratedReferralCode] = useState("");
   const [step, setStep] = useState(1);
   const [confirmationResult, setConfirmationResult] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -91,10 +95,31 @@ const PhoneSignUp = () => {
         {step === 1 ? (
           <div className="space-y-4">
             <input
+              type="text"
+              placeholder="Enter Your Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full px-4 py-3 bg-[#042346] border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+            />
+            <input
+              type="email"
+              placeholder="Enter Your Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-3 bg-[#042346] border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+            />
+            <input
               type="tel"
               placeholder="Enter Phone Number"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
+              className="w-full px-4 py-3 bg-[#042346] border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+            />
+            <input
+              type="text"
+              placeholder="Referral Code (Optional)"
+              value={referralCodeInput}
+              onChange={(e) => setReferralCodeInput(e.target.value)}
               className="w-full px-4 py-3 bg-[#042346] border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
             />
             <button
