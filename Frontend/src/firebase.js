@@ -1,5 +1,5 @@
 // src/firebase.js
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
@@ -14,7 +14,8 @@ const firebaseConfig = {
   measurementId: "G-FXQ79HW7JP"
 };
 
-const app = initializeApp(firebaseConfig);
+// Check if a Firebase app is already initialized
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 // ✅ Auth instance export
 const auth = getAuth(app);
