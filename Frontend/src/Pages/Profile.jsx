@@ -1,17 +1,23 @@
 import React from "react";
 import { User, LogOut, Wallet, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
+import useAuthStore from "../store/authStore";
 
 export default function ProfileCard() {
+  const user = useAuthStore((state) => state.user);
+
   return (
     <div className="max-w-md md:max-w-full w-full bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white rounded-2xl shadow-xl p-4 md:p-6">
       {/* Header */}
       <div className="flex items-center space-x-4">
         <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-2xl font-bold">
-          U
+          {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
         </div>
         <div>
-          <h2 className="text-xl font-semibold">Username</h2>
-          <p className="text-sm opacity-80">ID: #123456</p>
+          <h2 className="text-xl font-semibold">{user?.name || "Username"}</h2>
+          <p className="text-sm opacity-80">ID: {user?.uid ? user.uid.substring(0, 6) : "#123456"}</p>
+          {user?.referralCode && (
+            <p className="text-sm opacity-80">Referral: {user.referralCode}</p>
+          )}
         </div>
       </div>
 

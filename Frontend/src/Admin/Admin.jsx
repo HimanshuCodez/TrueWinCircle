@@ -17,7 +17,7 @@ import {
   Menu
 } from 'lucide-react';
 import { db } from '../firebase';
-import { collection, query, onSnapshot, doc, runTransaction, getDocs, where } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc, runTransaction, getDocs, where, deleteDoc } from 'firebase/firestore';
 import useAuthStore from '../store/authStore';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -154,6 +154,16 @@ const AdminDashboard = () => {
     }
   };
   
+  const handleDeletePayment = async (paymentId) => {
+    try {
+      await deleteDoc(doc(db, 'top-ups', paymentId));
+      toast.success('Payment record deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting payment record:', error);
+      toast.error('Failed to delete payment record.');
+    }
+  };
+
   const handleWinnerAnnouncement = (id) => {
     setWinners(winners.map(winner => 
       winner.id === id ? { ...winner, status: 'announced' } : winner
@@ -227,6 +237,7 @@ const AdminDashboard = () => {
                   payments={payments} 
                   userDetails={userDetails} 
                   handlePaymentApproval={handlePaymentApproval} 
+                  handleDeletePayment={handleDeletePayment} 
                 />;
       case 'winners': 
         return <WinnerApprove 

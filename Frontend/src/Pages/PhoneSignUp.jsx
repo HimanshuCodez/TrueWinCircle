@@ -32,10 +32,24 @@ const PhoneSignUp = () => {
     }
   }, []);
 
+  const generateReferralCode = () => {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < 6; i++) { // Generate a 6-character code
+      result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return result;
+  };
+
   const sendOtp = async () => {
+    if (!name) return toast.error("Enter your name");
+    if (!email) return toast.error("Enter your email");
     if (!phone) return toast.error("Enter phone number");
     setLoading(true);
     try {
+      const newReferralCode = generateReferralCode();
+      setGeneratedReferralCode(newReferralCode); // Store the generated code
+
       const formattedPhone = phone.startsWith("+") ? phone : `+91${phone}`;
       const result = await signInWithPhoneNumber(
         auth,
@@ -65,6 +79,10 @@ const PhoneSignUp = () => {
       const userDocRef = doc(db, "users", user.uid);
       await setDoc(userDocRef, {
         phoneNumber: user.phoneNumber,
+        name: name, // Add name
+        email: email, // Add email
+        referralCode: generatedReferralCode, // Add generated referral code
+        referredBy: referralCodeInput || null, // Add referral code input (if provided)
         balance: 0,
         winningMoney: 0,
         createdAt: new Date(),

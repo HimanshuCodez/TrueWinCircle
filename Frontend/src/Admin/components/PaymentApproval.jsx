@@ -1,7 +1,7 @@
 import React from 'react';
-import { Check, X } from 'lucide-react';
+import { Check, X, Trash2 } from 'lucide-react';
 
-const PaymentApproval = ({ payments, userDetails, handlePaymentApproval }) => {
+const PaymentApproval = ({ payments, userDetails, handlePaymentApproval, handleDeletePayment }) => {
   return (
     <div className="p-6">
       <div className="bg-white rounded-lg shadow-sm">
@@ -18,6 +18,7 @@ const PaymentApproval = ({ payments, userDetails, handlePaymentApproval }) => {
                 <th className="text-left p-4 font-medium">Status</th>
                 <th className="text-left p-4 font-medium">Date</th>
                 <th className="text-left p-4 font-medium">Actions</th>
+                <th className="text-left p-4 font-medium">Delete</th>
               </tr>
             </thead>
             <tbody>
@@ -59,6 +60,14 @@ const PaymentApproval = ({ payments, userDetails, handlePaymentApproval }) => {
                         </button>
                       </div>
                     )}
+                  </td>
+                  <td className="p-4">
+                    <button 
+                      onClick={() => handleDeletePayment(payment.id)}
+                      className="p-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </td>
                 </tr>
               ))}

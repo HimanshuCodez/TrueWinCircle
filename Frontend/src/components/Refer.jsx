@@ -1,15 +1,16 @@
-import React from "react";
 import { ArrowLeft, Megaphone, Copy } from "lucide-react";
 import { FaWhatsapp, FaFacebookF, FaTwitter, FaInstagram } from 'react-icons/fa';
 import { toast } from "react-toastify";
+import useAuthStore from "../store/authStore";
 
 export default function ReferralScreen() {
-  const referralCode = "RUJ2S";
+  const user = useAuthStore((state) => state.user);
+  const referralCode = user?.referralCode || "N/A";
 
   const copyCode = async () => {
     try {
       await navigator.clipboard.writeText(referralCode);
-      toast.sucess("Referral code copied!");
+      toast.success("Referral code copied!");
     } catch (e) {
       toast.error("Copy failed — please copy manually: " + referralCode);
     }
