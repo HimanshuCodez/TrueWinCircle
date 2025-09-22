@@ -48,7 +48,7 @@ export default function Navbar() {
             {/* Wallet Icon with Amount */}
             <Link to="/Wallet" className="relative flex items-center hover:text-yellow-500">
               <Wallet size={24} />
-              <span className="ml-1 font-semibold">{walletAmount}</span>
+              <span className="ml-1 font-semibold">₹{walletAmount}</span>
             </Link>
 
             {/* Account dropdown */}

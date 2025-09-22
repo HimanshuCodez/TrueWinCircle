@@ -15,6 +15,7 @@ import FaridabadCard from '../components/Cards.jsx/Faridabad'
 import DelhiBazaarCard from '../components/Cards.jsx/DelhiBazaar'
 import Carousel from '../components/Carousel'
 import Marquee from '../components/Marquee'
+import SocialButtons from '../components/Soical'
 
 
 
@@ -25,6 +26,7 @@ const Home = () => {
     <div className='pt-20'>
       <Marquee/>
 <Carousel/>
+<SocialButtons/>
       <NextResultTimer/>
       <LiveBettingHighlights/>
       <div className='mb-5'>   <MarketCard/></div>
