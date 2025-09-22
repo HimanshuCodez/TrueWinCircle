@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { storage } from '../firebase';
+import { app } from '../firebase';
 import { ref, getDownloadURL } from 'firebase/storage';
 
 const Pay = () => {
+  const storage = getStorage(app);
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const navigate = useNavigate();

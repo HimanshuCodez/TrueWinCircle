@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { storage } from '../../firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { app } from '../../firebase';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { toast } from 'react-toastify';
 import { Edit, Eye, Plus } from 'lucide-react';
 
 const BarCodeUpdate = () => {
+  const storage = getStorage(app);
   const [barcodeFile, setBarcodeFile] = useState(null);
   const [barcodeUrl, setBarcodeUrl] = useState('');
   const [barcodes, setBarcodes] = useState([
