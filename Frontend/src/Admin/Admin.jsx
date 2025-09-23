@@ -27,16 +27,12 @@ import WinnerApprove from './components/WinnerApprove';
 import WithdrawApproval from './components/WithdrawApproval';
 import DashboardView from './components/DashboardView';
 import MarqueeUpdate from './components/MarqueeUpdate';
-
-// Import Child Components
-
+import AllUsers from './components/AllUsers'; // Import the new component
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [searchTerm, setSearchTerm] = useState('');
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   
-  // State managed by AdminDashboard and passed to children
   const [payments, setPayments] = useState([]);
   const [withdrawals, setWithdrawals] = useState([]);
   const [winners, setWinners] = useState([ // Sample data
@@ -54,27 +50,22 @@ const AdminDashboard = () => {
   useEffect(() => {
     if (!isAdmin) return;
 
-    // Fetch Payments
     const paymentsQuery = query(collection(db, 'top-ups'));
     const unsubscribePayments = onSnapshot(paymentsQuery, (snapshot) => {
       const fetchedPayments = snapshot.docs.map(d => ({ id: d.id, ...d.data(), date: d.data().createdAt ? new Date(d.data().createdAt).toLocaleDateString() : 'N/A', user: d.data().userId }));
       setPayments(fetchedPayments);
-      // Fetch user details for new users
       const userIds = [...new Set(fetchedPayments.map(p => p.userId))];
       fetchMissingUserDetails(userIds);
     });
 
-    // Fetch Withdrawals
     const withdrawalsQuery = query(collection(db, 'withdrawals'));
     const unsubscribeWithdrawals = onSnapshot(withdrawalsQuery, (snapshot) => {
       const fetchedWithdrawals = snapshot.docs.map(d => ({ id: d.id, ...d.data(), date: d.data().createdAt ? new Date(d.data().createdAt).toLocaleDateString() : 'N/A', user: d.data().userId }));
       setWithdrawals(fetchedWithdrawals);
-      // Fetch user details for new users
       const userIds = [...new Set(fetchedWithdrawals.map(w => w.userId))];
       fetchMissingUserDetails(userIds);
     });
 
-    // Fetch Total Users
     const usersQuery = query(collection(db, 'users'));
     const unsubscribeUsers = onSnapshot(usersQuery, (snapshot) => {
       setTotalUsers(snapshot.size);
@@ -183,6 +174,7 @@ const AdminDashboard = () => {
       <nav className="space-y-2">
         {[
           { id: 'dashboard', label: 'Dashboard', icon: Settings },
+          { id: 'allUsers', label: 'All Users', icon: Users }, // Add new nav item
           { id: 'barcodes', label: 'Barcode Management', icon: QrCode },
           { id: 'payments', label: 'Payment Approval', icon: CreditCard },
           { id: 'winners', label: 'Winner Announcement', icon: Trophy },
@@ -214,7 +206,7 @@ const AdminDashboard = () => {
         <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="md:hidden p-2">
             {isSidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
-        <h2 className="text-2xl font-semibold capitalize">{activeTab}</h2>
+        <h2 className="text-2xl font-semibold capitalize">{activeTab.replace('allUsers', 'All Users')}</h2>
       </div>
       
     </div>
@@ -231,6 +223,8 @@ const AdminDashboard = () => {
     switch (activeTab) {
       case 'dashboard': 
         return <DashboardView stats={stats} />;
+      case 'allUsers': // Add new case
+        return <AllUsers />;
       case 'barcodes': 
         return <BarCodeUpdate />;
       case 'payments': 

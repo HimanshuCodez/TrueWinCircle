@@ -12,129 +12,83 @@ const redNumbers = [
 ];
 
 const isRed = (num) => redNumbers.includes(Number(num));
-const isGreen = (num) => num === "0" || num === "00";
 
 export default function RouletteBoard({ setSelectedBetType, selectedBetType }) {
   return (
-    <div className="p-2 md:p-6 bg-green-900 min-h-screen flex flex-col items-center">
-      {/* Top grid */}
-      <div className="flex flex-col md:flex-row items-start md:items-center">
-        {/* Left side: 0 and 00 */}
-        <div className="flex flex-row md:flex-col">
-          <div
-            onClick={() => setSelectedBetType("0")}
-            className={`w-10 h-16 md:w-16 md:h-24 flex items-center justify-center text-white text-base md:text-lg font-bold border border-white bg-green-600 cursor-pointer ${selectedBetType === "0" ? "ring-2 ring-yellow-500" : ""}`}
-          >
-            0
-          </div>
-          <div
-            onClick={() => setSelectedBetType("00")}
-            className={`w-10 h-16 md:w-16 md:h-24 flex items-center justify-center text-white text-base md:text-lg font-bold border border-white bg-green-600 cursor-pointer ${selectedBetType === "00" ? "ring-2 ring-yellow-500" : ""}`}
-          >
-            00
-          </div>
-        </div>
-
-        {/* Number grid */}
-        <div className="grid grid-cols-12 border border-white overflow-x-auto">
-          {numbers.map((row, rIdx) =>
-            row.map((num, cIdx) => (
+    <div className="p-2 md:p-4 bg-green-900 min-h-screen flex flex-col items-center w-full">
+      {/* Scrollable container for the entire board */}
+      <div className="w-full overflow-x-auto pb-4">
+        <div className="inline-block min-w-max relative"> 
+          {/* Main Board Layout */}
+          <div className="flex items-start">
+            {/* Left side: 0 and 00 */}
+            <div className="flex flex-col text-white text-base md:text-lg font-bold">
               <div
-                key={num}
-                onClick={() => setSelectedBetType(num)}
-                className={`w-10 h-10 md:w-16 md:h-16 flex items-center justify-center text-white text-base md:text-lg font-bold border border-white cursor-pointer
-                  ${isGreen(num) ? "bg-green-600" : isRed(num) ? "bg-red-600" : "bg-black"}
-                  ${selectedBetType === num ? "ring-2 ring-yellow-500" : ""}`}
-              >
-                {num}
+                onClick={() => setSelectedBetType("0")}
+                className={`w-12 h-[54px] md:w-16 md:h-24 flex items-center justify-center bg-green-600 cursor-pointer border-l border-t border-b border-white ${selectedBetType === "0" ? "ring-2 ring-yellow-500 z-10" : ""}`}>
+                0
               </div>
-            ))
-          )}
-        </div>
+              <div
+                onClick={() => setSelectedBetType("00")}
+                className={`w-12 h-[54px] md:w-16 md:h-24 flex items-center justify-center bg-green-600 cursor-pointer border-l border-b border-white ${selectedBetType === "00" ? "ring-2 ring-yellow-500 z-10" : ""}`}>
+                00
+              </div>
+            </div>
 
-        {/* Right side: 2 to 1 */}
-        <div className="flex flex-row md:flex-col">
-          <div
-            onClick={() => setSelectedBetType("col1")}
-            className={`w-10 h-10 md:w-16 md:h-16 flex items-center justify-center text-white text-xs md:text-sm font-bold border border-white cursor-pointer ${selectedBetType === "col1" ? "ring-2 ring-yellow-500" : ""}`}
-          >
-            2 to 1
+            {/* Main Number Grid */}
+            <div className="grid grid-cols-12 border-t border-white">
+              {numbers.map((row) =>
+                row.map((num) => (
+                  <div
+                    key={num}
+                    onClick={() => setSelectedBetType(num)}
+                    className={`w-9 h-9 md:w-16 md:h-16 flex items-center justify-center text-white text-sm md:text-lg font-bold border-r border-b border-white cursor-pointer transition-all
+                      ${isRed(num) ? "bg-red-600" : "bg-black"}
+                      ${selectedBetType === num ? "ring-2 ring-yellow-500 z-10 scale-110" : "hover:bg-opacity-75"}`}>
+                    {num}
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Right side: 2 to 1 */}
+            <div className="flex flex-col text-white text-xs md:text-sm font-bold">
+              {[...Array(3)].map((_, i) => (
+                <div
+                  key={`col${i + 1}`}
+                  onClick={() => setSelectedBetType(`col${i + 1}`)}
+                  className={`w-9 h-9 md:w-16 md:h-16 flex items-center justify-center border-r border-b border-t border-white cursor-pointer ${selectedBetType === `col${i + 1}` ? "ring-2 ring-yellow-500 z-10" : ""}`}>
+                  2:1
+                </div>
+              ))}
+            </div>
           </div>
-          <div
-            onClick={() => setSelectedBetType("col2")}
-            className={`w-10 h-10 md:w-16 md:h-16 flex items-center justify-center text-white text-xs md:text-sm font-bold border border-white cursor-pointer ${selectedBetType === "col2" ? "ring-2 ring-yellow-500" : ""}`}
-          >
-            2 to 1
+
+          {/* Bottom Section (aligned with the grid) */}
+          <div className="flex text-white font-bold text-sm md:text-lg">
+            <div className="w-12 md:w-16 shrink-0"></div> {/* Spacer for 0/00 column */}
+            <div className="grid grid-cols-3 w-[324px] md:w-[768px]">
+              <div onClick={() => setSelectedBetType("1st12")} className={`flex-1 text-center border-b border-r border-white py-2 md:py-4 cursor-pointer ${selectedBetType === "1st12" ? "ring-2 ring-yellow-500 z-10" : ""}`}>1st 12</div>
+              <div onClick={() => setSelectedBetType("2nd12")} className={`flex-1 text-center border-b border-r border-white py-2 md:py-4 cursor-pointer ${selectedBetType === "2nd12" ? "ring-2 ring-yellow-500 z-10" : ""}`}>2nd 12</div>
+              <div onClick={() => setSelectedBetType("3rd12")} className={`flex-1 text-center border-b border-r border-white py-2 md:py-4 cursor-pointer ${selectedBetType === "3rd12" ? "ring-2 ring-yellow-500 z-10" : ""}`}>3rd 12</div>
+            </div>
+            <div className="w-9 md:w-16 shrink-0"></div> {/* Spacer for 2:1 column */}
           </div>
-          <div
-            onClick={() => setSelectedBetType("col3")}
-            className={`w-10 h-10 md:w-16 md:h-16 flex items-center justify-center text-white text-xs md:text-sm font-bold border border-white cursor-pointer ${selectedBetType === "col3" ? "ring-2 ring-yellow-500" : ""}`}
-          >
-            2 to 1
+          <div className="flex text-white font-bold text-sm md:text-lg">
+            <div className="w-12 md:w-16 shrink-0"></div> {/* Spacer */}
+            <div className="grid grid-cols-6 w-[324px] md:w-[768px]">
+              <div onClick={() => setSelectedBetType("1-18")} className={`flex-1 text-center border-b border-r border-white py-2 md:py-4 cursor-pointer ${selectedBetType === "1-18" ? "ring-2 ring-yellow-500 z-10" : ""}`}>1-18</div>
+              <div onClick={() => setSelectedBetType("even")} className={`flex-1 text-center border-b border-r border-white py-2 md:py-4 cursor-pointer ${selectedBetType === "even" ? "ring-2 ring-yellow-500 z-10" : ""}`}>EVEN</div>
+              <div onClick={() => setSelectedBetType("red")} className={`flex-1 text-center border-b border-r border-white py-2 md:py-4 cursor-pointer bg-red-600 ${selectedBetType === "red" ? "ring-2 ring-yellow-500 z-10" : ""}`}>◆</div>
+              <div onClick={() => setSelectedBetType("black")} className={`flex-1 text-center border-b border-r border-white py-2 md:py-4 cursor-pointer bg-black ${selectedBetType === "black" ? "ring-2 ring-yellow-500 z-10" : ""}`}>◆</div>
+              <div onClick={() => setSelectedBetType("odd")} className={`flex-1 text-center border-b border-r border-white py-2 md:py-4 cursor-pointer ${selectedBetType === "odd" ? "ring-2 ring-yellow-500 z-10" : ""}`}>ODD</div>
+              <div onClick={() => setSelectedBetType("19-36")} className={`flex-1 text-center border-b border-r border-white py-2 md:py-4 cursor-pointer ${selectedBetType === "19-36" ? "ring-2 ring-yellow-500 z-10" : ""}`}>19-36</div>
+            </div>
+            <div className="w-9 md:w-16 shrink-0"></div> {/* Spacer */}
           </div>
         </div>
       </div>
 
-      {/* Bottom section */}
-      <div className="grid grid-cols-3 md:grid-cols-6 mt-2 w-full max-w-[960px] text-white font-bold text-base md:text-lg border border-white">
-        <div
-          onClick={() => setSelectedBetType("1st12")}
-          className={`col-span-1 md:col-span-2 flex items-center justify-center border border-white py-2 md:py-4 cursor-pointer ${selectedBetType === "1st12" ? "ring-2 ring-yellow-500" : ""}`}
-        >
-          1st 12
-        </div>
-        <div
-          onClick={() => setSelectedBetType("2nd12")}
-          className={`col-span-1 md:col-span-2 flex items-center justify-center border border-white py-2 md:py-4 cursor-pointer ${selectedBetType === "2nd12" ? "ring-2 ring-yellow-500" : ""}`}
-        >
-          2nd 12
-        </div>
-        <div
-          onClick={() => setSelectedBetType("3rd12")}
-          className={`col-span-1 md:col-span-2 flex items-center justify-center border border-white py-2 md:py-4 cursor-pointer ${selectedBetType === "3rd12" ? "ring-2 ring-yellow-500" : ""}`}
-        >
-          3rd 12
-        </div>
-
-        <div
-          onClick={() => setSelectedBetType("1-18")}
-          className={`flex items-center justify-center border border-white py-2 md:py-4 cursor-pointer ${selectedBetType === "1-18" ? "ring-2 ring-yellow-500" : ""}`}
-        >
-          1 to 18
-        </div>
-        <div
-          onClick={() => setSelectedBetType("even")}
-          className={`flex items-center justify-center border border-white py-2 md:py-4 cursor-pointer ${selectedBetType === "even" ? "ring-2 ring-yellow-500" : ""}`}
-        >
-          EVEN
-        </div>
-        <div
-          onClick={() => setSelectedBetType("red")}
-          className={`flex items-center justify-center border border-white py-2 md:py-4 cursor-pointer bg-red-600 ${selectedBetType === "red" ? "ring-2 ring-yellow-500" : ""}`}
-        >
-          ◆
-        </div>
-        <div
-          onClick={() => setSelectedBetType("black")}
-          className={`flex items-center justify-center border border-white py-2 md:py-4 cursor-pointer bg-black ${selectedBetType === "black" ? "ring-2 ring-yellow-500" : ""}`}
-        >
-          ◆
-        </div>
-        <div
-          onClick={() => setSelectedBetType("odd")}
-          className={`flex items-center justify-center border border-white py-2 md:py-4 cursor-pointer ${selectedBetType === "odd" ? "ring-2 ring-yellow-500" : ""}`}
-        >
-          ODD
-        </div>
-        <div
-          onClick={() => setSelectedBetType("19-36")}
-          className={`flex items-center justify-center border border-white py-2 md:py-4 cursor-pointer ${selectedBetType === "19-36" ? "ring-2 ring-yellow-500" : ""}`}
-        >
-          19 to 36
-        </div>
-      </div>
-
-      {/* Footer */}
       <p className="text-white mt-2 italic text-sm md:text-base">American Roulette</p>
     </div>
   );
