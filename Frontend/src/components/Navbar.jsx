@@ -109,7 +109,9 @@ export default function Navbar() {
 
           {user ? (
             <>
+              <Link to="/Profile" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>Profile</Link>
               <Link to="/Wallet" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>Wallet</Link>
+              <Link to="/History" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>History</Link>
               <Link to="/Withdraw" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>Withdraw</Link>
               <Link to="/AddCash" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>Add Cash</Link>
               <button onClick={handleLogout} className="hover:text-yellow-500">Logout</button>
