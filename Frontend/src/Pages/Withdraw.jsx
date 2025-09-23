@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
 import { getAuth } from "firebase/auth";
-import { doc, getDoc, runTransaction, collection } from "firebase/firestore";
+import { doc, getDoc, runTransaction, collection, query, orderBy, limit } from "firebase/firestore";
 import { db } from "../firebase";
 import { toast } from "react-toastify";
 import { ArrowLeft, IndianRupee } from "lucide-react";
@@ -26,6 +26,8 @@ const Withdraw = () => {
   const [winningMoney, setWinningMoney] = useState(0); // Renamed from userBalance
   const [onCooldown, setOnCooldown] = useState(false);
   const [cooldownRemaining, setCooldownRemaining] = useState(0);
+  const [withdrawalSubmitted, setWithdrawalSubmitted] = useState(false); // New state
+  const [lastWithdrawal, setLastWithdrawal] = useState(null); // New state for last withdrawal details
 
   const COOLDOWN_DURATION = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
 
@@ -111,8 +113,8 @@ const Withdraw = () => {
         toast.error('Insufficient winning money.');
         return;
     }
-    if (withdrawalAmount < 200) {
-        toast.error('Minimum withdrawal amount is ₹200.');
+    if (withdrawalAmount < 100) { // Changed from 200 to 100
+        toast.error('Minimum withdrawal amount is ₹100.');
         return;
     }
 
@@ -170,6 +172,7 @@ const Withdraw = () => {
       setOnCooldown(true);
       setCooldownRemaining(COOLDOWN_DURATION);
       toast.success('Withdrawal request submitted successfully!');
+      setWithdrawalSubmitted(true); // Set submitted state
       setAmount('');
       setUpiId('');
       setAccountNumber('');
@@ -206,6 +209,13 @@ const Withdraw = () => {
       ) : onCooldown ? (
         <div className="bg-[#0a2d55] rounded-xl p-6 shadow-lg text-center space-y-4">
           <h2 className="text-xl font-semibold text-yellow-500">Withdrawal Request Submitted!</h2>
+          <p className="text-lg">Status: <span className="font-semibold text-yellow-400">Pending</span></p>
+          
+          <div className="text-sm text-gray-200 space-y-2 my-4 p-4 bg-[#042346] rounded-lg border border-gray-700">
+            <p>Your payment will be credited to your account within 10 to 24 hours.</p>
+            <p>आपका भुगतान 10 से 24 घंटों के अंदर आपके खाते में पहुँचा दिया जाएगा।</p>
+          </div>
+
           <p className="text-lg">Your next withdrawal will be available in:</p>
           <div className="text-4xl font-bold text-white">
             {formatTime(cooldownRemaining)}
