@@ -43,6 +43,7 @@ export default function Navbar() {
         <Link to="/" className="hover:text-yellow-500">Results</Link>
         <Link to="/" className="hover:text-yellow-500">How to Play</Link>
         <Link to="/Support" className="hover:text-yellow-500">Support</Link>
+        <Link to="/Privacy" className="hover:text-yellow-500">Terms & Conditions</Link>
 
         {user ? (
           <>
