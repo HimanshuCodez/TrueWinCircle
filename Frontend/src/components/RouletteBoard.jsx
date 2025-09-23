@@ -15,12 +15,12 @@ const isRed = (num) => redNumbers.includes(Number(num));
 
 export default function RouletteBoard({ setSelectedBetType, selectedBetType }) {
   return (
-    <div className="p-2 md:p-4 bg-green-900 min-h-screen flex flex-col items-center w-full">
+    <div className="p-2 md:p-4 bg-green-900  flex flex-col items-center w-full">
       {/* Scrollable container for the entire board */}
-      <div className="w-full overflow-x-auto pb-4">
+      <div className="w-full overflow-x-auto pb-4 flex md:justify-center">
         <div className="inline-block min-w-max relative"> 
           {/* Main Board Layout */}
-          <div className="flex items-start">
+          <div className="flex  items-start">
             {/* Left side: 0 and 00 */}
             <div className="flex flex-col text-white text-base md:text-lg font-bold">
               <div
