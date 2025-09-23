@@ -1,355 +1,288 @@
-import { useState, useEffect, useRef } from "react";
-import { collection, addDoc, query, where, getDocs, serverTimestamp, doc, runTransaction, onSnapshot } from "firebase/firestore";
-import useAuthStore from "../store/authStore";
-import { toast } from "react-toastify";
-import { formatDistanceToNowStrict } from 'date-fns';
-import { db } from '../firebase'; // Import db from firebase.js
+import React, { useState, useEffect, useCallback } from 'react';
+import { doc, collection, addDoc, runTransaction, onSnapshot, serverTimestamp, query, where, getDocs, writeBatch } from 'firebase/firestore';
+import { db } from '../firebase';
+import useAuthStore from '../store/authStore';
+import { toast } from 'react-toastify';
+import { Zap, Clock, Gift, Loader2 } from 'lucide-react';
 
-export default function WinGame() {
-  const [selected, setSelected] = useState(null);
-  const [betAmount, setBetAmount] = useState(10);
-  const [nextResultTime, setNextResultTime] = useState(null);
-  const [timeLeft, setTimeLeft] = useState('');
-  const [gamePhase, setGamePhase] = useState('betting');
-  const [winningNumber, setWinningNumber] = useState(null);
-  const [winningUserName, setWinningUserName] = useState(null);
-  const [currentRoundId, setCurrentRoundId] = useState(null);
+// --- IMPORTANT --- 
+// This file contains game logic that should be on a backend server (like a Firebase Cloud Function).
+// Running this on the client is insecure and unreliable. This is a temporary solution to make the game functional.
+// You will also need to manually create the initial game state document in Firestore:
+// Collection: `game_state`, Document ID: `win_game_1_to_12`
+// Fields: `roundId` (Number), `roundEndsAt` (Timestamp), `lastRoundProcessed` (Number), `lastWinningNumber` (Number | null)
+
+const GAME_DURATION_SECONDS = 120;
+const BETTING_PERIOD_SECONDS = 60;
+
+const WinGame = () => {
   const { user } = useAuthStore();
-  const [balance, setBalance] = useState(0); // User's balance
-  const [bettingLoading, setBettingLoading] = useState(false); // Loading state for bet submission
+  
+  const [gameState, setGameState] = useState({ stage: 'loading', timeLeft: 0, roundId: null });
+  const [lastWinningNumber, setLastWinningNumber] = useState(null);
+  const [walletBalance, setWalletBalance] = useState(0);
 
-  const timerIntervalRef = useRef(null);
+  const [selectedNumber, setSelectedNumber] = useState(null);
+  const [betAmount, setBetAmount] = useState(10);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch user balance
-  useEffect(() => {
-    if (user) {
-      const userDocRef = doc(db, 'users', user.uid);
-      const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
-        if (docSnap.exists()) {
-          setBalance(docSnap.data().balance || 0);
-        } else {
-          setBalance(0);
-        }
-      });
-      return () => unsubscribe();
+  // --- BACKEND LOGIC (RUNNING ON CLIENT AS A TEMPORARY SOLUTION) ---
+  const calculateAndDistributeWinnings = async (roundId) => {
+    console.log(`Calculating results for round: ${roundId}`);
+    const betsRef = collection(db, "wingame_bets");
+    const q = query(betsRef, where("roundId", "==", roundId));
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+      console.log("No bets in this round.");
+      return Math.floor(Math.random() * 12) + 1;
     }
-  }, [user]);
 
-  const numbers = [
-    { num: 1, amount: 3586 }, // These amounts are static, will be replaced by fetched data
-    { num: 2, amount: 4269 },
-    { num: 3, amount: 2988 },
-    { num: 4, amount: 1643 },
-    { num: 5, amount: 5329 },
-    { num: 6, amount: 2551 },
-    { num: 7, amount: 3292 },
-    { num: 8, amount: 3075 },
-    { num: 9, amount: 2644 },
-    { num: 10, amount: 3866 },
-    { num: 11, amount: 4122 },
-    { num: 12, amount: 3556 },
-  ];
+    const numberTotals = {};
+    querySnapshot.forEach(doc => {
+      const bet = doc.data();
+      numberTotals[bet.number] = (numberTotals[bet.number] || 0) + bet.amount;
+    });
 
-  // Calculate next result time based on fixed schedule
-  const calculateNextResultTime = () => {
-    const now = new Date();
-    const resultHours = [0, 3, 6, 9, 12, 15, 18, 21]; // 12AM, 3AM, 6AM, 9AM, 12PM, 3PM, 6PM, 9PM
-
-    let nextTime = null;
-
-    for (const hour of resultHours) {
-      const candidateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, 0, 0);
-      if (candidateTime > now) {
-        nextTime = candidateTime;
-        break;
+    let minBetAmount = Infinity;
+    let potentialWinners = [];
+    for (let i = 1; i <= 12; i++) {
+      const total = numberTotals[i] || 0;
+      if (total < minBetAmount) {
+        minBetAmount = total;
+        potentialWinners = [i];
+      } else if (total === minBetAmount) {
+        potentialWinners.push(i);
       }
     }
 
-    // If no future time today, set for tomorrow's first time (00:00)
-    if (!nextTime) {
-      const tomorrow = new Date(now);
-      tomorrow.setDate(now.getDate() + 1);
-      nextTime = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate(), resultHours[0], 0, 0);
+    const winningNumber = potentialWinners[Math.floor(Math.random() * potentialWinners.length)];
+    console.log(`Winning number is: ${winningNumber}`);
+
+    const batch = writeBatch(db);
+
+    // Save the official round result for historical purposes
+    const roundResultRef = doc(db, 'wingame_rounds', String(roundId));
+    batch.set(roundResultRef, { winningNumber: winningNumber, createdAt: serverTimestamp() });
+
+    const userWinnings = {}; // { userId: totalWinnings, ... }
+
+    querySnapshot.forEach(doc => {
+      const bet = doc.data();
+      const betRef = doc.ref;
+      if (bet.number === winningNumber) {
+        const winnings = bet.amount * 10;
+        batch.update(betRef, { status: 'win', winnings });
+        userWinnings[bet.userId] = (userWinnings[bet.userId] || 0) + winnings;
+      } else {
+        batch.update(betRef, { status: 'loss', winnings: 0 });
+      }
+    });
+
+    await batch.commit();
+    console.log("All bets updated with win/loss status.");
+
+    for (const userId in userWinnings) {
+      const userDocRef = doc(db, 'users', userId);
+      const amountToCredit = userWinnings[userId];
+      try {
+        await runTransaction(db, async (transaction) => {
+          const userDoc = await transaction.get(userDocRef);
+          const currentWinnings = userDoc.exists() ? (userDoc.data().winningMoney || 0) : 0;
+          transaction.update(userDocRef, { winningMoney: currentWinnings + amountToCredit });
+        });
+      } catch (e) {
+        console.error(`Failed to credit winnings for user ${userId}:`, e);
+      }
     }
-    setNextResultTime(nextTime);
-    setCurrentRoundId(nextTime.getTime()); // Use timestamp as round ID
+    
+    return winningNumber;
   };
 
-  // Timer effect
- // Run once on mount to set the first round
-useEffect(() => {
-  calculateNextResultTime();
-}, []);
+  const initiateRoundEndProcess = useCallback(async (roundId) => {
+    if (!roundId) return;
+    const gameStateRef = doc(db, 'game_state', 'win_game_1_to_12');
+    
+    try {
+      await runTransaction(db, async (transaction) => {
+        const gameStateDoc = await transaction.get(gameStateRef);
+        if (!gameStateDoc.exists()) throw new Error("Game state document not found!");
+        if (gameStateDoc.data().lastRoundProcessed === roundId) {
+          return; // Round already processed
+        }
+        transaction.update(gameStateRef, { lastRoundProcessed: roundId });
+      });
 
-// Timer effect (only depends on nextResultTime)
-useEffect(() => {
-  if (!nextResultTime) return;
+      const winningNumber = await calculateAndDistributeWinnings(roundId);
 
-  timerIntervalRef.current = setInterval(() => {
-    const now = new Date();
-    const diff = nextResultTime.getTime() - now.getTime();
+      const newRoundId = Date.now();
+      const newRoundEndTime = new Date(newRoundId + GAME_DURATION_SECONDS * 1000);
+      
+      await runTransaction(db, async (transaction) => {
+          transaction.update(gameStateRef, {
+              lastWinningNumber: winningNumber,
+              roundId: newRoundId,
+              roundEndsAt: newRoundEndTime,
+          });
+      });
 
-    if (diff <= 0) {
-      clearInterval(timerIntervalRef.current);
-      setGamePhase('calculating');
-      handleResultCalculation();
-    } else {
-      const hours = Math.floor(diff / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-      setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
+    } catch (error) {
+      if (error.code !== 'aborted') { // 'aborted' means another client won the transaction race, which is fine.
+        console.error("Error in round-end process:", error);
+      }
     }
-  }, 1000);
+  }, []);
 
-  return () => clearInterval(timerIntervalRef.current);
-}, [nextResultTime]);
- // Recalculate timer when nextResultTime changes
+  // --- COMPONENT LIFECYCLE & UI LOGIC ---
+  useEffect(() => {
+    if (!user) return;
+    const userDocRef = doc(db, 'users', user.uid);
+    const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
+      if (docSnap.exists()) setWalletBalance(docSnap.data().walletBalance || 0);
+    });
+    return unsubscribe;
+  }, [user]);
 
-  const handleBet = async () => {
-    if (!user) {
-      toast.error("Please log in to place a bet.");
-      return;
-    }
-    if (selected === null) {
-      toast.error("Please select a number.");
-      return;
-    }
-    const parsedBetAmount = parseFloat(betAmount);
-    if (isNaN(parsedBetAmount) || parsedBetAmount < 10) {
-      toast.error("Minimum bet amount is ₹10.");
-      return;
-    }
-    if (gamePhase !== 'betting') {
-      toast.info("Betting is closed for this round.");
-      return;
-    }
-    if (parsedBetAmount > balance) {
-      toast.error("Insufficient balance.");
-      return;
-    }
+  useEffect(() => {
+    const gameStateRef = doc(db, 'game_state', 'win_game_1_to_12');
+    const unsubscribe = onSnapshot(gameStateRef, (docSnap) => {
+      if (!docSnap.exists()) {
+        console.error("CRITICAL: Game state document does not exist!");
+        setGameState({ stage: 'loading', timeLeft: 0, roundId: null });
+        return;
+      }
+      
+      const data = docSnap.data();
+      setLastWinningNumber(data.lastWinningNumber || null);
 
-    setBettingLoading(true);
+      const now = Date.now();
+      const roundEndTime = data.roundEndsAt.toDate().getTime();
+      const currentRoundId = data.roundId;
+      const diffSeconds = Math.floor((roundEndTime - now) / 1000);
 
+      if (diffSeconds <= 0) {
+        setGameState({ stage: 'waiting', timeLeft: 0, roundId: currentRoundId });
+        initiateRoundEndProcess(currentRoundId);
+      } else if (diffSeconds <= (GAME_DURATION_SECONDS - BETTING_PERIOD_SECONDS)) {
+        setGameState({ stage: 'waiting', timeLeft: diffSeconds, roundId: currentRoundId });
+      } else {
+        setGameState({ stage: 'betting', timeLeft: diffSeconds - (GAME_DURATION_SECONDS - BETTING_PERIOD_SECONDS), roundId: currentRoundId });
+      }
+    });
+    return unsubscribe;
+  }, [initiateRoundEndProcess]);
+
+  const handleBetSubmit = async () => {
+    if (!user) return toast.error('Please log in to bet.');
+    if (selectedNumber === null) return toast.error('Please select a number.');
+    if (betAmount < 10) return toast.error('Minimum bet is ₹10.');
+    if (walletBalance < betAmount) return toast.error('Insufficient balance.');
+    if (gameState.stage !== 'betting') return toast.error('Betting is closed for this round.');
+
+    setIsSubmitting(true);
     try {
       await runTransaction(db, async (transaction) => {
         const userDocRef = doc(db, 'users', user.uid);
         const userDoc = await transaction.get(userDocRef);
-
-        if (!userDoc.exists()) {
-          throw "User document does not exist!";
+        if (!userDoc.exists() || (userDoc.data().walletBalance || 0) < betAmount) {
+          throw new Error('Insufficient balance.');
         }
+        const newBalance = userDoc.data().walletBalance - betAmount;
+        transaction.update(userDocRef, { walletBalance: newBalance });
 
-        const currentBalance = userDoc.data().balance || 0;
-
-        if (currentBalance < parsedBetAmount) {
-          throw "Insufficient balance in transaction.";
-        }
-
-        // Deduct balance
-        transaction.update(userDocRef, { balance: currentBalance - parsedBetAmount });
-
-        // Add bet record
-        const betsCollectionRef = collection(db, "bets");
-        transaction.set(doc(betsCollectionRef), {
+        const betDocRef = doc(collection(db, 'wingame_bets'));
+        transaction.set(betDocRef, {
           userId: user.uid,
-          userName: user.displayName || user.email || "Anonymous",
-          number: selected,
-          amount: parsedBetAmount,
-          roundId: currentRoundId,
-          timestamp: serverTimestamp(),
+          roundId: gameState.roundId,
+          number: selectedNumber,
+          amount: betAmount,
+          createdAt: serverTimestamp(),
         });
       });
-
-      toast.success(`Bet placed: ₹${parsedBetAmount} on number ${selected}`);
-      setSelected(null);
+      toast.success(`Bet of ₹${betAmount} placed on ${selectedNumber}!`);
+      setSelectedNumber(null);
       setBetAmount(10);
     } catch (error) {
-      console.error("Error placing bet:", error);
-      toast.error(`Failed to place bet: ${error.message || error}`);
+      toast.error(error.message || 'Failed to place bet.');
     } finally {
-      setBettingLoading(false);
-    }
-  };
-
-  const handleResultCalculation = async () => {
-    setGamePhase('calculating');
-    try {
-      // Fetch all bets for the just-ended round
-      const betsRef = collection(db, "bets");
-      const q = query(betsRef, where("roundId", "==", currentRoundId));
-      const querySnapshot = await getDocs(q);
-
-      const numberBets = {}; // { number: totalAmount }
-      const numberUsers = {}; // { number: [{ userId, userName }] }
-
-      querySnapshot.forEach((doc) => {
-        const bet = doc.data();
-        numberBets[bet.number] = (numberBets[bet.number] || 0) + bet.amount;
-        if (!numberUsers[bet.number]) {
-          numberUsers[bet.number] = [];
-        }
-        numberUsers[bet.number].push({ userId: bet.userId, userName: bet.userName });
-      });
-
-      let minBetAmount = Infinity;
-      let potentialWinningNumbers = [];
-
-      // Find the number(s) with the minimum total bet amount
-      for (let i = 1; i <= 12; i++) { // Iterate through all possible numbers 1-12
-        const totalBet = numberBets[i] || 0; // If no bets, total is 0
-        if (totalBet < minBetAmount) {
-          minBetAmount = totalBet;
-          potentialWinningNumbers = [i]; // Start new list of potential winners
-        } else if (totalBet === minBetAmount) {
-          potentialWinningNumbers.push(i); // Add to list if tied
-        }
-      }
-
-      let finalWinningNumber;
-      let finalWinningUserName = "No winner this round";
-
-      if (potentialWinningNumbers.length > 0) {
-        // If multiple numbers tie for the lowest bet, pick one randomly
-        finalWinningNumber = potentialWinningNumbers[Math.floor(Math.random() * potentialWinningNumbers.length)];
-
-        // Find a user who bet on the winning number
-        if (numberUsers[finalWinningNumber] && numberUsers[finalWinningNumber].length > 0) {
-          // Pick a random user who bet on the winning number
-          const winnerUser = numberUsers[finalWinningNumber][Math.floor(Math.random() * numberUsers[finalWinningNumber].length)];
-          finalWinningUserName = winnerUser.userName;
-        } else {
-          finalWinningUserName = "No one bet on this number";
-        }
-      } else {
-        // This case happens if no bets were placed at all.
-        // In a real game, you might have a default winning number or roll again.
-        // For now, let's pick a random number if no bets were placed.
-        finalWinningNumber = Math.floor(Math.random() * 12) + 1; // Random number 1-12
-        finalWinningUserName = "No bets placed on winning number";
-      }
-
-      setWinningNumber(finalWinningNumber);
-      setWinningUserName(finalWinningUserName);
-      setGamePhase('showingResult');
-
-      // After showing result for a few seconds, go back to betting phase
-      setTimeout(() => {
-        setGamePhase('betting');
-        setWinningNumber(null);
-        setWinningUserName(null);
-        calculateNextResultTime(); // Calculate next round's time after showing result
-      }, 10000); // Show result for 10 seconds
-    } catch (error) {
-      console.error("Error calculating result:", error);
-      toast.error("Failed to calculate result.");
-      setGamePhase('betting'); // Go back to betting if error
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="p-6 bg-sky-800  min-h-screen text-white font-roboto">
-      {/* Title */}
-      <h2 className="text-3xl font-bold mb-2 text-center text-yellow-400">1 to 12 Win Game</h2>
-      <div className="text-center mb-6">
-        <p className="inline-block bg-yellow-500 text-gray-900 font-bold text-base px-4 py-2 rounded-full shadow-lg animate-pulse">
-          Play and win 10 times of the amount!
-        </p>
-      </div>
-      <hr className="border-gray-700 mb-6" />
+    <div className="font-roboto bg-gray-900 text-white min-h-screen p-4 pt-20">
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center mb-6">
+          <h1 className="text-4xl font-bold text-yellow-400">1 to 12 Win</h1>
+          <p className="text-gray-300 text-lg">Bet on a number and win 10 times the amount!</p>
+        </div>
 
+        <div className="bg-gray-800 rounded-xl shadow-lg p-4 mb-6 flex justify-around items-center">
+          <div className="text-center">
+            <p className="text-sm text-gray-400">Status</p>
+            {gameState.stage === 'betting' && <p className="text-lg font-bold text-green-400 animate-pulse">Betting Open</p>}
+            {gameState.stage === 'waiting' && <p className="text-lg font-bold text-red-400">Waiting for Result</p>}
+            {gameState.stage === 'loading' && <p className="text-lg font-bold text-gray-400">Loading...</p>}
+          </div>
+          <div className="text-center">
+            <p className="text-sm text-gray-400">{gameState.stage === 'betting' ? 'Time to Bet' : 'Result In'}</p>
+            <p className="text-3xl font-bold text-white">{String(gameState.timeLeft).padStart(2, '0')}s</p>
+          </div>
+          <div className="text-center">
+            <p className="text-sm text-gray-400">Last Winning Number</p>
+            <p className="text-3xl font-bold text-yellow-400">{lastWinningNumber ?? '--'}</p>
+          </div>
+        </div>
 
-
-      {/* Game grid & rules */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* Number boxes */}
-        <div className="md:col-span-3 grid grid-cols-3 sm:grid-cols-4 gap-4">
-          {numbers.map((item) => (
-            <div
-              key={item.num}
-              onClick={() => setSelected(item.num)}
-              className={`rounded-lg p-4 flex flex-col items-center justify-center cursor-pointer shadow-lg transition-all duration-200
-                ${
-                  selected === item.num
-                    ? "bg-yellow-500 text-gray-900 scale-105"
-                    : "bg-gray-800 text-white hover:bg-gray-700"
-                }`}
-            >
-              <span className="text-2xl font-bold">{item.num}</span>
-      
-            </div>
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 mb-6">
+          {[...Array(12).keys()].map(i => (
+            <button 
+              key={i + 1} 
+              onClick={() => setSelectedNumber(i + 1)}
+              disabled={gameState.stage !== 'betting'}
+              className={`py-5 rounded-lg text-2xl font-bold transition-all duration-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed ${
+                selectedNumber === i + 1 
+                ? 'bg-yellow-500 text-black scale-110' 
+                : 'bg-gray-700 hover:bg-gray-600'
+              }`}>
+              {i + 1}
+            </button>
           ))}
         </div>
 
-        {/* Rules box */}
-        <div className="bg-gray-800 text-white rounded-lg p-4 flex flex-col justify-between shadow-lg">
-          <div>
-            <h3 className="font-semibold text-xl mb-3 text-yellow-400">Game Rules</h3>
-            <ul className="space-y-2 text-sm text-gray-300">
-              <li>🟡 Select any number between 1 to 12</li>
-              <li>🟡 Minimum bet amount ₹10</li>
-              <li>🟡 Number with lowest total bet wins</li>
-              <li>🟡 Results at 12AM, 3AM, 6AM, 9AM, 12PM, 3PM, 6PM, 9PM</li>
-              <li>🟡 Winnings credited automatically</li>
-            </ul>
-          </div>
-          <div className="mt-4 pt-4 border-t border-gray-700">
-            <h4 className="font-semibold text-xl text-yellow-400">Next Result</h4>
-            <p className="  text-2xl mt-1">
-              Time Left: <span className="font-bold text-green-400">{timeLeft}</span>
-            </p>
-            {gamePhase === 'calculating' && (
-              <p className="text-sm mt-2 text-blue-400 animate-pulse">Calculating result...</p>
-            )}
-            {gamePhase === 'showingResult' && (
-              <div className="mt-2 p-6 bg-green-600 rounded-lg text-center animate-pulse">
-                <p className="text-5xl font-extrabold text-white">Winning Number: {winningNumber}</p>
-                <p className="text-2xl font-medium text-yellow-300 mt-2">Winner: {winningUserName}</p>
+        <div className="bg-gray-800 rounded-xl shadow-lg p-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-2">Selected Number</label>
+              <div className="w-full bg-gray-700 rounded-lg p-3 text-center text-xl font-bold">
+                {selectedNumber || 'None'}
               </div>
-            )}
+            </div>
+            <div>
+              <label htmlFor="betAmount" className="block text-sm font-medium text-gray-400 mb-2">Bet Amount (Min: ₹10)</label>
+              <input 
+                id="betAmount"
+                type="number"
+                value={betAmount}
+                onChange={(e) => setBetAmount(parseInt(e.target.value, 10) || 10)}
+                min="10"
+                className="w-full bg-gray-700 rounded-lg p-3 text-center text-xl font-bold focus:ring-2 focus:ring-yellow-500 outline-none"
+                disabled={gameState.stage !== 'betting'}
+              />
+            </div>
+            <button 
+              onClick={handleBetSubmit}
+              disabled={isSubmitting || gameState.stage !== 'betting'}
+              className="w-full bg-green-600 text-white font-bold py-3 rounded-lg text-xl flex items-center justify-center hover:bg-green-700 transition-colors disabled:bg-gray-500">
+              {isSubmitting ? <Loader2 className="animate-spin" /> : <Zap />}
+              <span className="ml-2">Place Bet</span>
+            </button>
           </div>
         </div>
-      </div>
 
-      {/* Bet form */}
-      <div className="bg-gray-800 rounded-lg p-4 mt-6 shadow-lg">
-        <h3 className="font-medium text-xl mb-3 text-yellow-400">Place Your Bet</h3>
-        <div className="flex flex-col sm:flex-row gap-4 items-end">
-          <div className="w-full sm:w-40">
-            <h3 className="font-medium text-lg mb-2 text-yellow-400">Choose Number</h3>
-            <select
-              className="border border-gray-600 rounded-md px-3 py-2 w-full bg-gray-700 text-white focus:ring-yellow-500 focus:border-yellow-500"
-              value={selected || ""}
-              onChange={(e) => setSelected(Number(e.target.value))}
-              disabled={gamePhase !== 'betting'}
-            >
-              <option value="">Choose number</option>
-              {numbers.map((item) => (
-                <option key={item.num} value={item.num}>
-                  {item.num}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="w-full sm:w-40">
-            <h3 className="font-medium text-lg mb-2 text-yellow-400">Enter Amount</h3>
-            <input
-              type="number"
-              value={betAmount}
-              onChange={(e) => setBetAmount(Number(e.target.value))}
-              className="border border-gray-600 rounded-md px-3 py-2 w-full bg-gray-700 text-white focus:ring-yellow-500 focus:border-yellow-500"
-              min="10"
-              disabled={gamePhase !== 'betting'}
-            />
-          </div>
-          <button
-            onClick={handleBet}
-            className="bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-semibold px-6 py-2 rounded-md shadow-lg transition-colors w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={gamePhase !== 'betting' || !selected || betAmount < 10 || bettingLoading}
-          >
-            {bettingLoading ? 'Placing Bet...' : 'Bet Now'}
-          </button>
-        </div>
       </div>
     </div>
   );
-}
+};
+
+export default WinGame;
