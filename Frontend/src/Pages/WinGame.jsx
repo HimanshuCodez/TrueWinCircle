@@ -160,12 +160,13 @@ const WinGame = () => {
     return unsubscribe;
   }, [user]);
 
+  // This effect syncs the game state from Firestore
   useEffect(() => {
     const gameStateRef = doc(db, 'game_state', 'win_game_1_to_12');
     const unsubscribe = onSnapshot(gameStateRef, (docSnap) => {
       if (!docSnap.exists()) {
         console.log("Game state not found, attempting to initialize...");
-        setGameState({ stage: 'loading', timeLeft: 0, roundId: null });
+        setGameState(prev => ({ ...prev, stage: 'loading' }));
         initializeGameState();
         return;
       }
@@ -189,6 +190,23 @@ const WinGame = () => {
     });
     return unsubscribe;
   }, [initiateRoundEndProcess, initializeGameState]);
+
+  // This new effect handles the client-side countdown timer
+  useEffect(() => {
+    if (gameState.timeLeft <= 0) return;
+
+    const timerId = setInterval(() => {
+      setGameState(prev => {
+        if (prev.timeLeft <= 1) {
+          clearInterval(timerId);
+          return { ...prev, timeLeft: 0 };
+        }
+        return { ...prev, timeLeft: prev.timeLeft - 1 };
+      });
+    }, 1000);
+
+    return () => clearInterval(timerId);
+  }, [gameState.timeLeft]); // It re-runs only when the timeLeft is reset by Firestore
 
   const handleBetSubmit = async () => {
     if (!user) return toast.error('Please log in to bet.');
