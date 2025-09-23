@@ -76,7 +76,7 @@ const AllUsers = () => {
           </thead>
           <tbody>
             {filteredUsers.map(user => {
-              const totalBalance = (user.walletBalance || 0) + (user.winningMoney || 0);
+              const totalBalance = (user.balance || 0) + (user.winningMoney || 0);
               return (
                 <tr key={user.id} className="border-b border-gray-200 last:border-0 hover:bg-gray-50 transition-colors">
                   <td className="p-4 font-medium text-gray-800">{user.name || 'N/A'}</td>

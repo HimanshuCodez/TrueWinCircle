@@ -25,7 +25,7 @@ export default function ProfilePage() {
           if (userSnap.exists()) {
             const data = userSnap.data();
             setBalances({
-              wallet: data.walletBalance || 0,
+              wallet: data.balance || 0,
               winning: data.winningMoney || 0,
             });
           } else {
