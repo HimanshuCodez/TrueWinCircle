@@ -155,7 +155,7 @@ const WinGame = () => {
     if (!user) return;
     const userDocRef = doc(db, 'users', user.uid);
     const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
-      if (docSnap.exists()) setWalletBalance(docSnap.data().walletBalance || 0);
+      if (docSnap.exists()) setWalletBalance(docSnap.data().balance || 0);
     });
     return unsubscribe;
   }, [user]);
