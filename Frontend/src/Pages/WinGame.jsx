@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { doc, collection, addDoc, runTransaction, onSnapshot, serverTimestamp, query, where, getDocs, writeBatch } from 'firebase/firestore';
+import { doc, collection, addDoc, runTransaction, onSnapshot, serverTimestamp, query, where, getDocs, writeBatch, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import useAuthStore from '../store/authStore';
 import { toast } from 'react-toastify';
@@ -8,9 +8,6 @@ import { Zap, Clock, Gift, Loader2 } from 'lucide-react';
 // --- IMPORTANT --- 
 // This file contains game logic that should be on a backend server (like a Firebase Cloud Function).
 // Running this on the client is insecure and unreliable. This is a temporary solution to make the game functional.
-// You will also need to manually create the initial game state document in Firestore:
-// Collection: `game_state`, Document ID: `win_game_1_to_12`
-// Fields: `roundId` (Number), `roundEndsAt` (Timestamp), `lastRoundProcessed` (Number), `lastWinningNumber` (Number | null)
 
 const GAME_DURATION_SECONDS = 120;
 const BETTING_PERIOD_SECONDS = 60;
@@ -60,13 +57,10 @@ const WinGame = () => {
     console.log(`Winning number is: ${winningNumber}`);
 
     const batch = writeBatch(db);
-
-    // Save the official round result for historical purposes
     const roundResultRef = doc(db, 'wingame_rounds', String(roundId));
     batch.set(roundResultRef, { winningNumber: winningNumber, createdAt: serverTimestamp() });
 
-    const userWinnings = {}; // { userId: totalWinnings, ... }
-
+    const userWinnings = {};
     querySnapshot.forEach(doc => {
       const bet = doc.data();
       const betRef = doc.ref;
@@ -118,18 +112,41 @@ const WinGame = () => {
       const newRoundId = Date.now();
       const newRoundEndTime = new Date(newRoundId + GAME_DURATION_SECONDS * 1000);
       
-      await runTransaction(db, async (transaction) => {
-          transaction.update(gameStateRef, {
-              lastWinningNumber: winningNumber,
-              roundId: newRoundId,
-              roundEndsAt: newRoundEndTime,
-          });
-      });
+      await setDoc(gameStateRef, {
+        lastWinningNumber: winningNumber,
+        roundId: newRoundId,
+        roundEndsAt: newRoundEndTime,
+      }, { merge: true });
 
     } catch (error) {
-      if (error.code !== 'aborted') { // 'aborted' means another client won the transaction race, which is fine.
+      if (error.code !== 'aborted') {
         console.error("Error in round-end process:", error);
       }
+    }
+  }, []);
+
+  const initializeGameState = useCallback(async () => {
+    const gameStateRef = doc(db, 'game_state', 'win_game_1_to_12');
+    try {
+        await runTransaction(db, async (transaction) => {
+            const gameStateDoc = await transaction.get(gameStateRef);
+            if (gameStateDoc.exists()) {
+                return; // Already initialized by another client
+            }
+            const now = Date.now();
+            const initialData = {
+                roundId: now,
+                roundEndsAt: new Date(now + GAME_DURATION_SECONDS * 1000),
+                lastRoundProcessed: 0,
+                lastWinningNumber: null,
+            };
+            transaction.set(gameStateRef, initialData);
+        });
+        console.log("Game initialized successfully!");
+    } catch (error) {
+        if (error.code !== 'aborted') {
+            console.error("Failed to initialize game state:", error);
+        }
     }
   }, []);
 
@@ -147,8 +164,9 @@ const WinGame = () => {
     const gameStateRef = doc(db, 'game_state', 'win_game_1_to_12');
     const unsubscribe = onSnapshot(gameStateRef, (docSnap) => {
       if (!docSnap.exists()) {
-        console.error("CRITICAL: Game state document does not exist!");
+        console.log("Game state not found, attempting to initialize...");
         setGameState({ stage: 'loading', timeLeft: 0, roundId: null });
+        initializeGameState();
         return;
       }
       
@@ -170,7 +188,7 @@ const WinGame = () => {
       }
     });
     return unsubscribe;
-  }, [initiateRoundEndProcess]);
+  }, [initiateRoundEndProcess, initializeGameState]);
 
   const handleBetSubmit = async () => {
     if (!user) return toast.error('Please log in to bet.');
