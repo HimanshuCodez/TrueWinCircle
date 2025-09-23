@@ -105,7 +105,7 @@ export default function Navbar() {
           <Link to="/" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>Games</Link>
           <Link to="/" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>Results</Link>
           <Link to="/" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>How to Play</Link>
-
+  <Link to="/Privacy" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>Terms & Conditions</Link>
           <div className="w-3/4 border-t border-gray-700 my-1"></div>
 
           {user ? (
@@ -115,6 +115,7 @@ export default function Navbar() {
               <Link to="/History" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>History</Link>
               <Link to="/Withdraw" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>Withdraw</Link>
               <Link to="/AddCash" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>Add Cash</Link>
+            
               <Link to="/Support" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>Support</Link>
               <button onClick={handleLogout} className="hover:text-yellow-500">Logout</button>
             </>
