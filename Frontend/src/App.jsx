@@ -26,6 +26,8 @@ import ReferralScreen from './components/Refer';
 import Profile from './Pages/Profile';
 import Support from './Pages/Support';
 import ProfileCard from './Pages/Profile';
+import History from './Pages/History';
+import PrivacyPolicy from './components/PrivacyPolicy';
 
 const AppContent = () => {
   const location = useLocation();
@@ -62,6 +64,8 @@ const AppContent = () => {
         <Route path="/payconfirm" element={<PaymentConfirmation />} />
         <Route path="/Wallet" element={<MyWallet />} />
         <Route path="/Support" element={<Support />} />
+        <Route path="/History" element={<History />} />
+        <Route path="/Privacy" element={< PrivacyPolicy/>} />
         <Route path="/Profile" element={<ProfileCard />} />
         <Route path="/Reffer" element={<ReferralScreen />} />
         <Route path="/Admin" element={<AdminDashboard />} />

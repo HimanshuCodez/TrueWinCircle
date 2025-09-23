@@ -1,11 +1,11 @@
 import { useNavigate } from 'react-router-dom';
-
 import { useState } from 'react';
 import { toast } from 'react-toastify';
 
 export function AddCash() {
   const navigate = useNavigate();
   const [amount, setAmount] = useState('');
+  const [message, setMessage] = useState(''); // New state for message
 
   const handleNext = () => {
     const parsedAmount = parseInt(amount);
@@ -13,7 +13,12 @@ export function AddCash() {
       toast.error('Please enter an amount between ₹50 and ₹1,000,000');
       return;
     }
+    if (!message.trim()) {
+      toast.error('Please provide a message for the payment.');
+      return;
+    }
     window.localStorage.setItem('Amount', parsedAmount);
+    window.localStorage.setItem('PaymentMessage', message); // Save message
     navigate('/Pay');
   };
 
@@ -60,6 +65,21 @@ export function AddCash() {
                 ₹{val}
               </button>
             ))}
+          </div>
+
+          <div>
+            <label htmlFor="message-input" className="block text-sm font-medium text-gray-400 mb-2">
+              Message (Required)
+            </label>
+            <textarea
+              id="message-input"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition"
+              placeholder="e.g., Transaction ID, or payment details"
+              rows="3"
+              required
+            />
           </div>
 
           <button

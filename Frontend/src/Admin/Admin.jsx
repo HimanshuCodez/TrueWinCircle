@@ -100,28 +100,29 @@ const AdminDashboard = () => {
   };
 
   // --- ACTION HANDLERS ---
-  const handlePaymentApproval = async (paymentId, action, userId, amount) => {
+  const handlePaymentApproval = async (paymentId, action, userId, amount, reason = null) => {
     try {
       await runTransaction(db, async (transaction) => {
         const paymentRef = doc(db, 'top-ups', paymentId);
         const userRef = doc(db, 'users', userId);
 
-        // --- ALL READS FIRST ---
         let userSnap;
         if (action === 'approved') {
-          userSnap = await transaction.get(userRef); // READ 1
+          userSnap = await transaction.get(userRef);
         }
-        // --- END ALL READS ---
 
-        // --- ALL WRITES AFTER ALL READS ---
-        transaction.update(paymentRef, { status: action }); // WRITE 1
+        const paymentUpdateData = { status: action };
+        if (action === 'rejected' && reason) {
+          paymentUpdateData.adminComment = reason;
+        }
+        transaction.update(paymentRef, paymentUpdateData);
 
         if (action === 'approved') {
           if (userSnap.exists()) {
-            const currentBalance = userSnap.data().balance || 0;
-            transaction.update(userRef, { balance: currentBalance + amount }); // WRITE 2
+            const currentBalance = userSnap.data().walletBalance || 0;
+            transaction.update(userRef, { walletBalance: currentBalance + amount });
           } else {
-            transaction.set(userRef, { balance: amount, winningMoney: 0, createdAt: new Date() }); // WRITE 3
+            transaction.set(userRef, { walletBalance: amount, winningMoney: 0, createdAt: new Date() });
           }
         }
       });
