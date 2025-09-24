@@ -155,7 +155,7 @@ const WinGame = () => {
     if (!user) return;
     const userDocRef = doc(db, 'users', user.uid);
     const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
-      if (docSnap.exists()) setWalletBalance(docSnap.data().balance || 0);
+      if (docSnap.exists()) setWalletBalance(docSnap.data().balance || 0); // CORRECTED
     });
     return unsubscribe;
   }, [user]);
@@ -220,11 +220,11 @@ const WinGame = () => {
       await runTransaction(db, async (transaction) => {
         const userDocRef = doc(db, 'users', user.uid);
         const userDoc = await transaction.get(userDocRef);
-        if (!userDoc.exists() || (userDoc.data().walletBalance || 0) < betAmount) {
+        if (!userDoc.exists() || (userDoc.data().balance || 0) < betAmount) { // CORRECTED
           throw new Error('Insufficient balance.');
         }
-        const newBalance = userDoc.data().walletBalance - betAmount;
-        transaction.update(userDocRef, { walletBalance: newBalance });
+        const newBalance = userDoc.data().balance - betAmount; // CORRECTED
+        transaction.update(userDocRef, { balance: newBalance }); // CORRECTED
 
         const betDocRef = doc(collection(db, 'wingame_bets'));
         transaction.set(betDocRef, {

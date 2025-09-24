@@ -110,10 +110,10 @@ const AdminDashboard = () => {
 
         if (action === 'approved') {
           if (userSnap.exists()) {
-            const currentBalance = userSnap.data().walletBalance || 0;
-            transaction.update(userRef, { walletBalance: currentBalance + amount });
+            const currentBalance = userSnap.data().balance || 0;
+            transaction.update(userRef, { balance: currentBalance + amount });
           } else {
-            transaction.set(userRef, { walletBalance: amount, winningMoney: 0, createdAt: new Date() });
+            transaction.set(userRef, { balance: amount, winningMoney: 0, createdAt: new Date() });
           }
         }
       });
