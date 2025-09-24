@@ -121,7 +121,7 @@ export default function CasinoRoulette() {
         setWinningNumber(newWinningNumber);
         setRecent((prev) => [newWinningNumber, ...prev].slice(0, 10));
         handlePayout(newWinningNumber, selectedBetType, parsedBetAmount);
-        setBetAmount("");
+        setBetAmount(0);
         setSelectedBetType(null);
       }, 5500); // Spin duration + 0.5s buffer
 
