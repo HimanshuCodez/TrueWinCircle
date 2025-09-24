@@ -12,9 +12,9 @@ export default function Footer() {
         </p>
         <div className="flex justify-center gap-6 text-sm opacity-80">
           
-          <Link href="/Privacy" className="hover:text-yellow-400 transition">Privacy Policy</Link>
-          <Link href="/Privacy" className="hover:text-yellow-400 transition">Terms</Link>
-          <Link href="/Support" className="hover:text-yellow-400 transition">Support</Link>
+          <Link to="/Privacy" className="hover:text-yellow-400 transition">Privacy Policy</Link>
+          <Link to="/Privacy" className="hover:text-yellow-400 transition">Terms</Link>
+          <Link to="/Support" className="hover:text-yellow-400 transition">Support</Link>
         </div>
       </div>
     </footer>
