@@ -22,6 +22,15 @@ const WinGame = () => {
   const [selectedNumber, setSelectedNumber] = useState(null);
   const [betAmount, setBetAmount] = useState(10);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isBettingClosedModalOpen, setIsBettingClosedModalOpen] = useState(false);
+
+  const handleNumberClick = (number) => {
+    if (gameState.stage === 'betting') {
+      setSelectedNumber(number);
+    } else {
+      setIsBettingClosedModalOpen(true);
+    }
+  };
 
   // --- BACKEND LOGIC (RUNNING ON CLIENT AS A TEMPORARY SOLUTION) ---
   const calculateAndDistributeWinnings = async (roundId) => {
@@ -272,15 +281,19 @@ const WinGame = () => {
 
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 mb-6">
           {[...Array(12).keys()].map(i => (
-            <button 
-              key={i + 1} 
-              onClick={() => setSelectedNumber(i + 1)}
-              disabled={gameState.stage !== 'betting'}
-              className={`py-5 rounded-lg text-2xl font-bold transition-all duration-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed ${
-                selectedNumber === i + 1 
-                ? 'bg-yellow-500 text-black scale-110' 
-                : 'bg-gray-700 hover:bg-gray-600'
-              }`}>
+            <button
+              key={i + 1}
+              onClick={() => handleNumberClick(i + 1)}
+              className={`py-5 rounded-lg text-2xl font-bold transition-all text-black duration-200 shadow-md ${
+                selectedNumber === i + 1
+                  ? 'bg-yellow-500 text-black scale-110'
+                  : 'bg-gray-100'
+              } ${
+                gameState.stage !== 'betting'
+                  ? 'opacity-50 cursor-not-allowed'
+                  : 'hover:bg-gray-600'
+              }`}
+            >
               {i + 1}
             </button>
           ))}
@@ -317,6 +330,20 @@ const WinGame = () => {
         </div>
 
       </div>
+      {isBettingClosedModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-lg shadow-xl p-6 w-11/12 max-w-sm text-center">
+            <h3 className="text-xl font-bold text-yellow-400 mb-4">Betting Closed</h3>
+            <p className="text-gray-300 mb-6">The betting window for this round is closed. Please wait for the next round to begin.</p>
+            <button
+              onClick={() => setIsBettingClosedModalOpen(false)}
+              className="bg-yellow-500 text-black font-bold py-2 px-6 rounded-lg hover:bg-yellow-600 transition-colors"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

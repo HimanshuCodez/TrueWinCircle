@@ -10,30 +10,20 @@ const ResultChart = ({ marketName, onClose }) => {
   useEffect(() => {
     const fetchResults = async () => {
       setLoading(true);
-      try {
-        const resultsRef = collection(db, 'results');
-        const q = query(
-          resultsRef,
-          where('market', '==', marketName),
-          orderBy('date', 'desc'),
-          limit(7)
-        );
-        const querySnapshot = await getDocs(q);
-        const fetchedResults = querySnapshot.docs.map(doc => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            date: data.date.toDate(), 
-            number: data.number,
-          }
-        });
-        setResults(fetchedResults);
-      } catch (error) {
-        console.error(`Error fetching results for ${marketName}: `, error);
-        setResults([]); // Set to empty array on error
-      } finally {
+      // Simulate fetching data with a delay
+      setTimeout(() => {
+        const dummyResults = [
+          { id: '1', date: new Date(new Date().setDate(new Date().getDate() - 0)), number: '42' },
+          { id: '2', date: new Date(new Date().setDate(new Date().getDate() - 1)), number: '17' },
+          { id: '3', date: new Date(new Date().setDate(new Date().getDate() - 2)), number: '88' },
+          { id: '4', date: new Date(new Date().setDate(new Date().getDate() - 3)), number: '05' },
+          { id: '5', date: new Date(new Date().setDate(new Date().getDate() - 4)), number: '91' },
+          { id: '6', date: new Date(new Date().setDate(new Date().getDate() - 5)), number: '33' },
+          { id: '7', date: new Date(new Date().setDate(new Date().getDate() - 6)), number: '76' },
+        ];
+        setResults(dummyResults);
         setLoading(false);
-      }
+      }, 1000); // 1 second delay to show loader
     };
 
     fetchResults();
