@@ -44,7 +44,7 @@ const ShreeGaneshCard = () => {
           <div className="flex items-center gap-2 text-red-600 text-lg font-bold">
             <span>{`{ 23 }`}</span>
             <span className="text-black">{`→`}</span>
-            <span>{`[ ** ]`}</span>
+            <span>{`[ 67 ]`}</span>
           </div>
 
           {/* Market Running */}
@@ -68,10 +68,10 @@ const ShreeGaneshCard = () => {
           {/* Timings */}
           <div className="flex justify-between text-sm text-gray-700 w-full mt-3">
             <p>
-              <span className="font-medium">Open:</span> 03:00 PM
+              <span className="font-medium">Open:</span> 12:00 PM
             </p>
             <p>
-              <span className="font-medium">Close:</span> 08:40 PM
+              <span className="font-medium">Close:</span> 08:00 PM
             </p>
           </div>
         </div>

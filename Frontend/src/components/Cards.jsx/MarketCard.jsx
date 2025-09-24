@@ -39,7 +39,7 @@ const MarketCard = () => {
           <div className="flex items-center gap-2 text-red-600 text-lg font-bold">
             <span>{`{ 23 }`}</span>
             <span className="text-black">{`→`}</span>
-            <span>{`[ ** ]`}</span>
+            <span>{`[ 78 ]`}</span>
           </div>
 
           {/* Market Running */}

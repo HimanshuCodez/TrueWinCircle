@@ -44,7 +44,7 @@ const DhanKuberCard = () => {
           <div className="flex items-center gap-2 text-red-600 text-lg font-bold">
             <span>{`{ ** }`}</span>
             <span className="text-black">{`→`}</span>
-            <span>{`[ ** ]`}</span>
+            <span>{`[ 68 ]`}</span>
           </div>
 
           {/* Market Running */}
@@ -68,10 +68,10 @@ const DhanKuberCard = () => {
           {/* Timings */}
           <div className="flex justify-between text-sm text-gray-700 w-full mt-3">
             <p>
-              <span className="font-medium">Open:</span> 03:00 PM
+              <span className="font-medium">Open:</span> 11:00 PM
             </p>
             <p>
-              <span className="font-medium">Close:</span> 08:40 PM
+              <span className="font-medium">Close:</span> 05:40 PM
             </p>
           </div>
         </div>

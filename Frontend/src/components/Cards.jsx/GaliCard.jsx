@@ -42,9 +42,9 @@ const GaliCard = () => {
         <div onClick={() => setOpen(true)} className="cursor-pointer flex flex-col items-center justify-center gap-2 py-4 px-3">
           {/* Status line */}
           <div className="flex items-center gap-2 text-red-600 text-lg font-bold">
-            <span>{`{ ** }`}</span>
+            <span>{`{ 12 }`}</span>
             <span className="text-black">{`→`}</span>
-            <span>{`[ ** ]`}</span>
+            <span>{`[ 45 ]`}</span>
           </div>
 
           {/* Market Running */}
