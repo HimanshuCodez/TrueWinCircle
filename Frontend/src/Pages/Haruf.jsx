@@ -12,6 +12,8 @@ const BetBox = ({ num, value, onChange }) => (
       </div>
       <input
         type="number"
+        pattern="[0-9]*"
+        inputMode="numeric"
         min="0"
         value={value || ""}
         onChange={(e) => onChange(num, e.target.value)}
@@ -42,9 +44,10 @@ const HarufGrid = () => {
   }, [user]);
 
   const handleInputChange = (num, value) => {
+    const sanitizedValue = value.replace(/[^0-9]/g, "");
     setBets((prev) => ({
       ...prev,
-      [num]: value ? parseInt(value) : "",
+      [num]: sanitizedValue,
     }));
   };
 
@@ -142,10 +145,10 @@ const HarufGrid = () => {
 
   return (
     <div className="flex flex-col items-center w-full pb-20">
-      {/* Numbers 00–99 */}
+      {/* Numbers 01–100 */}
       <div className="grid grid-cols-10 gap-2 p-2">
         {Array.from({ length: 100 }, (_, i) => (
-          <BetBox key={i} num={i} value={bets[i]} onChange={handleInputChange} />
+          <BetBox key={i + 1} num={i + 1} value={bets[i + 1]} onChange={handleInputChange} />
         ))}
       </div>
 
@@ -160,6 +163,8 @@ const HarufGrid = () => {
               </div>
               <input
                 type="number"
+                pattern="[0-9]*"
+                inputMode="numeric"
                 min="0"
                 value={bets[`A${i}`] || ""}
                 onChange={(e) => handleInputChange(`A${i}`, e.target.value)}
@@ -181,6 +186,8 @@ const HarufGrid = () => {
               </div>
               <input
                 type="number"
+                pattern="[0-9]*"
+                inputMode="numeric"
                 min="0"
                 value={bets[`B${i}`] || ""}
                 onChange={(e) => handleInputChange(`B${i}`, e.target.value)}

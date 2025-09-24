@@ -66,7 +66,7 @@ const AppContent = () => {
         <Route path="/Wallet" element={<MyWallet />} />
         <Route path="/Support" element={<Support />} />
         <Route path="/History" element={<History />} />
-        <Route path="/Privacy" element={< PrivacyPolicy/>} />
+        <Route path="/Privacy" element={<PrivacyPolicy/>} />
         <Route path="/Profile" element={<ProfileCard />} />
         <Route path="/Reffer" element={<ReferralScreen />} />
         <Route path="/BettingHistory" element={<BettingHistory />} />
