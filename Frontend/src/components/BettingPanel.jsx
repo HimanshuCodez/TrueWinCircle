@@ -40,7 +40,8 @@ export default function BettingPanel({ betAmount, setBetAmount, spinWheel, spinn
           <span className="text-sm font-semibold">{balance.toFixed(2)}</span>
           <button 
             onClick={() => handleBetChange(-1)}
-            className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center hover:bg-gray-600"
+            disabled={parsedBetAmount <= 10}
+            className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Minus size={20} />
           </button>
