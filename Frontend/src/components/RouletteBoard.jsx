@@ -11,7 +11,13 @@ const redNumbers = [
   25, 27, 30, 32, 34, 36,
 ];
 
+const blackNumbers = [
+  2, 4, 6, 8, 10, 11, 13, 15, 17, 20, 22, 24,
+  26, 28, 29, 31, 33, 35,
+];
+
 const isRed = (num) => redNumbers.includes(Number(num));
+const isBlack = (num) => blackNumbers.includes(Number(num));
 
 export default function RouletteBoard({ setSelectedBetType, selectedBetType }) {
   return (
@@ -44,7 +50,7 @@ export default function RouletteBoard({ setSelectedBetType, selectedBetType }) {
                     onClick={() => setSelectedBetType(num)}
                     className={`w-9 h-9 md:w-16 md:h-16 flex items-center justify-center text-white text-sm md:text-lg font-bold border-r border-b border-white cursor-pointer transition-all
                       ${isRed(num) ? "bg-red-600" : "bg-black"}
-                      ${selectedBetType === num ? "ring-2 ring-yellow-500 z-10 scale-110" : "hover:bg-opacity-75"}`}>
+                      ${(selectedBetType === num || (selectedBetType === "red" && isRed(num)) || (selectedBetType === "black" && isBlack(num))) ? "ring-2 ring-yellow-500 z-10 scale-110" : "hover:bg-opacity-75"}`}>
                     {num}
                   </div>
                 ))
