@@ -18,6 +18,10 @@ const blackNumbers = [
 
 const isRed = (num) => redNumbers.includes(Number(num));
 const isBlack = (num) => blackNumbers.includes(Number(num));
+const isOdd = (num) => Number(num) % 2 !== 0 && Number(num) > 0;
+const isEven = (num) => Number(num) % 2 === 0 && Number(num) > 0;
+const isHigh = (num) => Number(num) >= 19 && Number(num) <= 36;
+const isLow = (num) => Number(num) >= 1 && Number(num) <= 18;
 
 export default function RouletteBoard({ setSelectedBetType, selectedBetType }) {
   return (
@@ -50,7 +54,7 @@ export default function RouletteBoard({ setSelectedBetType, selectedBetType }) {
                     onClick={() => setSelectedBetType(num)}
                     className={`w-9 h-9 md:w-16 md:h-16 flex items-center justify-center text-white text-sm md:text-lg font-bold border-r border-b border-white cursor-pointer transition-all
                       ${isRed(num) ? "bg-red-600" : "bg-black"}
-                      ${(selectedBetType === num || (selectedBetType === "red" && isRed(num)) || (selectedBetType === "black" && isBlack(num))) ? "ring-2 ring-yellow-500 z-10 scale-110" : "hover:bg-opacity-75"}`}>
+                      ${(selectedBetType === num || (selectedBetType === "red" && isRed(num)) || (selectedBetType === "black" && isBlack(num)) || (selectedBetType === "odd" && isOdd(num)) || (selectedBetType === "even" && isEven(num)) || (selectedBetType === "19-36" && isHigh(num)) || (selectedBetType === "1-18" && isLow(num))) ? "ring-2 ring-yellow-500 z-10 scale-110" : "hover:bg-opacity-75"}`}>
                     {num}
                   </div>
                 ))
