@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { User, Menu, X, Wallet } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import useAuthStore from "../store/authStore";
 import { getAuth, signOut } from "firebase/auth";
 
@@ -10,6 +10,7 @@ export default function Navbar() {
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
   const auth = getAuth();
+  const location = useLocation();
 
   // Example wallet amount (replace with API/store value)
   const walletAmount = (user?.balance || 0) + (user?.winningMoney || 0);
@@ -25,11 +26,18 @@ export default function Navbar() {
     }
   };
 
+  const handleLogoClick = () => {
+    if (location.pathname === "/") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    // On other pages, the Link component will handle navigation to "/"
+  };
+
   return (
     <div className="fixed top-0 left-0 w-full bg-[#042346] text-white px-4 md:px-8 py-3 flex justify-between items-center shadow-md z-50">
       {/* Logo */}
       <div className="flex items-center gap-2">
-        <Link to={"/"} className="flex items-center gap-2">
+        <Link to={"/"} onClick={handleLogoClick} className="flex items-center gap-2">
         <div className="w-6 h-6 border-2 border-yellow-500 rounded-full"></div>
         <span className="font-bold text-lg">
           TrueWin<span className="text-yellow-500">Circle</span>
