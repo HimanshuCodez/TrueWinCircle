@@ -1,9 +1,18 @@
 import React, { useState } from "react";
 import HarufGrid from "../../Pages/Haruf"; // your betting component
 import { Play, BarChart2, X } from "lucide-react"; // icons
+import ResultChart from "../ResultChart";
 
 const MarketCard = () => {
-  const [open, setOpen] = useState(false);
+
+const [open, setOpen] = useState(false);
+ const [showChart, setShowChart] = useState(false);
+
+ 
+
+  if (showChart) {
+    return <ResultChart marketName="GHAZIABAD" onClose={() => setShowChart(false)} />;
+  }
 
   if (open) {
     return (
@@ -50,9 +59,9 @@ const MarketCard = () => {
           {/* Action row */}
           <div className="flex justify-between items-center w-full mt-2 px-2">
             {/* Left icon */}
-            <div className="flex items-center gap-1 text-red-500">
-              <BarChart2 size={35} />
-            </div>
+           <div onClick={(e) => { e.stopPropagation(); setShowChart(true); }} className="cursor-pointer flex items-center gap-1 text-red-500">
+                         <BarChart2 size={35} />
+                       </div>
 
             {/* Right play button */}
             <button className="bg-[#042346]  p-3 rounded-full hover:bg-yellow-600">
