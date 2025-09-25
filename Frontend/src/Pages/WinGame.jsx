@@ -322,7 +322,7 @@ const WinGame = () => {
             </div>
             <button 
               onClick={handleBetSubmit}
-              disabled={isSubmitting || gameState.stage !== 'betting'}
+              disabled={isSubmitting}
               className="w-full bg-green-600 text-white font-bold py-3 rounded-lg text-xl flex items-center justify-center hover:bg-green-700 transition-colors disabled:bg-gray-500">
               {isSubmitting ? <Loader2 className="animate-spin" /> : <Zap />}
               <span className="ml-2">Place Bet</span>
