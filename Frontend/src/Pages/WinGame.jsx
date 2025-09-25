@@ -169,10 +169,14 @@ const WinGame = () => {
     return unsubscribe;
   }, [user]);
 
-  // This effect syncs the game state from Firestore
+  // This effect syncs game state from Firestore and handles the countdown timer.
   useEffect(() => {
     const gameStateRef = doc(db, 'game_state', 'win_game_1_to_12');
+    let timerId = null;
+
     const unsubscribe = onSnapshot(gameStateRef, (docSnap) => {
+      if (timerId) clearInterval(timerId);
+
       if (!docSnap.exists()) {
         console.log("Game state not found, attempting to initialize...");
         setGameState(prev => ({ ...prev, stage: 'loading' }));
@@ -181,41 +185,35 @@ const WinGame = () => {
       }
       
       const data = docSnap.data();
+      const roundEndTime = data.roundEndsAt.toDate();
+      const currentRoundId = data.roundId;
+
       setLastWinningNumber(data.lastWinningNumber || null);
 
-      const now = Date.now();
-      const roundEndTime = data.roundEndsAt.toDate().getTime();
-      const currentRoundId = data.roundId;
-      const diffSeconds = Math.floor((roundEndTime - now) / 1000);
+      const updateTimer = () => {
+        const now = new Date();
+        const diffSeconds = Math.floor((roundEndTime - now) / 1000);
 
-      if (diffSeconds <= 0) {
-        setGameState({ stage: 'waiting', timeLeft: 0, roundId: currentRoundId });
-        initiateRoundEndProcess(currentRoundId);
-      } else if (diffSeconds <= (GAME_DURATION_SECONDS - BETTING_PERIOD_SECONDS)) {
-        setGameState({ stage: 'waiting', timeLeft: diffSeconds, roundId: currentRoundId });
-      } else {
-        setGameState({ stage: 'betting', timeLeft: diffSeconds - (GAME_DURATION_SECONDS - BETTING_PERIOD_SECONDS), roundId: currentRoundId });
-      }
-    });
-    return unsubscribe;
-  }, [initiateRoundEndProcess, initializeGameState]);
-
-  // This new effect handles the client-side countdown timer
-  useEffect(() => {
-    if (gameState.timeLeft <= 0) return;
-
-    const timerId = setInterval(() => {
-      setGameState(prev => {
-        if (prev.timeLeft <= 1) {
-          clearInterval(timerId);
-          return { ...prev, timeLeft: 0 };
+        if (diffSeconds <= 0) {
+          if (timerId) clearInterval(timerId);
+          setGameState({ stage: 'waiting', timeLeft: 0, roundId: currentRoundId });
+          initiateRoundEndProcess(currentRoundId);
+        } else if (diffSeconds <= (GAME_DURATION_SECONDS - BETTING_PERIOD_SECONDS)) {
+          setGameState({ stage: 'waiting', timeLeft: diffSeconds, roundId: currentRoundId });
+        } else {
+          setGameState({ stage: 'betting', timeLeft: diffSeconds - (GAME_DURATION_SECONDS - BETTING_PERIOD_SECONDS), roundId: currentRoundId });
         }
-        return { ...prev, timeLeft: prev.timeLeft - 1 };
-      });
-    }, 1000);
+      };
 
-    return () => clearInterval(timerId);
-  }, [gameState.timeLeft]); // It re-runs only when the timeLeft is reset by Firestore
+      updateTimer();
+      timerId = setInterval(updateTimer, 1000);
+    });
+
+    return () => {
+      unsubscribe();
+      if (timerId) clearInterval(timerId);
+    };
+  }, [initiateRoundEndProcess, initializeGameState]);
 
   const handleBetSubmit = async () => {
     if (!user) return toast.error('Please log in to bet.');
