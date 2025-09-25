@@ -220,7 +220,10 @@ const WinGame = () => {
     if (selectedNumber === null) return toast.error('Please select a number.');
     if (betAmount < 10) return toast.error('Minimum bet is ₹10.');
     if (walletBalance < betAmount) return toast.error('Insufficient balance.');
-    if (gameState.stage !== 'betting') return toast.error('Betting is closed for this round.');
+    if (gameState.stage !== 'betting') {
+      setIsBettingClosedModalOpen(true);
+      return;
+    }
 
     setIsSubmitting(true);
     try {
