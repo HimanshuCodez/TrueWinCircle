@@ -2,10 +2,31 @@ import { ArrowLeft, Megaphone, Copy } from "lucide-react";
 import { FaWhatsapp, FaFacebookF, FaTwitter, FaInstagram } from 'react-icons/fa';
 import { toast } from "react-toastify";
 import useAuthStore from "../store/authStore";
+import { useEffect, useState } from "react";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../firebase";
 
 export default function ReferralScreen() {
   const user = useAuthStore((state) => state.user);
   const referralCode = user?.referralCode || "N/A";
+  const [referrerName, setReferrerName] = useState(null);
+
+  useEffect(() => {
+    const fetchReferrerName = async () => {
+      if (user?.referredBy) {
+        try {
+          const referrerDocRef = doc(db, "users", user.referredBy);
+          const referrerDocSnap = await getDoc(referrerDocRef);
+          if (referrerDocSnap.exists()) {
+            setReferrerName(referrerDocSnap.data().name);
+          }
+        } catch (error) {
+          console.error("Error fetching referrer's name:", error);
+        }
+      }
+    };
+    fetchReferrerName();
+  }, [user?.referredBy]);
 
   const copyCode = async () => {
     try {
@@ -74,6 +95,13 @@ export default function ReferralScreen() {
                 </button>
               </div>
             </div>
+
+            {referrerName && (
+              <div className="mb-6 text-center">
+                <p className="text-gray-300 text-sm mb-2">You were referred by:</p>
+                <p className="font-bold text-yellow-500 text-xl">{referrerName}</p>
+              </div>
+            )}
 
             <p className="text-red-400 text-sm uppercase tracking-wide text-center mb-6">
               Share your referral code with friends

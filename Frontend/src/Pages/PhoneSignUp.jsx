@@ -77,16 +77,43 @@ const PhoneSignUp = () => {
 
       // Create user document in Firestore if it doesn't exist
       const userDocRef = doc(db, "users", user.uid);
+
+      let referrerId = null;
+      let bonusAmount = 0;
+      if (referralCodeInput) {
+        const referrerQuery = query(collection(db, "users"), where("referralCode", "==", referralCodeInput));
+        const referrerSnapshot = await getDocs(referrerQuery);
+
+        if (!referrerSnapshot.empty) {
+          const referrerDoc = referrerSnapshot.docs[0];
+          referrerId = referrerDoc.id;
+          bonusAmount = 50;
+          toast.success(`Referral code applied! You received ₹${bonusAmount} bonus.`);
+        } else {
+          toast.warn("Invalid referral code. No bonus applied.");
+        }
+      }
+
       await setDoc(userDocRef, {
         phoneNumber: user.phoneNumber,
-        name: name, // Add name
-        email: email, // Add email
-        referralCode: generatedReferralCode, // Add generated referral code
-        referredBy: referralCodeInput || null, // Add referral code input (if provided)
-        balance: 0,
+        name: name,
+        email: email,
+        referralCode: generatedReferralCode,
+        referredBy: referrerId,
+        balance: bonusAmount,
         winningMoney: 0,
         createdAt: new Date(),
-      }, { merge: true }); // Use merge: true to avoid overwriting existing data if any
+      }, { merge: true });
+
+      if (bonusAmount > 0) {
+        await addDoc(collection(db, "transactions"), {
+          userId: user.uid,
+          type: "referral_bonus",
+          amount: bonusAmount,
+          description: `Referral bonus from ${referralCodeInput}`,
+          createdAt: new Date(),
+        });
+      }
 
       toast.success("Sign in successful!");
       navigate("/");

@@ -29,10 +29,14 @@ const History = () => {
         // 3. Fetch Game Bets
         const betsQuery = query(collection(db, 'wingame_bets'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'));
 
-        const [depositsSnapshot, withdrawalsSnapshot, betsSnapshot] = await Promise.all([
+        // 4. Fetch Referral Bonuses
+        const referralBonusQuery = query(collection(db, 'transactions'), where('userId', '==', user.uid), where('type', '==', 'referral_bonus'), orderBy('createdAt', 'desc'));
+
+        const [depositsSnapshot, withdrawalsSnapshot, betsSnapshot, referralBonusSnapshot] = await Promise.all([
           getDocs(depositsQuery),
           getDocs(withdrawalsQuery),
           getDocs(betsQuery),
+          getDocs(referralBonusQuery),
         ]);
 
         const deposits = depositsSnapshot.docs.map(doc => ({
@@ -63,7 +67,15 @@ const History = () => {
           };
         });
 
-        const combinedHistory = [...deposits, ...withdrawals, ...bets];
+        const referralBonuses = referralBonusSnapshot.docs.map(doc => ({
+          id: doc.id,
+          type: 'referral_bonus',
+          amount: doc.data().amount,
+          status: 'Received',
+          date: doc.data().createdAt.toDate(),
+        }));
+
+        const combinedHistory = [...deposits, ...withdrawals, ...bets, ...referralBonuses];
         combinedHistory.sort((a, b) => b.date.getTime() - a.date.getTime());
 
         setHistory(combinedHistory);
@@ -113,6 +125,14 @@ const History = () => {
         sign = '-';
         statusText = item.status;
         statusColor = 'text-gray-400';
+        break;
+      case 'referral_bonus':
+        Icon = <Gift className="text-purple-500" />;
+        title = 'Referral Bonus';
+        amountColor = 'text-purple-500';
+        sign = '+';
+        statusText = item.status;
+        statusColor = 'text-green-400';
         break;
       default: return null;
     }
