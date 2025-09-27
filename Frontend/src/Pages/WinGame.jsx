@@ -25,11 +25,7 @@ const WinGame = () => {
   const [isBettingClosedModalOpen, setIsBettingClosedModalOpen] = useState(false);
 
   const handleNumberClick = (number) => {
-    if (gameState.stage === 'betting') {
-      setSelectedNumber(number);
-    } else {
-      setIsBettingClosedModalOpen(true);
-    }
+    setSelectedNumber(number);
   };
 
   // --- BACKEND LOGIC (RUNNING ON CLIENT AS A TEMPORARY SOLUTION) ---
