@@ -68,7 +68,7 @@ export default function RouletteBoard({ setSelectedBetType, selectedBetType }) {
                   key={`col${i + 1}`}
                   onClick={() => setSelectedBetType(`col${i + 1}`)}
                   className={`w-9 h-9 md:w-16 md:h-16 flex items-center justify-center border-r border-b border-t border-white cursor-pointer ${selectedBetType === `col${i + 1}` ? "ring-2 ring-yellow-500 z-10" : ""}`}>
-                  2:1
+                  2 to 1
                 </div>
               ))}
             </div>
