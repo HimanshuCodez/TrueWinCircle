@@ -83,7 +83,7 @@ export default function RouletteBoard({ setSelectedBetType, selectedBetType }) {
           {/* Bottom Section (aligned with the grid) */}
           <div className="flex text-white font-bold text-sm md:text-lg">
             <div className="w-12 md:w-16 shrink-0"></div> {/* Spacer for 0/00 column */}
-            <div className="grid grid-cols-3 w-[324px] md:w-[768px]">
+            <div className="grid grid-cols-3 w-[432px] md:w-[768px]">
               <div onClick={() => setSelectedBetType("1st12")} className={`flex-1 text-center border-b border-r border-white py-2 md:py-4 cursor-pointer ${selectedBetType === "1st12" ? "ring-2 ring-yellow-500 z-10" : ""}`}>1st 12</div>
               <div onClick={() => setSelectedBetType("2nd12")} className={`flex-1 text-center border-b border-r border-white py-2 md:py-4 cursor-pointer ${selectedBetType === "2nd12" ? "ring-2 ring-yellow-500 z-10" : ""}`}>2nd 12</div>
               <div onClick={() => setSelectedBetType("3rd12")} className={`flex-1 text-center border-b border-r border-white py-2 md:py-4 cursor-pointer ${selectedBetType === "3rd12" ? "ring-2 ring-yellow-500 z-10" : ""}`}>3rd 12</div>
@@ -92,7 +92,7 @@ export default function RouletteBoard({ setSelectedBetType, selectedBetType }) {
           </div>
           <div className="flex text-white font-bold text-sm md:text-lg">
             <div className="w-12 md:w-16 shrink-0"></div> {/* Spacer */}
-            <div className="grid grid-cols-6 w-[324px] md:w-[768px]">
+            <div className="grid grid-cols-6 w-[432px] md:w-[768px]">
               <div onClick={() => setSelectedBetType("1-18")} className={`flex-1 text-center border-b border-r border-white py-2 md:py-4 cursor-pointer ${selectedBetType === "1-18" ? "ring-2 ring-yellow-500 z-10" : ""}`}>1-18</div>
               <div onClick={() => setSelectedBetType("even")} className={`flex-1 text-center border-b border-r border-white py-2 md:py-4 cursor-pointer ${selectedBetType === "even" ? "ring-2 ring-yellow-500 z-10" : ""}`}>EVEN</div>
               <div onClick={() => setSelectedBetType("red")} className={`flex-1 text-center border-b border-r border-white py-2 md:py-4 cursor-pointer bg-red-600 ${selectedBetType === "red" ? "ring-2 ring-yellow-500 z-10" : ""}`}>◆</div>
