@@ -22,6 +22,12 @@ const isOdd = (num) => Number(num) % 2 !== 0 && Number(num) > 0;
 const isEven = (num) => Number(num) % 2 === 0 && Number(num) > 0;
 const isHigh = (num) => Number(num) >= 19 && Number(num) <= 36;
 const isLow = (num) => Number(num) >= 1 && Number(num) <= 18;
+const isFirst12 = (num) => Number(num) >= 1 && Number(num) <= 12;
+const isSecond12 = (num) => Number(num) >= 13 && Number(num) <= 24;
+const isThird12 = (num) => Number(num) >= 25 && Number(num) <= 36;
+const isCol1 = (num) => numbers[0].includes(String(num));
+const isCol2 = (num) => numbers[1].includes(String(num));
+const isCol3 = (num) => numbers[2].includes(String(num));
 
 export default function RouletteBoard({ setSelectedBetType, selectedBetType }) {
   return (
@@ -54,7 +60,7 @@ export default function RouletteBoard({ setSelectedBetType, selectedBetType }) {
                     onClick={() => setSelectedBetType(num)}
                     className={`w-9 h-9 md:w-16 md:h-16 flex items-center justify-center text-white text-sm md:text-lg font-bold border-r border-b border-white cursor-pointer transition-all
                       ${isRed(num) ? "bg-red-600" : "bg-black"}
-                      ${(selectedBetType === num || (selectedBetType === "red" && isRed(num)) || (selectedBetType === "black" && isBlack(num)) || (selectedBetType === "odd" && isOdd(num)) || (selectedBetType === "even" && isEven(num)) || (selectedBetType === "19-36" && isHigh(num)) || (selectedBetType === "1-18" && isLow(num))) ? "ring-2 ring-yellow-500 z-10 scale-110" : "hover:bg-opacity-75"}`}>
+                      ${(selectedBetType === num || (selectedBetType === "red" && isRed(num)) || (selectedBetType === "black" && isBlack(num)) || (selectedBetType === "odd" && isOdd(num)) || (selectedBetType === "even" && isEven(num)) || (selectedBetType === "19-36" && isHigh(num)) || (selectedBetType === "1-18" && isLow(num)) || (selectedBetType === '1st12' && isFirst12(num)) || (selectedBetType === '2nd12' && isSecond12(num)) || (selectedBetType === '3rd12' && isThird12(num)) || (selectedBetType === 'col1' && isCol1(num)) || (selectedBetType === 'col2' && isCol2(num)) || (selectedBetType === 'col3' && isCol3(num))) ? "ring-2 ring-yellow-500 z-10 scale-110" : "hover:bg-opacity-75"}`}>
                     {num}
                   </div>
                 ))
