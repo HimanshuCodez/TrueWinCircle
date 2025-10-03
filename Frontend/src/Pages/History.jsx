@@ -43,28 +43,33 @@ const History = () => {
           getDocs(harufBetsQuery),
         ]);
 
-        const deposits = depositsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          type: 'deposit',
-          amount: doc.data().amount,
-          status: doc.data().status,
-          date: doc.data().createdAt.toDate(),
-        }));
+        const deposits = depositsSnapshot.docs.map(doc => {
+          const data = doc.data();
+          if (!data.createdAt || typeof data.createdAt.toDate !== 'function') return null;
+          return {
+            id: doc.id,
+            type: 'deposit',
+            amount: data.amount,
+            status: data.status,
+            date: data.createdAt.toDate(),
+          };
+        }).filter(Boolean);
 
-        const withdrawals = withdrawalsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          type: 'withdrawal',
-          amount: doc.data().amount,
-          status: doc.data().status,
-          date: doc.data().createdAt.toDate(),
-        }));
+        const withdrawals = withdrawalsSnapshot.docs.map(doc => {
+          const data = doc.data();
+          if (!data.createdAt || typeof data.createdAt.toDate !== 'function') return null;
+          return {
+            id: doc.id,
+            type: 'withdrawal',
+            amount: data.amount,
+            status: data.status,
+            date: data.createdAt.toDate(),
+          };
+        }).filter(Boolean);
 
         const bets = betsSnapshot.docs.map(doc => {
           const data = doc.data();
-          // Wait until server confirms the timestamp to avoid errors
-          if (!data.createdAt) {
-            return null;
-          }
+          if (!data.createdAt || typeof data.createdAt.toDate !== 'function') return null;
           const date = data.createdAt.toDate();
 
           // Bet is still pending (no win/loss status)
@@ -86,18 +91,23 @@ const History = () => {
             status: `Bet on ${data.number}`,
             date: date,
           };
-        }).filter(Boolean); // Filter out any null entries
+        }).filter(Boolean);
 
-        const referralBonuses = referralBonusSnapshot.docs.map(doc => ({
-          id: doc.id,
-          type: 'referral_bonus',
-          amount: doc.data().amount,
-          status: 'Received',
-          date: doc.data().createdAt.toDate(),
-        }));
+        const referralBonuses = referralBonusSnapshot.docs.map(doc => {
+          const data = doc.data();
+          if (!data.createdAt || typeof data.createdAt.toDate !== 'function') return null;
+          return {
+            id: doc.id,
+            type: 'referral_bonus',
+            amount: data.amount,
+            status: 'Received',
+            date: data.createdAt.toDate(),
+          };
+        }).filter(Boolean);
 
         const harufBets = harufBetsSnapshot.docs.map(doc => {
           const data = doc.data();
+          if (!data.timestamp || typeof data.timestamp.toDate !== 'function') return null;
           const date = data.timestamp.toDate();
           let type = 'bet_placed';
           let displayAmount = data.betAmount;
@@ -116,7 +126,7 @@ const History = () => {
             status: `Haruf on ${data.selectedNumber}`,
             date: date,
           };
-        });
+        }).filter(Boolean);
 
         const combinedHistory = [...deposits, ...withdrawals, ...bets, ...referralBonuses, ...harufBets];
         combinedHistory.sort((a, b) => b.date.getTime() - a.date.getTime());
