@@ -21,19 +21,19 @@ const History = () => {
 
       try {
         // 1. Fetch Deposits
-        const depositsQuery = query(collection(db, 'top-ups'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'));
+        const depositsQuery = query(collection(db, 'top-ups'), where('userId', '==', user.uid));
         
         // 2. Fetch Withdrawals
-        const withdrawalsQuery = query(collection(db, 'withdrawals'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'));
+        const withdrawalsQuery = query(collection(db, 'withdrawals'), where('userId', '==', user.uid));
 
         // 3. Fetch Game Bets
-        const betsQuery = query(collection(db, 'wingame_bets'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'));
+        const betsQuery = query(collection(db, 'wingame_bets'), where('userId', '==', user.uid));
 
         // 4. Fetch Referral Bonuses
-        const referralBonusQuery = query(collection(db, 'transactions'), where('userId', '==', user.uid), where('type', '==', 'referral_bonus'), orderBy('createdAt', 'desc'));
+        const referralBonusQuery = query(collection(db, 'transactions'), where('userId', '==', user.uid), where('type', '==', 'referral_bonus'));
 
         // 5. Fetch Haruf Bets
-        const harufBetsQuery = query(collection(db, 'harufBets'), where('userId', '==', user.uid), orderBy('timestamp', 'desc'));
+        const harufBetsQuery = query(collection(db, 'harufBets'), where('userId', '==', user.uid));
 
         const [depositsSnapshot, withdrawalsSnapshot, betsSnapshot, referralBonusSnapshot, harufBetsSnapshot] = await Promise.all([
           getDocs(depositsQuery),
