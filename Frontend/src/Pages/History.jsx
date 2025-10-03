@@ -35,12 +35,23 @@ const History = () => {
         // 5. Fetch Haruf Bets
         const harufBetsQuery = query(collection(db, 'harufBets'), where('userId', '==', user.uid));
 
-        const [depositsSnapshot, withdrawalsSnapshot, betsSnapshot, referralBonusSnapshot, harufBetsSnapshot] = await Promise.all([
+        // 6. Fetch Roulette Bets
+        const rouletteBetsQuery = query(collection(db, 'rouletteBets'), where('userId', '==', user.uid));
+
+        const [
+          depositsSnapshot, 
+          withdrawalsSnapshot, 
+          betsSnapshot, 
+          referralBonusSnapshot, 
+          harufBetsSnapshot,
+          rouletteBetsSnapshot
+        ] = await Promise.all([
           getDocs(depositsQuery),
           getDocs(withdrawalsQuery),
           getDocs(betsQuery),
           getDocs(referralBonusQuery),
           getDocs(harufBetsQuery),
+          getDocs(rouletteBetsQuery),
         ]);
 
         const deposits = depositsSnapshot.docs.map(doc => {
@@ -128,7 +139,30 @@ const History = () => {
           };
         }).filter(Boolean);
 
-        const combinedHistory = [...deposits, ...withdrawals, ...bets, ...referralBonuses, ...harufBets];
+        const rouletteBets = rouletteBetsSnapshot.docs.map(doc => {
+          const data = doc.data();
+          if (!data.timestamp || typeof data.timestamp.toDate !== 'function') return null;
+          const date = data.timestamp.toDate();
+          let type = 'bet_placed';
+          let displayAmount = data.betAmount;
+
+          if (data.status === 'win') {
+            type = 'win';
+            displayAmount = data.winnings || data.betAmount;
+          } else if (data.status === 'loss') {
+            type = 'loss';
+          }
+
+          return {
+            id: doc.id,
+            type: type,
+            amount: displayAmount,
+            status: `Roulette on ${data.betType}`,
+            date: date,
+          };
+        }).filter(Boolean);
+
+        const combinedHistory = [...deposits, ...withdrawals, ...bets, ...referralBonuses, ...harufBets, ...rouletteBets];
         combinedHistory.sort((a, b) => b.date.getTime() - a.date.getTime());
 
         setHistory(combinedHistory);
