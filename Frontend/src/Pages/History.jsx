@@ -3,7 +3,7 @@ import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import useAuthStore from '../store/authStore';
 import Loader from '../components/Loader';
-import { ArrowDownCircle, ArrowUpCircle, AlertTriangle, Trophy, ShieldX } from 'lucide-react';
+import { ArrowDownCircle, ArrowUpCircle, AlertTriangle, Trophy, ShieldX, Clock, Gift } from 'lucide-react';
 
 const History = () => {
   const user = useAuthStore((state) => state.user);
@@ -32,11 +32,15 @@ const History = () => {
         // 4. Fetch Referral Bonuses
         const referralBonusQuery = query(collection(db, 'transactions'), where('userId', '==', user.uid), where('type', '==', 'referral_bonus'), orderBy('createdAt', 'desc'));
 
-        const [depositsSnapshot, withdrawalsSnapshot, betsSnapshot, referralBonusSnapshot] = await Promise.all([
+        // 5. Fetch Haruf Bets
+        const harufBetsQuery = query(collection(db, 'harufBets'), where('userId', '==', user.uid), orderBy('timestamp', 'desc'));
+
+        const [depositsSnapshot, withdrawalsSnapshot, betsSnapshot, referralBonusSnapshot, harufBetsSnapshot] = await Promise.all([
           getDocs(depositsQuery),
           getDocs(withdrawalsQuery),
           getDocs(betsQuery),
           getDocs(referralBonusQuery),
+          getDocs(harufBetsQuery),
         ]);
 
         const deposits = depositsSnapshot.docs.map(doc => ({
@@ -57,15 +61,32 @@ const History = () => {
 
         const bets = betsSnapshot.docs.map(doc => {
           const data = doc.data();
+          // Wait until server confirms the timestamp to avoid errors
+          if (!data.createdAt) {
+            return null;
+          }
+          const date = data.createdAt.toDate();
+
+          // Bet is still pending (no win/loss status)
+          if (!data.status) {
+            return {
+              id: doc.id,
+              type: 'bet_placed',
+              amount: data.amount,
+              status: `Bet on ${data.number}`,
+              date: date,
+            };
+          }
+          
           const isWin = data.status === 'win';
           return {
             id: doc.id,
             type: isWin ? 'win' : 'loss',
             amount: isWin ? data.winnings || (data.amount * 10) : data.amount,
             status: `Bet on ${data.number}`,
-            date: data.createdAt.toDate(),
+            date: date,
           };
-        });
+        }).filter(Boolean); // Filter out any null entries
 
         const referralBonuses = referralBonusSnapshot.docs.map(doc => ({
           id: doc.id,
@@ -75,7 +96,29 @@ const History = () => {
           date: doc.data().createdAt.toDate(),
         }));
 
-        const combinedHistory = [...deposits, ...withdrawals, ...bets, ...referralBonuses];
+        const harufBets = harufBetsSnapshot.docs.map(doc => {
+          const data = doc.data();
+          const date = data.timestamp.toDate();
+          let type = 'bet_placed';
+          let displayAmount = data.betAmount;
+
+          if (data.status === 'win') {
+            type = 'win';
+            displayAmount = data.winnings || data.betAmount; // Use winnings if available
+          } else if (data.status === 'loss') {
+            type = 'loss';
+          }
+
+          return {
+            id: doc.id,
+            type: type,
+            amount: displayAmount,
+            status: `Haruf on ${data.selectedNumber}`,
+            date: date,
+          };
+        });
+
+        const combinedHistory = [...deposits, ...withdrawals, ...bets, ...referralBonuses, ...harufBets];
         combinedHistory.sort((a, b) => b.date.getTime() - a.date.getTime());
 
         setHistory(combinedHistory);
@@ -125,6 +168,14 @@ const History = () => {
         sign = '-';
         statusText = item.status;
         statusColor = 'text-gray-400';
+        break;
+      case 'bet_placed':
+        Icon = <Clock className="text-blue-400" />;
+        title = 'Bet Placed';
+        amountColor = 'text-gray-400';
+        sign = '-';
+        statusText = item.status;
+        statusColor = 'text-blue-400';
         break;
       case 'referral_bonus':
         Icon = <Gift className="text-purple-500" />;
