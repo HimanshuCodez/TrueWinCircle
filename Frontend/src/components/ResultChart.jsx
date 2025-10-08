@@ -68,7 +68,7 @@ const ResultChart = ({ marketName, onClose }) => {
                     </tbody>
                     </table>
                 ) : (
-                    <p className="text-center text-gray-500 mt-4">No data available.</p>
+                    <p className="text-center text-gray-500 mt-4">No Result available.</p>
                 )}
                 </div>
             )}

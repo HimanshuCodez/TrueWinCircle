@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
-import HarufGrid from "../../Pages/Haruf"; // your betting component
-import { Play, BarChart2, X } from "lucide-react"; // icons
+import HarufGrid from "../../Pages/Haruf";
+import { Play, BarChart2, X } from "lucide-react";
 import ResultChart from "../ResultChart";
 import { db } from "../../firebase";
 import { collection, query, where, getDocs, limit } from "firebase/firestore";
 
-const MarketCard = () => {
+const MarketCard = ({ marketName, openTime, closeTime }) => {
   const [open, setOpen] = useState(false);
   const [showChart, setShowChart] = useState(false);
   const [todayResult, setTodayResult] = useState("..");
@@ -15,7 +15,6 @@ const MarketCard = () => {
   useEffect(() => {
     const fetchResults = async () => {
       setLoading(true);
-      const marketName = "GHAZIABAD";
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -65,7 +64,7 @@ const MarketCard = () => {
           setYesterdayResult("..");
         }
       } catch (error) {
-        console.error("Error fetching results:", error);
+        console.error(`Error fetching results for ${marketName}:`, error);
         setTodayResult(
           Math.floor(Math.random() * 100)
             .toString()
@@ -77,12 +76,14 @@ const MarketCard = () => {
       }
     };
 
-    fetchResults();
-  }, []);
+    if (marketName) {
+      fetchResults();
+    }
+  }, [marketName]);
 
   if (showChart) {
     return (
-      <ResultChart marketName="GHAZIABAD" onClose={() => setShowChart(false)} />
+      <ResultChart marketName={marketName} onClose={() => setShowChart(false)} />
     );
   }
 
@@ -111,7 +112,7 @@ const MarketCard = () => {
       >
         {/* Header */}
         <div className="bg-yellow-500 text-black font-bold text-center py-2">
-          GHAZIABAD
+          {marketName}
         </div>
 
         {/* Body */}
@@ -160,10 +161,10 @@ const MarketCard = () => {
           {/* Timings */}
           <div className="flex justify-between text-sm text-gray-700 w-full mt-3">
             <p>
-              <span className="font-medium">Open:</span> 03:00 PM
+              <span className="font-medium">Open:</span> {openTime}
             </p>
             <p>
-              <span className="font-medium">Close:</span> 08:40 PM
+              <span className="font-medium">Close:</span> {closeTime}
             </p>
           </div>
         </div>

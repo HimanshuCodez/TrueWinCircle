@@ -7,19 +7,9 @@ import WinGame from './WinGame'
 import CasinoRoulette from './SpinWheel'
 import Footer from '../components/Footer'
 import MarketCard from '../components/Cards.jsx/MarketCard'
-import GaliCard from '../components/Cards.jsx/GaliCard'
-import DisawarCard from '../components/Cards.jsx/Disawar'
-import DhanKuberCard from '../components/Cards.jsx/DhanKuber'
-import ShreeGaneshCard from '../components/Cards.jsx/ShreeGanesh'
-import FaridabadCard from '../components/Cards.jsx/Faridabad'
-import DelhiBazaarCard from '../components/Cards.jsx/DelhiBazaar'
 import Carousel from '../components/Carousel'
 import Marquee from '../components/Marquee'
 import SocialButtons from '../components/Soical'
-
-
-
-
 
 const Home = () => {
   return (
@@ -29,14 +19,13 @@ const Home = () => {
 <SocialButtons/>
       <NextResultTimer/>
       <LiveBettingHighlights/>
-      <div className='mb-5'>   <MarketCard/></div>
-      <div className='mb-5'>   <DelhiBazaarCard/></div>
-
-      <div className='mb-5'>   <GaliCard/></div>
-      <div className='mb-5'>   <DisawarCard/></div>
-      <div className='mb-5'>   <DhanKuberCard/></div>
-      <div className='mb-5'>   <ShreeGaneshCard/></div>
-      <div className='mb-5'>   <FaridabadCard/></div>
+      <div className='mb-5'>   <MarketCard marketName="GHAZIABAD" openTime="03:00 PM" closeTime="08:40 PM" /></div>
+      <div className='mb-5'>   <MarketCard marketName="DELHI BAZAAR" openTime="08:00 PM" closeTime="06:40 PM" /></div>
+      <div className='mb-5'>   <MarketCard marketName="GALI" openTime="03:00 PM" closeTime="08:40 PM" /></div>
+      <div className='mb-5'>   <MarketCard marketName="DISAWAR" openTime="03:00 PM" closeTime="08:40 PM" /></div>
+      <div className='mb-5'>   <MarketCard marketName="DHAN KUBER" openTime="11:00 PM" closeTime="05:40 PM" /></div>
+      <div className='mb-5'>   <MarketCard marketName="SHREE GANESH" openTime="12:00 PM" closeTime="08:00 PM" /></div>
+      <div className='mb-5'>   <MarketCard marketName="FARIDABAD" openTime="03:00 PM" closeTime="08:40 PM" /></div>
     
    
         <WinGame/>
