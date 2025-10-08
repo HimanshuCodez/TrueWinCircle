@@ -1,17 +1,89 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import HarufGrid from "../../Pages/Haruf"; // your betting component
 import { Play, BarChart2, X } from "lucide-react"; // icons
 import ResultChart from "../ResultChart";
+import { db } from "../../firebase";
+import { collection, query, where, getDocs, limit } from "firebase/firestore";
 
 const MarketCard = () => {
+  const [open, setOpen] = useState(false);
+  const [showChart, setShowChart] = useState(false);
+  const [todayResult, setTodayResult] = useState("..");
+  const [yesterdayResult, setYesterdayResult] = useState("..");
+  const [loading, setLoading] = useState(true);
 
-const [open, setOpen] = useState(false);
- const [showChart, setShowChart] = useState(false);
+  useEffect(() => {
+    const fetchResults = async () => {
+      setLoading(true);
+      const marketName = "GHAZIABAD";
 
- 
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+
+      try {
+        const resultsRef = collection(db, "results");
+
+        // Fetch today's result
+        const qToday = query(
+          resultsRef,
+          where("marketName", "==", marketName),
+          where("date", ">=", today),
+          where("date", "<", tomorrow),
+          limit(1)
+        );
+        const todaySnapshot = await getDocs(qToday);
+
+        if (!todaySnapshot.empty) {
+          setTodayResult(todaySnapshot.docs[0].data().number);
+        } else {
+          setTodayResult(
+            Math.floor(Math.random() * 100)
+              .toString()
+              .padStart(2, "0")
+          );
+        }
+
+        // Fetch yesterday's result
+        const qYesterday = query(
+          resultsRef,
+          where("marketName", "==", marketName),
+          where("date", ">=", yesterday),
+          where("date", "<", today),
+          limit(1)
+        );
+        const yesterdaySnapshot = await getDocs(qYesterday);
+
+        if (!yesterdaySnapshot.empty) {
+          setYesterdayResult(yesterdaySnapshot.docs[0].data().number);
+        } else {
+          setYesterdayResult("..");
+        }
+      } catch (error) {
+        console.error("Error fetching results:", error);
+        setTodayResult(
+          Math.floor(Math.random() * 100)
+            .toString()
+            .padStart(2, "0")
+        );
+        setYesterdayResult("..");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchResults();
+  }, []);
 
   if (showChart) {
-    return <ResultChart marketName="GHAZIABAD" onClose={() => setShowChart(false)} />;
+    return (
+      <ResultChart marketName="GHAZIABAD" onClose={() => setShowChart(false)} />
+    );
   }
 
   if (open) {
@@ -46,9 +118,15 @@ const [open, setOpen] = useState(false);
         <div className="flex flex-col items-center justify-center gap-2 py-4 px-3">
           {/* Status line */}
           <div className="flex items-center gap-2 text-red-600 text-lg font-bold">
-            <span>{`{ 23 }`}</span>
-            <span className="text-black">{`→`}</span>
-            <span>{`[ 78 ]`}</span>
+            {loading ? (
+              <span>Loading...</span>
+            ) : (
+              <>
+                <span>{`{ ${yesterdayResult} }`}</span>
+                <span className="text-black">{`→`}</span>
+                <span>{`[ ${todayResult} ]`}</span>
+              </>
+            )}
           </div>
 
           {/* Market Running */}
@@ -59,13 +137,23 @@ const [open, setOpen] = useState(false);
           {/* Action row */}
           <div className="flex justify-between items-center w-full mt-2 px-2">
             {/* Left icon */}
-           <div onClick={(e) => { e.stopPropagation(); setShowChart(true); }} className="cursor-pointer flex items-center gap-1 text-red-500">
-                         <BarChart2 size={35} />
-                       </div>
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowChart(true);
+              }}
+              className="cursor-pointer flex items-center gap-1 text-red-500"
+            >
+              <BarChart2 size={35} />
+            </div>
 
             {/* Right play button */}
             <button className="bg-[#042346]  p-3 rounded-full hover:bg-yellow-600">
-              <Play onClick={() => setOpen(true)} className="text-white" size={24} />
+              <Play
+                onClick={() => setOpen(true)}
+                className="text-white"
+                size={24}
+              />
             </button>
           </div>
 
