@@ -84,12 +84,20 @@ export default function Navbar() {
             </div>
           </>
         ) : (
-          <Link
-            to="/testphonesignup"
-            className="bg-yellow-500 text-black font-bold px-5 py-2 rounded-full hover:bg-yellow-600"
-          >
-            JOIN NOW
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              to="/login"
+              className="bg-yellow-500 text-black font-bold px-5 py-2 rounded-full hover:bg-yellow-600"
+            >
+              Login
+            </Link>
+            <Link
+              to="/testphonesignup"
+              className="bg-gray-700 text-white font-bold px-5 py-2 rounded-full hover:bg-gray-600"
+            >
+              Sign Up
+            </Link>
+          </div>
         )}
       </div>
 
@@ -129,13 +137,22 @@ export default function Navbar() {
               <button onClick={handleLogout} className="hover:text-yellow-500">Logout</button>
             </>
           ) : (
-            <Link
-              to="/testphonesignup"
-              className="bg-yellow-500 text-black font-bold px-5 py-2 rounded-full hover:bg-yellow-600"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              JOIN NOW
-            </Link>
+            <div className="flex items-center gap-4">
+              <Link
+                to="/login"
+                className="bg-yellow-500 text-black font-bold px-5 py-2 rounded-full hover:bg-yellow-600"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Login
+              </Link>
+              <Link
+                to="/testphonesignup"
+                className="bg-gray-700 text-white font-bold px-5 py-2 rounded-full hover:bg-gray-600"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Sign Up
+              </Link>
+            </div>
           )}
         </div>
       )}

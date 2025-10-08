@@ -29,6 +29,7 @@ import ProfileCard from './Pages/Profile';
 import History from './Pages/History';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import BettingHistory from './components/BettingHistory';
+import PhoneSignIn from './Pages/PhoneSignIn';
 
 const AppContent = () => {
   const location = useLocation();
@@ -57,6 +58,7 @@ const AppContent = () => {
         <Route path="/spinwheel" element={<SpinWheel />} />
         <Route path="/fixnumber" element={<FixNumber />} />
         <Route path="/wingame" element={<WinGame />} />
+        <Route path="/login" element={<PhoneSignIn />} />
         <Route path="/testphonesignup" element={<PhoneSignUp />} />
         <Route path="/addcash" element={<AddCash />} />
         <Route path="/Profile" element={<Profile />} />
