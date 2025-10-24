@@ -173,6 +173,16 @@ export default function CasinoRoulette() {
           
           const currentWinningMoney = userDoc.data().winningMoney || 0;
           transaction.update(userDocRef, { winningMoney: currentWinningMoney + winnings });
+
+          // Add new winner doc inside the same transaction
+          const winnerDocRef = doc(collection(db, 'winners'));
+          transaction.set(winnerDocRef, {
+            userId: user.uid,
+            gameName: 'Roulette',
+            prize: winnings,
+            timestamp: serverTimestamp(),
+            status: 'pending_approval'
+          });
         });
         toast.success(`Congratulations! You won ₹${winnings.toFixed(2)}!`);
       } catch (e) {

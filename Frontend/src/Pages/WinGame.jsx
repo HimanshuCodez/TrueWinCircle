@@ -89,6 +89,16 @@ const WinGame = () => {
           const userDoc = await transaction.get(userDocRef);
           const currentWinnings = userDoc.exists() ? (userDoc.data().winningMoney || 0) : 0;
           transaction.update(userDocRef, { winningMoney: currentWinnings + amountToCredit });
+
+          // Add new winner doc inside the same transaction
+          const winnerDocRef = doc(collection(db, 'winners'));
+          transaction.set(winnerDocRef, {
+            userId: userId,
+            gameName: '1 to 12 Win',
+            prize: amountToCredit,
+            timestamp: serverTimestamp(),
+            status: 'pending_approval'
+          });
         });
       } catch (e) {
         console.error(`Failed to credit winnings for user ${userId}:`, e);
