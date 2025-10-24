@@ -6,12 +6,10 @@ export default function BettingPanel({ betAmount, setBetAmount, spinWheel, spinn
 
   const handleBetChange = (change) => {
     const newAmount = parsedBetAmount + change;
-    if (newAmount >= 1 && newAmount <= balance) {
+    if (newAmount >= 1) {
       setBetAmount(newAmount.toString());
-    } else if (newAmount < 1) {
+    } else {
       setBetAmount("1");
-    } else if (newAmount > balance) {
-      setBetAmount(balance.toString());
     }
   };
 

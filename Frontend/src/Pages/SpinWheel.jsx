@@ -86,7 +86,7 @@ export default function CasinoRoulette() {
     if (!user) return toast.error("Please log in to place a bet.");
     if (selectedBetType === null) return toast.error("Please select a bet type.");
     if (isNaN(parsedBetAmount) || parsedBetAmount <= 0) return toast.error("Please enter a valid bet amount.");
-    if (parsedBetAmount > balance) return toast.error("Insufficient balance.");
+    if (parsedBetAmount > balance) return toast.error("Insufficient balance, cannot spin the wheel.");
 
     setBettingLoading(true);
 

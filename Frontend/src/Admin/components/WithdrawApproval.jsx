@@ -16,7 +16,7 @@ const WithdrawApproval = ({ withdrawals, userDetails, handleWithdrawalApproval }
                 <th className="text-left p-4 font-medium">Amount</th>
                 <th className="text-left p-4 font-medium">Method</th>
                 <th className="text-left p-4 font-medium">Status</th>
-                <th className="text-left p-4 font-medium">Date</th>
+               
                 <th className="text-left p-4 font-medium">Actions</th>
               </tr>
             </thead>
@@ -37,7 +37,7 @@ const WithdrawApproval = ({ withdrawals, userDetails, handleWithdrawalApproval }
                       {withdrawal.status}
                     </span>
                   </td>
-                  <td className="p-4 text-gray-600">{withdrawal.date?.toDate().toLocaleString()}</td>
+                 
                   <td className="p-4">
                     {withdrawal.status === 'pending' && (
                       <div className="flex space-x-2">
