@@ -28,6 +28,8 @@ import WithdrawApproval from './components/WithdrawApproval';
 import DashboardView from './components/DashboardView';
 import MarqueeUpdate from './components/MarqueeUpdate';
 import AllUsers from './components/AllUsers'; // Import the new component
+import HarufUpdate from './components/harufUpdate';
+
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -179,7 +181,8 @@ const AdminDashboard = () => {
           { id: 'payments', label: 'Payment Approval', icon: CreditCard },
           { id: 'winners', label: 'Winner Announcement', icon: Trophy },
           { id: 'withdrawals', label: 'Withdrawal Approval', icon: DollarSign },
-          { id: 'marquee', label: 'Screen Text', icon: Edit }
+          { id: 'marquee', label: 'Screen Text', icon: Edit },
+          { id: 'harufUpdate', label: 'Market Results', icon: Edit }
         ].map(item => (
           <button
             key={item.id}
@@ -206,7 +209,7 @@ const AdminDashboard = () => {
         <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="md:hidden p-2">
             {isSidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
-        <h2 className="text-2xl font-semibold capitalize">{activeTab.replace('allUsers', 'All Users')}</h2>
+        <h2 className="text-2xl font-semibold capitalize">{activeTab.replace('allUsers', 'All Users').replace('harufUpdate', 'Market Results')}</h2>
       </div>
       
     </div>
@@ -247,6 +250,8 @@ const AdminDashboard = () => {
                 />;
       case 'marquee':
         return <MarqueeUpdate />;
+      case 'harufUpdate':
+        return <HarufUpdate />;
       default: 
         return <DashboardView stats={stats} />;
     }
