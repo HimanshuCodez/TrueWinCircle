@@ -27,19 +27,18 @@ const MarketCard = ({ marketName, openTime, closeTime }) => {
 
       try {
         const resultsRef = collection(db, "results");
+        const allResultsSnapshot = await getDocs(resultsRef); // Fetch all documents
+        const allResults = allResultsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        // Fetch today's result
-        const qToday = query(
-          resultsRef,
-          where("marketName", "==", marketName),
-          where("date", ">=", today),
-          where("date", "<", tomorrow),
-          limit(1)
+        // Filter for today's result
+        const todayResultDoc = allResults.find(result =>
+          result.marketName === marketName &&
+          result.date.toDate() >= today &&
+          result.date.toDate() < tomorrow
         );
-        const todaySnapshot = await getDocs(qToday);
 
-        if (!todaySnapshot.empty) {
-          setTodayResult(todaySnapshot.docs[0].data().number);
+        if (todayResultDoc) {
+          setTodayResult(todayResultDoc.number);
         } else {
           setTodayResult(
             Math.floor(Math.random() * 100)
@@ -48,20 +47,17 @@ const MarketCard = ({ marketName, openTime, closeTime }) => {
           );
         }
 
-        // Fetch yesterday's result
-        const qYesterday = query(
-          resultsRef,
-          where("marketName", "==", marketName),
-          where("date", ">=", yesterday),
-          where("date", "<", today),
-          limit(1)
+        // Filter for yesterday's result
+        const yesterdayResultDoc = allResults.find(result =>
+          result.marketName === marketName &&
+          result.date.toDate() >= yesterday &&
+          result.date.toDate() < today
         );
-        const yesterdaySnapshot = await getDocs(qYesterday);
 
-        if (!yesterdaySnapshot.empty) {
-          setYesterdayResult(yesterdaySnapshot.docs[0].data().number);
+        if (!yesterdayResultDoc) {
+          setYesterdayResult('..');
         } else {
-          setYesterdayResult("..");
+          setYesterdayResult(yesterdayResultDoc.number);
         }
       } catch (error) {
         console.error(`Error fetching results for ${marketName}:`, error);
@@ -70,7 +66,7 @@ const MarketCard = ({ marketName, openTime, closeTime }) => {
             .toString()
             .padStart(2, "0")
         );
-        setYesterdayResult("..");
+        setYesterdayResult('..');
       } finally {
         setLoading(false);
       }

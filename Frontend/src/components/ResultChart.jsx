@@ -12,9 +12,8 @@ const ResultChart = ({ marketName, onClose }) => {
       setLoading(true);
       try {
         const resultsRef = collection(db, 'results');
-        const q = query(resultsRef, where('marketName', '==', marketName), orderBy('date', 'desc'), limit(30));
-        const querySnapshot = await getDocs(q);
-        const fetchedResults = querySnapshot.docs.map(doc => {
+        const allResultsSnapshot = await getDocs(resultsRef); // Fetch all documents
+        let allResults = allResultsSnapshot.docs.map(doc => {
             const data = doc.data();
             return {
                 id: doc.id,
@@ -23,6 +22,16 @@ const ResultChart = ({ marketName, onClose }) => {
                 date: data.date.toDate(),
             };
         });
+
+        // Client-side filtering
+        allResults = allResults.filter(result => result.marketName === marketName);
+
+        // Client-side sorting by date in descending order
+        allResults.sort((a, b) => b.date.getTime() - a.date.getTime());
+
+        // Client-side limiting
+        const fetchedResults = allResults.slice(0, 30);
+
         setResults(fetchedResults);
       } catch (error) {
           console.error("Error fetching results: ", error);

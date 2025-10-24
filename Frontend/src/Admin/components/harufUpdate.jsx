@@ -25,6 +25,8 @@ const HarufUpdate = () => {
     setLoading(true);
     try {
       const resultsRef = collection(db, "results");
+      const allResultsSnapshot = await getDocs(resultsRef); // Fetch all documents
+      const allResults = allResultsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -33,32 +35,26 @@ const HarufUpdate = () => {
       const yesterday = new Date(today);
       yesterday.setDate(yesterday.getDate() - 1);
 
-      // Fetch today's result
-      const qToday = query(
-        resultsRef,
-        where("marketName", "==", market),
-        where("date", ">=", today),
-        where("date", "<", tomorrow),
-        limit(1)
+      // Filter for today's result
+      const todayResultDoc = allResults.find(result =>
+        result.marketName === market &&
+        result.date.toDate() >= today &&
+        result.date.toDate() < tomorrow
       );
-      const todaySnapshot = await getDocs(qToday);
-      if (!todaySnapshot.empty) {
-        setCurrentTodayResult(todaySnapshot.docs[0].data().number);
+      if (todayResultDoc) {
+        setCurrentTodayResult(todayResultDoc.number);
       } else {
         setCurrentTodayResult('..');
       }
 
-      // Fetch yesterday's result
-      const qYesterday = query(
-        resultsRef,
-        where("marketName", "==", market),
-        where("date", ">=", yesterday),
-        where("date", "<", today),
-        limit(1)
+      // Filter for yesterday's result
+      const yesterdayResultDoc = allResults.find(result =>
+        result.marketName === market &&
+        result.date.toDate() >= yesterday &&
+        result.date.toDate() < today
       );
-      const yesterdaySnapshot = await getDocs(qYesterday);
-      if (!yesterdaySnapshot.empty) {
-        setCurrentYesterdayResult(yesterdaySnapshot.docs[0].data().number);
+      if (yesterdayResultDoc) {
+        setCurrentYesterdayResult(yesterdayResultDoc.number);
       } else {
         setCurrentYesterdayResult('..');
       }
