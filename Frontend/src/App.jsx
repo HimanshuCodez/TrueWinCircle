@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from './firebase';
@@ -34,7 +34,15 @@ import PhoneSignIn from './Pages/PhoneSignIn';
 const AppContent = () => {
   const location = useLocation();
   // The Navbar will not be shown on the /Admin route
+  const navigate = useNavigate();
+  const { user } = useAuthStore();
   const showNavbar = location.pathname.toLowerCase() !== '/admin';
+
+  useEffect(() => {
+    if (user && user.role === 'admin') {
+      navigate('/Admin');
+    }
+  }, [user, navigate]);
 
   return (
     <>
@@ -72,8 +80,8 @@ const AppContent = () => {
         <Route path="/Profile" element={<ProfileCard />} />
         <Route path="/Reffer" element={<ReferralScreen />} />
         <Route path="/BettingHistory" element={<BettingHistory />} />
-        <Route path="/Admin" element={<AdminDashboard />} />
-        {/* <AdminRoute></AdminRoute> */}
+        <Route path="/Admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+        {/*  */}
       </Routes>
     
     </>
@@ -113,9 +121,7 @@ const App = () => {
   }
 
   return (
-    <Router>
-      <AppContent />
-    </Router>
+    <AppContent />
   );
 };
 
