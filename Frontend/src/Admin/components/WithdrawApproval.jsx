@@ -16,14 +16,14 @@ const WithdrawApproval = ({ withdrawals, userDetails, handleWithdrawalApproval }
                 <th className="text-left p-4 font-medium">Amount</th>
                 <th className="text-left p-4 font-medium">Method</th>
                 <th className="text-left p-4 font-medium">Status</th>
-             
+                <th className="text-left p-4 font-medium">Date</th>
                 <th className="text-left p-4 font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
               {withdrawals.map(withdrawal => (
                 <tr key={withdrawal.id} className="border-b hover:bg-gray-50">
-                  <td className="p-4">{userDetails[withdrawal.user]?.phoneNumber || withdrawal.user.name}</td>
+                  <td className="p-4">{userDetails[withdrawal.userId]?.name || 'Unknown User'}</td>
                   <td className="p-4 font-medium">₹{withdrawal.amount}</td>
                   <td className="p-4">{withdrawal.method}</td>
                   <td className="p-4">
@@ -37,7 +37,7 @@ const WithdrawApproval = ({ withdrawals, userDetails, handleWithdrawalApproval }
                       {withdrawal.status}
                     </span>
                   </td>
-                  <td className="p-4 text-gray-600">{withdrawal.date}</td>
+                  <td className="p-4 text-gray-600">{withdrawal.date?.toDate().toLocaleString()}</td>
                   <td className="p-4">
                     {withdrawal.status === 'pending' && (
                       <div className="flex space-x-2">
