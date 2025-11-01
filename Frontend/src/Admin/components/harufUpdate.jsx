@@ -20,13 +20,24 @@ const HarufUpdate = () => {
   const [currentTodayResult, setCurrentTodayResult] = useState('..');
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [history, setHistory] = useState([]);
 
-  const fetchCurrentResults = async (market) => {
+  const fetchResultsAndHistory = async (market) => {
     setLoading(true);
+    setCurrentTodayResult('..');
+    setCurrentYesterdayResult('..');
+    setHistory([]);
     try {
       const resultsRef = collection(db, "results");
-      const allResultsSnapshot = await getDocs(resultsRef); // Fetch all documents
-      const allResults = allResultsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const q = query(
+        resultsRef,
+        where("marketName", "==", market),
+        orderBy("date", "desc"),
+        limit(30) // Fetch last 30 results for history
+      );
+
+      const querySnapshot = await getDocs(q);
+      const results = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -35,40 +46,37 @@ const HarufUpdate = () => {
       const yesterday = new Date(today);
       yesterday.setDate(yesterday.getDate() - 1);
 
-      // Filter for today's result
-      const todayResultDoc = allResults.find(result =>
-        result.marketName === market &&
-        result.date.toDate() >= today &&
-        result.date.toDate() < tomorrow
-      );
-      if (todayResultDoc) {
-        setCurrentTodayResult(todayResultDoc.number);
-      } else {
-        setCurrentTodayResult('..');
+      let foundToday = false;
+      let foundYesterday = false;
+
+      for (const result of results) {
+        if (result.date) { // Ensure date exists
+            const resultDate = result.date.toDate();
+            if (!foundToday && resultDate >= today && resultDate < tomorrow) {
+                setCurrentTodayResult(result.number);
+                foundToday = true;
+            }
+            if (!foundYesterday && resultDate >= yesterday && resultDate < today) {
+                setCurrentYesterdayResult(result.number);
+                foundYesterday = true;
+            }
+        }
       }
 
-      // Filter for yesterday's result
-      const yesterdayResultDoc = allResults.find(result =>
-        result.marketName === market &&
-        result.date.toDate() >= yesterday &&
-        result.date.toDate() < today
-      );
-      if (yesterdayResultDoc) {
-        setCurrentYesterdayResult(yesterdayResultDoc.number);
-      } else {
-        setCurrentYesterdayResult('..');
-      }
+      setHistory(results);
 
     } catch (error) {
-      console.error("Error fetching current results:", error);
-      toast.error("Failed to fetch current results.");
+      console.error("Error fetching results:", error);
+      toast.error("Failed to fetch results.");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchCurrentResults(selectedMarket);
+    if (selectedMarket) {
+        fetchResultsAndHistory(selectedMarket);
+    }
   }, [selectedMarket]);
 
   const handleUpdateResult = async () => {
@@ -86,7 +94,7 @@ const HarufUpdate = () => {
       });
       toast.success(`Result for ${selectedMarket} updated successfully!`);
       setNewResult('');
-      fetchCurrentResults(selectedMarket); // Refresh current results
+      fetchResultsAndHistory(selectedMarket); // Refresh results and history
     } catch (error) {
       console.error("Error updating result:", error);
       toast.error("Failed to update result.");
@@ -109,8 +117,7 @@ const HarufUpdate = () => {
             className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
           >
             {marketNames.map((name) => (
-              <option key={name} value={name}>{name}</option>
-            ))}
+              <option key={name} value={name}>{name}</option>))}
           </select>
         </div>
 
@@ -148,6 +155,44 @@ const HarufUpdate = () => {
         >
           {submitting ? 'Updating...' : 'Update Result'}
         </button>
+      </div>
+
+      <div className="mt-6">
+        <h4 className="text-md font-semibold mb-2">Update History for {selectedMarket}</h4>
+        <div className="max-h-96 overflow-y-auto border rounded-lg">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Date
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Number
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {history.length > 0 ? (
+                history.map((item) => (
+                  <tr key={item.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {item.date ? item.date.toDate().toLocaleDateString() : 'No date'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {item.number}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="2" className="px-6 py-4 text-center text-sm text-gray-500">
+                    {loading ? 'Loading history...' : 'No history found.'}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
