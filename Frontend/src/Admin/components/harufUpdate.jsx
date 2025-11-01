@@ -28,16 +28,23 @@ const HarufUpdate = () => {
     setCurrentYesterdayResult('..');
     setHistory([]);
     try {
+      // Fetch ALL results because we are not using an index.
+      // WARNING: This is inefficient and can be slow and costly if you have many results.
       const resultsRef = collection(db, "results");
-      const q = query(
-        resultsRef,
-        where("marketName", "==", market),
-        orderBy("date", "desc"),
-        limit(30) // Fetch last 30 results for history
-      );
+      const allResultsSnapshot = await getDocs(resultsRef);
+      const allResults = allResultsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-      const querySnapshot = await getDocs(q);
-      const results = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      // Filter results for the selected market
+      const marketResults = allResults.filter(result => result.marketName === market);
+
+      // Sort the market-specific results by date
+      marketResults.sort((a, b) => {
+        if (a.date && b.date) {
+          return b.date.toDate() - a.date.toDate(); // descending
+        }
+        return 0;
+      });
+
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -49,7 +56,7 @@ const HarufUpdate = () => {
       let foundToday = false;
       let foundYesterday = false;
 
-      for (const result of results) {
+      for (const result of marketResults) {
         if (result.date) { // Ensure date exists
             const resultDate = result.date.toDate();
             if (!foundToday && resultDate >= today && resultDate < tomorrow) {
@@ -63,7 +70,8 @@ const HarufUpdate = () => {
         }
       }
 
-      setHistory(results);
+      // Set history, limited to the last 30 results for display
+      setHistory(marketResults.slice(0, 30));
 
     } catch (error) {
       console.error("Error fetching results:", error);
