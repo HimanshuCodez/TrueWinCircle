@@ -82,26 +82,18 @@ const WinGame = () => {
     console.log("All bets updated with win/loss status.");
 
     for (const userId in userWinnings) {
-      const userDocRef = doc(db, 'users', userId);
       const amountToCredit = userWinnings[userId];
       try {
-        await runTransaction(db, async (transaction) => {
-          const userDoc = await transaction.get(userDocRef);
-          const currentWinnings = userDoc.exists() ? (userDoc.data().winningMoney || 0) : 0;
-          transaction.update(userDocRef, { winningMoney: currentWinnings + amountToCredit });
-
-          // Add new winner doc inside the same transaction
-          const winnerDocRef = doc(collection(db, 'winners'));
-          transaction.set(winnerDocRef, {
-            userId: userId,
-            gameName: '1 to 12 Win',
-            prize: amountToCredit,
-            timestamp: serverTimestamp(),
-            status: 'pending_approval'
-          });
+        // Create a 'winner' document for admin approval instead of directly crediting the user.
+        await addDoc(collection(db, 'winners'), {
+          userId: userId,
+          gameName: '1 to 12 Win',
+          prize: amountToCredit,
+          timestamp: serverTimestamp(),
+          status: 'pending_approval'
         });
       } catch (e) {
-        console.error(`Failed to credit winnings for user ${userId}:`, e);
+        console.error(`Failed to create winner document for user ${userId}:`, e);
       }
     }
     
@@ -260,8 +252,6 @@ const WinGame = () => {
       setIsSubmitting(false);
     }
   };
-
-  return (
     <div className="font-roboto bg-gray-900 text-white min-h-screen p-4 pt-20">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-6">
@@ -352,7 +342,7 @@ const WinGame = () => {
         </div>
       )}
     </div>
-  );
+  
 };
 
 export default WinGame;

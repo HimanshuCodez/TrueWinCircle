@@ -158,10 +158,38 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleWinnerAnnouncement = (id) => {
-    setWinners(winners.map(winner => 
-      winner.id === id ? { ...winner, status: 'announced' } : winner
-    ));
+  const handleWinnerAnnouncement = async (winnerId) => {
+    try {
+      await runTransaction(db, async (transaction) => {
+        const winnerRef = doc(db, 'winners', winnerId);
+        const winnerSnap = await transaction.get(winnerRef);
+
+        if (!winnerSnap.exists() || winnerSnap.data().status !== 'pending_approval') {
+          throw new Error('Winner not found or already processed.');
+        }
+        
+        const winnerData = winnerSnap.data();
+        const { userId, prize } = winnerData;
+
+        const userRef = doc(db, 'users', userId);
+        const userSnap = await transaction.get(userRef);
+
+        if (!userSnap.exists()) {
+          throw new Error('User not found.');
+        }
+
+        // Update winner status
+        transaction.update(winnerRef, { status: 'announced' });
+
+        // Credit user's winningMoney
+        const currentWinnings = userSnap.data().winningMoney || 0;
+        transaction.update(userRef, { winningMoney: currentWinnings + prize });
+      });
+      toast.success('Winner announced and credited successfully!');
+    } catch (error) {
+      console.error('Error announcing winner:', error);
+      toast.error(error.message || 'Failed to announce winner.');
+    }
   };
 
   // --- CHILD COMPONENTS ---
