@@ -29,6 +29,7 @@ import DashboardView from './components/DashboardView';
 import MarqueeUpdate from './components/MarqueeUpdate';
 import AllUsers from './components/AllUsers'; // Import the new component
 import HarufUpdate from './components/harufUpdate';
+import Bets from './components/Bets';
 
 
 const AdminDashboard = () => {
@@ -210,7 +211,8 @@ const AdminDashboard = () => {
           { id: 'winners', label: 'Winner Announcement', icon: Trophy },
           { id: 'withdrawals', label: 'Withdrawal Approval', icon: DollarSign },
           { id: 'marquee', label: 'Screen Text', icon: Edit },
-          { id: 'harufUpdate', label: 'Market Results', icon: Edit }
+          { id: 'harufUpdate', label: 'Market Results', icon: Edit },
+          { id: 'winGameBets', label: 'Win Game Bets', icon: Trophy }
         ].map(item => (
           <button
             key={item.id}
@@ -280,6 +282,8 @@ const AdminDashboard = () => {
         return <MarqueeUpdate />;
       case 'harufUpdate':
         return <HarufUpdate />;
+      case 'winGameBets':
+        return <Bets />;
       default: 
         return <DashboardView stats={stats} />;
     }
