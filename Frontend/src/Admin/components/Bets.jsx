@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, onSnapshot, where, doc } from 'firebase/firestore';
-import { db } from '../../../firebase'; // Adjust path as needed
+import { db } from '../../firebase';
 import { Loader2 } from 'lucide-react';
 
 const Bets = () => {
