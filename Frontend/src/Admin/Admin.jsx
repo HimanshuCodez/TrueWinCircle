@@ -223,13 +223,14 @@ const AdminDashboard = () => {
             <span>{item.label}</span>
           </button>
         ))}
-      </nav>
-      <div className="absolute bottom-4 left-4 right-4">
-        <button className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-800 text-red-400">
+        <button 
+          onClick={() => { /* handle logout logic here */ }}
+          className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-800 text-red-400"
+        >
           <LogOut className="h-5 w-5" />
           <span>Logout</span>
         </button>
-      </div>
+      </nav>
     </div>
   );
 
