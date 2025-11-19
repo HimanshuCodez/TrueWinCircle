@@ -252,6 +252,8 @@ const WinGame = () => {
       setIsSubmitting(false);
     }
   };
+
+  return (
     <div className="font-roboto bg-gray-900 text-white min-h-screen p-4 pt-20">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-6">
@@ -342,7 +344,7 @@ const WinGame = () => {
         </div>
       )}
     </div>
-  
+  );
 };
 
 export default WinGame;

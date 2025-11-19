@@ -8,6 +8,8 @@ const Bets = () => {
   const [totalBets, setTotalBets] = useState(0);
   const [loading, setLoading] = useState(true);
   const [currentRoundId, setCurrentRoundId] = useState(null);
+  const [roundEndTime, setRoundEndTime] = useState(null);
+  const [remainingTime, setRemainingTime] = useState(null);
 
   useEffect(() => {
     const gameStateRef = doc(db, 'game_state', 'win_game_1_to_12');
@@ -18,8 +20,14 @@ const Bets = () => {
         if (gameStateData.roundId !== currentRoundId) {
           setCurrentRoundId(gameStateData.roundId);
         }
+        if (gameStateData.nextResultTime) {
+          setRoundEndTime(gameStateData.nextResultTime.toDate());
+        } else {
+          setRoundEndTime(null);
+        }
       } else {
         setCurrentRoundId(null); // No game state found
+        setRoundEndTime(null);
       }
       setLoading(false);
     }, (error) => {
@@ -31,6 +39,27 @@ const Bets = () => {
       unsubscribeGameState();
     };
   }, [currentRoundId]);
+
+  useEffect(() => {
+    if (!roundEndTime) {
+      setRemainingTime(null);
+      return;
+    }
+
+    const timer = setInterval(() => {
+      const now = new Date();
+      const difference = roundEndTime.getTime() - now.getTime();
+      
+      if (difference > 0) {
+        setRemainingTime(Math.round(difference / 1000));
+      } else {
+        setRemainingTime(0);
+        clearInterval(timer);
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [roundEndTime]);
 
   useEffect(() => {
     if (currentRoundId === null) {
@@ -81,7 +110,14 @@ const Bets = () => {
 
   return (
     <div className="p-4 bg-white shadow rounded-lg">
-      <h2 className="text-2xl font-semibold mb-4">Current Bets (Round ID: {currentRoundId || 'N/A'})</h2>
+      <h2 className="text-2xl font-semibold mb-4">
+        Current Bets (Round ID: {currentRoundId || 'N/A'})
+        {remainingTime !== null && (
+          <span className="ml-4 text-lg font-medium text-gray-700">
+            Time Left: <span className="font-bold text-red-500">{remainingTime}s</span>
+          </span>
+        )}
+      </h2>
       <p className="text-lg mb-4">Total Bet Amount: ₹{totalBets}</p>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
         {Object.entries(betsSummary).map(([number, data]) => (
