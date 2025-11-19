@@ -3,6 +3,7 @@ import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '../../firebase';
 import Loader from '../../components/Loader';
 import UserBettingHistory from './UserBettingHistory';
+import UserWinLoss from './UserWinLoss';
 
 const AllUsers = () => {
   const [users, setUsers] = useState([]);
@@ -114,7 +115,12 @@ const AllUsers = () => {
                     {user.name || 'N/A'}
                   </td>
                   <td className="p-4 text-gray-600">{user.phoneNumber || 'N/A'}</td>
-                  <td className="p-4 text-gray-600">{user.email || 'N/A'}</td>
+                  <td className="p-4 text-gray-600">
+                    <div className="flex items-center justify-between">
+                      {user.email || 'N/A'}
+                      <UserWinLoss userId={user.id} />
+                    </div>
+                  </td>
                   <td className="p-4 text-left text-gray-600">{formatJoinDate(user.joinedDate)}</td>
                   <td className="p-4 text-right font-semibold text-gray-800">₹{totalBalance.toFixed(2)}</td>
                 </tr>

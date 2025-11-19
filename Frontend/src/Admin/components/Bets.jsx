@@ -3,6 +3,9 @@ import { collection, query, onSnapshot, where, doc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { Loader2 } from 'lucide-react';
 
+const GAME_DURATION_SECONDS = 120;
+const BETTING_PERIOD_SECONDS = 60;
+
 const Bets = () => {
   const [betsSummary, setBetsSummary] = useState({});
   const [totalBets, setTotalBets] = useState(0);
@@ -10,6 +13,7 @@ const Bets = () => {
   const [currentRoundId, setCurrentRoundId] = useState(null);
   const [roundEndTime, setRoundEndTime] = useState(null);
   const [remainingTime, setRemainingTime] = useState(null);
+  const [stage, setStage] = useState('loading'); // 'loading', 'betting', 'waiting'
 
   useEffect(() => {
     const gameStateRef = doc(db, 'game_state', 'win_game_1_to_12');
@@ -20,8 +24,8 @@ const Bets = () => {
         if (gameStateData.roundId !== currentRoundId) {
           setCurrentRoundId(gameStateData.roundId);
         }
-        if (gameStateData.nextResultTime) {
-          setRoundEndTime(gameStateData.nextResultTime.toDate());
+        if (gameStateData.roundEndsAt) { // Changed from nextResultTime
+          setRoundEndTime(gameStateData.roundEndsAt.toDate());
         } else {
           setRoundEndTime(null);
         }
@@ -43,18 +47,24 @@ const Bets = () => {
   useEffect(() => {
     if (!roundEndTime) {
       setRemainingTime(null);
+      setStage('loading');
       return;
     }
 
     const timer = setInterval(() => {
       const now = new Date();
-      const difference = roundEndTime.getTime() - now.getTime();
-      
-      if (difference > 0) {
-        setRemainingTime(Math.round(difference / 1000));
-      } else {
+      const diffSeconds = Math.floor((roundEndTime - now) / 1000);
+
+      if (diffSeconds <= 0) {
         setRemainingTime(0);
+        setStage('waiting');
         clearInterval(timer);
+      } else if (diffSeconds <= (GAME_DURATION_SECONDS - BETTING_PERIOD_SECONDS)) {
+        setStage('waiting');
+        setRemainingTime(diffSeconds);
+      } else {
+        setStage('betting');
+        setRemainingTime(diffSeconds - (GAME_DURATION_SECONDS - BETTING_PERIOD_SECONDS));
       }
     }, 1000);
 
@@ -99,7 +109,7 @@ const Bets = () => {
     return () => unsubscribe();
   }, [currentRoundId]);
 
-  if (loading) {
+  if (loading && currentRoundId === null) {
     return (
       <div className="flex justify-center items-center h-64">
         <Loader2 className="animate-spin text-blue-500" size={32} />
@@ -110,14 +120,25 @@ const Bets = () => {
 
   return (
     <div className="p-4 bg-white shadow rounded-lg">
-      <h2 className="text-2xl font-semibold mb-4">
-        Current Bets (Round ID: {currentRoundId || 'N/A'})
-        {remainingTime !== null && (
-          <span className="ml-4 text-lg font-medium text-gray-700">
-            Time Left: <span className="font-bold text-red-500">{remainingTime}s</span>
-          </span>
-        )}
-      </h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-semibold">
+          Current Bets (Round ID: {currentRoundId || 'N/A'})
+        </h2>
+        <div className="text-right">
+          {stage === 'loading' ? (
+              <p className="text-lg font-bold text-gray-500">Loading...</p>
+          ) : (
+            <>
+              <p className="text-sm text-gray-500">
+                {stage === 'betting' ? 'Betting Ends In' : 'Result In'}
+              </p>
+              <p className={`text-2xl font-bold ${stage === 'betting' ? 'text-green-500' : 'text-red-500'}`}>
+                {remainingTime !== null ? `${remainingTime}s` : '...'}
+              </p>
+            </>
+          )}
+        </div>
+      </div>
       <p className="text-lg mb-4">Total Bet Amount: ₹{totalBets}</p>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
         {Object.entries(betsSummary).map(([number, data]) => (
