@@ -2,7 +2,7 @@ import React from "react";
 import { X, Info, Undo, Plus, Minus, Coins } from "lucide-react";
 
 export default function BettingPanel({ betAmount, setBetAmount, spinWheel, spinning, bettingLoading, balance, selectedBetType }) {
-  const parsedBetAmount = parseFloat(betAmount);
+  const parsedBetAmount = parseFloat(betAmount) || 0;
 
   const handleBetChange = (change) => {
     const newAmount = parsedBetAmount + change;
@@ -43,7 +43,13 @@ export default function BettingPanel({ betAmount, setBetAmount, spinWheel, spinn
           >
             <Minus size={20} />
           </button>
-          <span className="text-base font-bold">{parsedBetAmount.toFixed(2)}</span>
+          <input
+            type="number"
+            value={betAmount}
+            onChange={(e) => setBetAmount(e.target.value)}
+            className="w-24 bg-gray-700 rounded-lg p-2 text-center text-lg font-bold focus:ring-2 focus:ring-yellow-500 outline-none"
+            placeholder="Amount"
+          />
           <button 
             onClick={() => handleBetChange(1)}
             className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center hover:bg-gray-600"
