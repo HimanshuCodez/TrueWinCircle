@@ -16,7 +16,7 @@ import {
   LogOut,
   Menu
 } from 'lucide-react';
-import { db } from '../firebase';
+import { db, auth } from '../firebase';
 import { collection, query, onSnapshot, doc, runTransaction, getDocs, where, deleteDoc } from 'firebase/firestore';
 import useAuthStore from '../store/authStore';
 import { ToastContainer, toast } from 'react-toastify';
@@ -46,7 +46,7 @@ const AdminDashboard = () => {
   const [totalUsers, setTotalUsers] = useState(0);
   const [userDetails, setUserDetails] = useState({});
 
-  const { user } = useAuthStore();
+  const { user, setUser } = useAuthStore();
   const isAdmin = user?.role === 'admin';
 
   // --- DATA FETCHING ---
@@ -193,6 +193,17 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await auth.signOut();
+      setUser(null); // Clear user from Zustand store
+      toast.success("Logged out successfully!");
+    } catch (error) {
+      console.error("Error logging out:", error);
+      toast.error("Failed to log out.");
+    }
+  };
+
   // --- CHILD COMPONENTS ---
   const Sidebar = () => (
     <div className={`fixed inset-y-0 left-0 z-30 w-64 bg-gray-900 text-white p-4 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out md:relative md:translate-x-0 md:w-64`}>
@@ -224,7 +235,7 @@ const AdminDashboard = () => {
           </button>
         ))}
         <button 
-          onClick={() => { /* handle logout logic here */ }}
+          onClick={handleLogout} // Changed onClick handler
           className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-800 text-red-400"
         >
           <LogOut className="h-5 w-5" />
