@@ -308,16 +308,14 @@ const WinGame = () => {
             </div>
             <div>
               <label htmlFor="betAmount" className="block text-sm font-medium text-gray-400 mb-2">Bet Amount (Min: ₹10)</label>
-              <input 
-                id="betAmount"
-                type="number"
-                value={betAmount}
-                onChange={(e) => setBetAmount(parseInt(e.target.value, 10) || 10)}
-                min="10"
-                className="w-full bg-gray-700 rounded-lg p-3 text-center text-xl font-bold focus:ring-2 focus:ring-yellow-500 outline-none"
-                disabled={gameState.stage !== 'betting'}
-              />
-            </div>
+                            <input
+                              id="betAmount"
+                              type="number"
+                              value={betAmount}
+                              onChange={(e) => setBetAmount(parseInt(e.target.value, 10) || 10)}
+                              min="10"
+                              className="w-full bg-gray-700 rounded-lg p-3 text-center text-xl font-bold focus:ring-2 focus:ring-yellow-500 outline-none"
+                            />            </div>
             <button 
               onClick={handleBetSubmit}
               disabled={isSubmitting}
