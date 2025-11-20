@@ -98,6 +98,7 @@ const PhoneSignUp = () => {
         phoneNumber: user.phoneNumber,
         name: name,
         email: email,
+        role: 'user', // Explicitly set role for new users
         referralCode: generatedReferralCode,
         referredBy: referrerId,
         balance: bonusAmount,

@@ -17,11 +17,13 @@ const UserBettingHistory = ({ userId }) => {
       try {
         const betsQuery = query(
           collection(db, 'wingame_bets'),
-          where('userId', '==', userId),
-          orderBy('createdAt', 'desc')
+          where('userId', '==', userId)
         );
         const betsSnapshot = await getDocs(betsQuery);
         const userBets = betsSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        // Sort on the client-side to avoid needing a composite index
+        userBets.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
 
         if (userBets.length === 0) {
           setHistory([]);
