@@ -43,11 +43,14 @@ const UserBettingHistory = ({ userId }) => {
               resultsMap[doc.id] = doc.data().winningNumber;
             });
 
-            const fullHistory = userBets.map(bet => ({
-              ...bet,
-              resultNumber: resultsMap[bet.roundId] ?? 'N/A',
-              createdAt: bet.createdAt.toDate(),
-            }));
+            const fullHistory = userBets.map(bet => {
+              if (!bet.createdAt?.toDate) return null;
+              return {
+                ...bet,
+                resultNumber: resultsMap[bet.roundId] ?? 'N/A',
+                createdAt: bet.createdAt.toDate(),
+              };
+            }).filter(Boolean);
             setHistory(fullHistory);
         } else {
             setHistory([]);

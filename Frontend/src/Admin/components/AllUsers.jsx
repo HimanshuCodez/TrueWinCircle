@@ -121,7 +121,7 @@ const AllUsers = () => {
                       <UserWinLoss userId={user.id} />
                     </div>
                   </td>
-                  <td className="p-4 text-left text-gray-600">{formatJoinDate(user.joinedDate)}</td>
+                  <td className="p-4 text-left text-gray-600">{formatJoinDate(user.createdAt)}</td>
                   <td className="p-4 text-right font-semibold text-gray-800">₹{totalBalance.toFixed(2)}</td>
                 </tr>
               );
