@@ -93,8 +93,8 @@ resource.data.role);
       allow read: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
     }
     match /rouletteBets/{betId} {
-      allow create: if request.auth != null;
-      allow read: if isAdmin();
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
     }
   }
 }

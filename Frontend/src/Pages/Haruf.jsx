@@ -474,7 +474,7 @@ const HarufGrid = () => {
 
 
 
-                const totalBetAmount = placedBets.reduce((acc, [_, amount]) => acc + amount, 0);
+                const totalBetAmount = Object.values(bets).reduce((acc, b) => acc + (parseInt(b) || 0), 0);
 
 
 
