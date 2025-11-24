@@ -318,9 +318,15 @@ const HarufGrid = () => {
 
 
 
-    const handlePlaceBet = async () => {
+        const handlePlaceBet = async () => {
 
-        if (!user) return toast.error("You must be logged in to place a bet.");
+
+
+            const { user } = useAuthStore.getState();
+
+
+
+            if (!user) return toast.error("You must be logged in to place a bet.");
 
         
 
@@ -500,13 +506,7 @@ const HarufGrid = () => {
 
         <div className="flex flex-col items-center w-full pb-20 pt-10">
 
-            <div className="text-center mb-4 p-2 bg-gray-800 text-white rounded-lg shadow-lg">
-
-                <p className="text-sm text-gray-400">Last Winning Number</p>
-
-                <p className="text-3xl font-bold text-yellow-400">{lastWinningNumber !== null ? String(lastWinningNumber).padStart(2, '0') : '--'}</p>
-
-            </div>
+            
 
             
 
