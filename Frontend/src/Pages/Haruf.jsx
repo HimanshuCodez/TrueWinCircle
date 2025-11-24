@@ -318,187 +318,327 @@ const HarufGrid = () => {
 
 
 
-        const handlePlaceBet = async () => {
+            const handlePlaceBet = async () => {
 
 
 
-            const { user } = useAuthStore.getState();
+                const { user } = useAuthStore.getState();
 
 
 
-            if (!user) return toast.error("You must be logged in to place a bet.");
-
-        
-
-        const gameStateRef = doc(db, 'game_state', 'haruf_game');
-
-        const gameStateSnap = await getDoc(gameStateRef);
-
-        if (!gameStateSnap.exists()) {
-
-            return toast.error("Game is not ready. Please try again in a moment.");
-
-        }
-
-        const { roundId, roundEndsAt } = gameStateSnap.data();
+                if (!user) return toast.error("You must be logged in to place a bet.");
 
 
 
-        // Optional: Prevent betting in the last few seconds of a round
-
-        const bettingCutoff = roundEndsAt.toDate();
-
-        bettingCutoff.setSeconds(bettingCutoff.getSeconds() - 10); // e.g., last 10 seconds
-
-        if (new Date() > bettingCutoff) {
-
-            return toast.warn("The betting window for this round is closing. Please wait for the next round.");
-
-        }
+                
 
 
 
-        const finalBets = {};
+                const gameStateRef = doc(db, 'game_state', 'haruf_game');
 
-        for (const key in bets) {
 
-            const amount = parseInt(bets[key]) || 0;
 
-            if (amount > 0) {
+                const gameStateSnap = await getDoc(gameStateRef);
 
-                if (key.startsWith('A')) {
 
-                    const andarDigit = parseInt(key.substring(1));
 
-                    for (let j = 0; j < 10; j++) {
+                if (!gameStateSnap.exists()) {
 
-                        const num = andarDigit * 10 + j;
 
-                        finalBets[num.toString()] = (finalBets[num.toString()] || 0) + (amount / 10);
 
-                    }
+                    return toast.error("Game is not ready. Please try again in a moment.");
 
-                } else if (key.startsWith('B')) {
 
-                    const baharDigit = parseInt(key.substring(1));
-
-                    for (let j = 0; j < 10; j++) {
-
-                        const num = j * 10 + baharDigit;
-
-                        finalBets[num.toString()] = (finalBets[num.toString()] || 0) + (amount / 10);
-
-                    }
-
-                } else {
-
-                    const num = parseInt(key);
-
-                    if (!isNaN(num)) {
-
-                        finalBets[num.toString()] = (finalBets[num.toString()] || 0) + amount;
-
-                    }
 
                 }
 
-            }
-
-        }
 
 
-
-        const placedBets = Object.entries(finalBets).filter(([_, amount]) => amount > 0);
-
-        if (placedBets.length === 0) return toast.error("Please enter at least one bet.");
+                const { roundId, roundEndsAt } = gameStateSnap.data();
 
 
 
-        const totalBetAmount = placedBets.reduce((acc, [_, amount]) => acc + amount, 0);
-
-        if (totalBetAmount > balance) return toast.error("Insufficient balance.");
+        
 
 
 
-        setBettingLoading(true);
-
-        try {
-
-            await runTransaction(db, async (transaction) => {
-
-                const userDocRef = doc(db, "users", user.uid);
-
-                const userDoc = await transaction.get(userDocRef);
-
-                if (!userDoc.exists()) throw new Error("User does not exist!");
+                const finalBets = {};
 
 
 
-                const currentBalance = userDoc.data().balance || 0;
-
-                if (currentBalance < totalBetAmount) throw new Error("Insufficient balance.");
+                for (const key in bets) {
 
 
 
-                const newBalance = Math.round((currentBalance - totalBetAmount) * 100) / 100;
-
-                transaction.update(userDocRef, { balance: newBalance });
+                    const amount = parseInt(bets[key]) || 0;
 
 
 
-                const betsCollectionRef = collection(db, "harufBets");
+                    if (amount > 0) {
 
-                placedBets.forEach(([num, amount]) => {
 
-                    const roundedAmount = Math.round(amount * 100) / 100;
 
-                    if (roundedAmount > 0) {
+                        if (key.startsWith('A')) {
 
-                        transaction.set(doc(betsCollectionRef), {
 
-                            userId: user.uid,
 
-                            roundId: roundId,
+                            const andarDigit = parseInt(key.substring(1));
 
-                            betType: "Haruf",
 
-                            selectedNumber: num,
 
-                            betAmount: roundedAmount,
+                            for (let j = 0; j < 10; j++) {
 
-                            timestamp: serverTimestamp(),
 
-                            status: "pending",
 
-                        });
+                                const num = andarDigit * 10 + j;
+
+
+
+                                finalBets[num.toString()] = (finalBets[num.toString()] || 0) + (amount / 10);
+
+
+
+                            }
+
+
+
+                        } else if (key.startsWith('B')) {
+
+
+
+                            const baharDigit = parseInt(key.substring(1));
+
+
+
+                            for (let j = 0; j < 10; j++) {
+
+
+
+                                const num = j * 10 + baharDigit;
+
+
+
+                                finalBets[num.toString()] = (finalBets[num.toString()] || 0) + (amount / 10);
+
+
+
+                            }
+
+
+
+                        } else {
+
+
+
+                            const num = parseInt(key);
+
+
+
+                            if (!isNaN(num)) {
+
+
+
+                                finalBets[num.toString()] = (finalBets[num.toString()] || 0) + amount;
+
+
+
+                            }
+
+
+
+                        }
+
+
 
                     }
 
-                });
-
-            });
 
 
+                }
 
-            toast.success("Bets placed successfully!");
 
-            toast.info("Result in approximately 1 minute.");
 
-            setBets({});
+        
 
-        } catch (e) {
 
-            console.error("Bet placement failed: ", e);
 
-            toast.error(`Failed to place bet: ${e.message || e}`);
+                const placedBets = Object.entries(finalBets).filter(([_, amount]) => amount > 0);
 
-        } finally {
 
-            setBettingLoading(false);
 
-        }
+                if (placedBets.length === 0) return toast.error("Please enter at least one bet.");
 
-    };
+
+
+        
+
+
+
+                const totalBetAmount = placedBets.reduce((acc, [_, amount]) => acc + amount, 0);
+
+
+
+                if (totalBetAmount > balance) return toast.error("Insufficient balance.");
+
+
+
+        
+
+
+
+                setBettingLoading(true);
+
+
+
+                try {
+
+
+
+                    await runTransaction(db, async (transaction) => {
+
+
+
+                        const userDocRef = doc(db, "users", user.uid);
+
+
+
+                        const userDoc = await transaction.get(userDocRef);
+
+
+
+                        if (!userDoc.exists()) throw new Error("User does not exist!");
+
+
+
+        
+
+
+
+                        const currentBalance = userDoc.data().balance || 0;
+
+
+
+                        if (currentBalance < totalBetAmount) throw new Error("Insufficient balance.");
+
+
+
+        
+
+
+
+                        const newBalance = Math.round((currentBalance - totalBetAmount) * 100) / 100;
+
+
+
+                        transaction.update(userDocRef, { balance: newBalance });
+
+
+
+        
+
+
+
+                        const betsCollectionRef = collection(db, "harufBets");
+
+
+
+                        placedBets.forEach(([num, amount]) => {
+
+
+
+                            const roundedAmount = Math.round(amount * 100) / 100;
+
+
+
+                            if (roundedAmount > 0) {
+
+
+
+                                transaction.set(doc(betsCollectionRef), {
+
+
+
+                                    userId: user.uid,
+
+
+
+                                    roundId: roundId,
+
+
+
+                                    betType: "Haruf",
+
+
+
+                                    selectedNumber: num,
+
+
+
+                                    betAmount: roundedAmount,
+
+
+
+                                    timestamp: serverTimestamp(),
+
+
+
+                                    status: "pending",
+
+
+
+                                });
+
+
+
+                            }
+
+
+
+                        });
+
+
+
+                    });
+
+
+
+        
+
+
+
+                    toast.success("Bet placed. Result in approximately 1 minute.");
+
+
+
+                    setBets({});
+
+
+
+                } catch (e) {
+
+
+
+                    console.error("Bet placement failed: ", e);
+
+
+
+                    toast.error(`Failed to place bet: ${e.message || e}`);
+
+
+
+                } finally {
+
+
+
+                    setBettingLoading(false);
+
+
+
+                }
+
+
+
+            };
 
 
 
