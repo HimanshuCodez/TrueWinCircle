@@ -15,8 +15,8 @@ import { Pagination, Navigation, Autoplay } from 'swiper/modules';
 const slides = [
   'https://i.postimg.cc/76bn3FpN/wheel.jpg', // 2:1 ratio
   'https://i.postimg.cc/bN0ktYsV/eghit.jpg',
-  'https://as1.ftcdn.net/v2/jpg/06/82/84/34/1000_F_682843481_oT0Sf1vLt7OG9q2UbLMZWfTdbUqzU6GX.jpg',
-  'https://t3.ftcdn.net/jpg/08/29/59/16/240_F_829591667_VPaDq5xCTFNx5rVm3d7qQjuWxv4JzSlJ.jpg',
+  'https://i.postimg.cc/44YTynFs/number.jpg',
+  'https://i.postimg.cc/G2NVGJS2/ninty.jpg',
 ];
 
 export default function Carousel() {
