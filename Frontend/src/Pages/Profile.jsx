@@ -107,14 +107,7 @@ export default function ProfilePage() {
               <p className="text-lg font-bold text-purple-400">150</p>
               <p className="text-xs opacity-70">Total Bets</p>
             </div>
-            <div className="bg-gray-800 p-3 rounded-xl text-center">
-              <p className="text-lg font-bold text-green-400">90</p>
-              <p className="text-xs opacity-70">Wins</p>
-            </div>
-            <div className="bg-gray-800 p-3 rounded-xl text-center">
-              <p className="text-lg font-bold text-red-400">60</p>
-              <p className="text-xs opacity-70">Losses</p>
-            </div>
+         
           </div>
 
           {/* Actions */}

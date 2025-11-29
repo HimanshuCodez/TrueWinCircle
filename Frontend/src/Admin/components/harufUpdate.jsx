@@ -11,6 +11,7 @@ const marketNames = [
   "FARIDABAD",
   "GALI",
   "SHREE GANESH",
+  "GHAZIABAD",
 ];
 
 const HarufUpdate = () => {
