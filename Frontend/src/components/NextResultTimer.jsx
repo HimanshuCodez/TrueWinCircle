@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { db } from '../../firebase'; // Import db from firebase.js
+import { db } from '../firebase'; // Import db from firebase.js
 import { doc, getDoc } from 'firebase/firestore'; // Import Firestore functions
 
 export default function NextResultTimer() {
