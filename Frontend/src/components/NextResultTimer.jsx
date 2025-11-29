@@ -1,8 +1,14 @@
 import { useEffect, useState } from "react";
+import { db } from '../../firebase'; // Import db from firebase.js
+import { doc, getDoc } from 'firebase/firestore'; // Import Firestore functions
 
 export default function NextResultTimer() {
   // Countdown state
   const [time, setTime] = useState({ hours: 1, minutes: 54, seconds: 41 });
+  // Jackpot state
+  const [currentJackpot, setCurrentJackpot] = useState("Loading...");
+  const [lastWinner, setLastWinner] = useState("Loading...");
+  const [jackpotLoading, setJackpotLoading] = useState(true);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -22,6 +28,32 @@ export default function NextResultTimer() {
     }, 1000);
 
     return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const fetchJackpotInfo = async () => {
+      try {
+        const jackpotRef = doc(db, 'settings', 'jackpot');
+        const docSnap = await getDoc(jackpotRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setCurrentJackpot(data.currentJackpot || "N/A");
+          setLastWinner(data.lastWinner || "N/A");
+        } else {
+          console.log("No jackpot document found in Firestore.");
+          setCurrentJackpot("N/A");
+          setLastWinner("N/A");
+        }
+      } catch (error) {
+        console.error("Error fetching jackpot info:", error);
+        setCurrentJackpot("Error");
+        setLastWinner("Error");
+      } finally {
+        setJackpotLoading(false);
+      }
+    };
+
+    fetchJackpotInfo();
   }, []);
 
   return (  
@@ -48,8 +80,14 @@ export default function NextResultTimer() {
       {/* Right Side - Jackpot */}
       <div className="text-right">
         <h3 className="font-semibold">Current Jackpot</h3>
-        <p className="text-2xl font-bold text-[#d4af37]">₹1,24,850</p>
-        <p className="text-xs text-gray-300">Last Winner: Rajesh K. (₹52,000)</p>
+        {jackpotLoading ? (
+          <p className="text-2xl font-bold text-[#d4af37]">Loading...</p>
+        ) : (
+          <>
+            <p className="text-2xl font-bold text-[#d4af37]">₹{currentJackpot}</p>
+            <p className="text-xs text-gray-300">Last Winner: {lastWinner}</p>
+          </>
+        )}
       </div>
     </div>
   );
