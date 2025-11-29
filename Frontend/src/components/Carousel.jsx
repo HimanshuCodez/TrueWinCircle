@@ -1,4 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { db } from '../../firebase'; // Import db from firebase.js
+import { collection, getDocs } from 'firebase/firestore'; // Import Firestore functions
+
 // Import Swiper React components
 import { Swiper, SwiperSlide } from 'swiper/react';
 
@@ -11,15 +14,52 @@ import 'swiper/css/autoplay';
 // import required modules
 import { Pagination, Navigation, Autoplay } from 'swiper/modules';
 
-// Using images with a more standard aspect ratio
-const slides = [
-  'https://i.postimg.cc/76bn3FpN/wheel.jpg', // 2:1 ratio
-  'https://i.postimg.cc/bN0ktYsV/eghit.jpg',
-  'https://i.postimg.cc/44YTynFs/number.jpg',
-  'https://i.postimg.cc/G2NVGJS2/ninty.jpg',
-];
-
 export default function Carousel() {
+  const [slides, setSlides] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchSlides = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, 'carousel_slides'));
+        const fetchedSlides = querySnapshot.docs.map(doc => doc.data().url);
+        setSlides(fetchedSlides);
+      } catch (err) {
+        console.error("Error fetching carousel slides: ", err);
+        setError("Failed to load carousel images.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSlides();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-2 sm:px-2 lg:px-2 py-4 text-center">
+        <p>Loading carousel...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-7xl mx-auto px-2 sm:px-2 lg:px-2 py-4 text-center text-red-500">
+        <p>{error}</p>
+      </div>
+    );
+  }
+
+  if (slides.length === 0) {
+    return (
+      <div className="max-w-7xl mx-auto px-2 sm:px-2 lg:px-2 py-4 text-center">
+        <p>No carousel slides available.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-2 sm:px-2 lg:px-2 py-4">
       <Swiper
