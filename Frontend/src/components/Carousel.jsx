@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { db } from '../../firebase'; // Import db from firebase.js
+import { db } from '../firebase'; // Import db from firebase.js
 import { collection, getDocs } from 'firebase/firestore'; // Import Firestore functions
 
 // Import Swiper React components

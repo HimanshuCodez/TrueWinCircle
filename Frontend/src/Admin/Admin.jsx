@@ -30,6 +30,7 @@ import MarqueeUpdate from './components/MarqueeUpdate';
 import AllUsers from './components/AllUsers'; // Import the new component
 import HarufUpdate from './components/harufUpdate';
 import Bets from './components/Bets';
+import SliderUpdate from './components/SliderUpdate';
 
 
 const AdminDashboard = () => {
@@ -223,6 +224,7 @@ const AdminDashboard = () => {
           { id: 'withdrawals', label: 'Withdrawal Approval', icon: DollarSign },
           { id: 'marquee', label: 'Screen Text', icon: Edit },
           { id: 'harufUpdate', label: 'Market Results', icon: Edit },
+          { id: 'sliderUpdate', label: 'Carousel Slides', icon: Edit },
           { id: 'winGameBets', label: 'Win Game Bets', icon: Trophy }
         ].map(item => (
           <button
@@ -294,6 +296,8 @@ const AdminDashboard = () => {
         return <MarqueeUpdate />;
       case 'harufUpdate':
         return <HarufUpdate />;
+      case 'sliderUpdate':
+        return <SliderUpdate />;
       case 'winGameBets':
         return <Bets />;
       default: 
