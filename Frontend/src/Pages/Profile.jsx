@@ -3,7 +3,7 @@ import { LogOut, Wallet, ArrowUpCircle, ArrowDownCircle, Copy } from "lucide-rea
 import { useNavigate } from "react-router-dom";
 import useAuthStore from "../store/authStore";
 import { db } from "../firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getCountFromServer } from "firebase/firestore";
 import { toast } from "react-toastify";
 import BettingHistory from "../components/BettingHistory"; // Import the new component
 
@@ -13,10 +13,11 @@ export default function ProfilePage() {
   const navigate = useNavigate();
 
   const [balances, setBalances] = useState({ wallet: 0, winning: 0 });
+  const [totalBets, setTotalBets] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchBalances = async () => {
+    const fetchProfileData = async () => {
       if (user?.uid) {
         setLoading(true);
         try {
@@ -31,9 +32,14 @@ export default function ProfilePage() {
           } else {
             toast.error("User data not found.");
           }
+
+          const betsCollectionRef = collection(db, "bets");
+          const q = query(betsCollectionRef, where("userId", "==", user.uid));
+          const snapshot = await getCountFromServer(q);
+          setTotalBets(snapshot.data().count);
         } catch (error) {
-          console.error("Error fetching user balances:", error);
-          toast.error("Could not load balances.");
+          console.error("Error fetching user profile data:", error);
+          toast.error("Could not load profile data.");
         } finally {
           setLoading(false);
         }
@@ -42,7 +48,7 @@ export default function ProfilePage() {
       }
     };
 
-    fetchBalances();
+    fetchProfileData();
   }, [user?.uid]);
 
   const handleCopy = (text) => {
@@ -104,7 +110,7 @@ export default function ProfilePage() {
           {/* Stats */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
             <div className="bg-gray-800 p-3 rounded-xl text-center">
-              <p className="text-lg font-bold text-purple-400">150</p>
+              <p className="text-lg font-bold text-purple-400">{totalBets}</p>
               <p className="text-xs opacity-70">Total Bets</p>
             </div>
          
