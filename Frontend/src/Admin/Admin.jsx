@@ -209,14 +209,14 @@ const AdminDashboard = () => {
 
   // --- CHILD COMPONENTS ---
   const Sidebar = () => (
-    <div className={`fixed inset-y-0 left-0 z-30 w-64 bg-gray-900 text-white p-4 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out md:relative md:translate-x-0 md:w-64`}>
-      <div className="mb-8 flex justify-center items-center">
+    <div className={`fixed inset-y-0 left-0 z-30 w-64 bg-gray-900 text-white p-4 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out md:relative md:translate-x-0 md:w-64 flex flex-col`}>
+      <div className="mb-8 flex justify-center items-center flex-shrink-0">
         <div>
           <h1 className="text-2xl font-bold text-center">True Win Circle</h1>
           <p className="text-gray-400 text-center text-sm">Admin Dashboard</p>
         </div>
       </div>
-      <nav className="space-y-2">
+      <nav className="space-y-2 overflow-y-auto">
         {[
           { id: 'dashboard', label: 'Dashboard', icon: Settings },
           { id: 'allUsers', label: 'All Users', icon: Users },
