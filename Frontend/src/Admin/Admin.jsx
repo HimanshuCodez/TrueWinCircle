@@ -27,18 +27,16 @@ import 'react-toastify/dist/ReactToastify.css';
 // Component Imports
 import AllUsers from './components/AllUsers';
 import BarCodeUpdate from './components/BarCodeUpdate';
+import HarufUpdate from './components/HarufUpdate';
 import Bets from './components/Bets';
 import DashboardView from './components/DashboardView';
-
 import MarqueeUpdate from './components/MarqueeUpdate';
 import PaymentApproval from './components/PaymentApproval';
 import ProfitLoss from './components/ProfitLoss';
-
 import SliderUpdate from './components/SliderUpdate';
 import WinnerApprove from './components/WinnerApprove';
 import WithdrawApproval from './components/WithdrawApproval';
 import ReferralComponent from './components/Refferal';
-import HarufUpdate from './components/HarufUpdate';
 
 
 
