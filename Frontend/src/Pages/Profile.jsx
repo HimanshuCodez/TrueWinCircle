@@ -5,7 +5,7 @@ import useAuthStore from "../store/authStore";
 import { db } from "../firebase";
 import { doc, getDoc, collection, query, where, getCountFromServer } from "firebase/firestore";
 import { toast } from "react-toastify";
-import BettingHistory from "../components/BettingHistory"; // Import the new component
+
 
 export default function ProfilePage() {
   const user = useAuthStore((state) => state.user);
