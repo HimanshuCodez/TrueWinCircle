@@ -264,10 +264,10 @@ const AdminDashboard = () => {
           <button
             key={item.id}
             onClick={() => { setActiveTab(item.id); setSidebarOpen(false); }}
-            className={`w-full flex items-center justify-start space-x-3 p-3 rounded-lg transition-colors flex-wrap ${activeTab === item.id ? 'bg-blue-600' : 'hover:bg-gray-800'}`}
+            className={`w-full flex items-center justify-start space-x-3 p-3 rounded-lg transition-colors ${activeTab === item.id ? 'bg-blue-600' : 'hover:bg-gray-800'}`}
           >
             <item.icon className="h-5 w-5 flex-shrink-0" />
-            <span className="flex-grow text-left">{item.label}</span>
+            <span>{item.label}</span>
           </button>
         ))}
         <button 
