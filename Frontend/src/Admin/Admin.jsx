@@ -16,24 +16,27 @@ import {
   LogOut,
   Menu,
   TrendingUp,
+  UserPlus, // Added
 } from 'lucide-react';
 import { db, auth } from '../firebase';
-import { collection, query, onSnapshot, doc, runTransaction, getDocs, where, deleteDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc, runTransaction, getDocs, where, deleteDoc, updateDoc, addDoc } from 'firebase/firestore'; // Added updateDoc and addDoc
 import useAuthStore from '../store/authStore';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import BarCodeUpdate from './components/BarCodeUpdate';
-import PaymentApproval from './components/PaymentApproval';
-import WinnerApprove from './components/WinnerApprove';
-import WithdrawApproval from './components/WithdrawApproval';
-import DashboardView from './components/DashboardView';
-import MarqueeUpdate from './components/MarqueeUpdate';
-import AllUsers from './components/AllUsers';
 
+// Component Imports
+import AllUsers from './components/AllUsers';
+import BarCodeUpdate from './components/BarCodeUpdate';
 import Bets from './components/Bets';
+import DashboardView from './components/DashboardView';
+import HarufUpdate from './components/HarufUpdate'; // Corrected casing
+import MarqueeUpdate from './components/MarqueeUpdate';
+import PaymentApproval from './components/PaymentApproval';
+import ProfitLoss from './components/ProfitLoss';
+import Referrals from './components/Referrals'; // Added
 import SliderUpdate from './components/SliderUpdate';
-import ProfitLoss from './components/ProfitLoss'; // Import the new component
-import HarufUpdate from './components/harufUpdate';
+import WinnerApprove from './components/WinnerApprove';
+import WithdrawApproval from './components/WithdrawalApproval';
 
 
 const AdminDashboard = () => {
@@ -104,10 +107,11 @@ const AdminDashboard = () => {
         const paymentRef = doc(db, 'top-ups', paymentId);
         const userRef = doc(db, 'users', userId);
 
-        let userSnap;
-        if (action === 'approved') {
-          userSnap = await transaction.get(userRef);
+        let userSnap = await transaction.get(userRef); // Get user data inside transaction
+        if (!userSnap.exists()) {
+            throw new Error("User not found for payment approval.");
         }
+        const userData = userSnap.data();
 
         const paymentUpdateData = { status: action };
         if (action === 'rejected' && reason) {
@@ -116,18 +120,40 @@ const AdminDashboard = () => {
         transaction.update(paymentRef, paymentUpdateData);
 
         if (action === 'approved') {
-          if (userSnap.exists()) {
-            const currentBalance = userSnap.data().balance || 0;
-            transaction.update(userRef, { balance: currentBalance + amount });
-          } else {
-            transaction.set(userRef, { balance: amount, winningMoney: 0, createdAt: new Date() });
+          const currentBalance = userData.balance || 0;
+          transaction.update(userRef, { balance: currentBalance + amount });
+
+          // Referral bonus logic
+          if (amount >= 50 && userData.referredBy && userData.referralBonusAwarded === false) {
+            const referrerRef = doc(db, "users", userData.referredBy);
+            const referrerSnap = await transaction.get(referrerRef);
+
+            if (referrerSnap.exists()) {
+              const referrerData = referrerSnap.data();
+              const referrerBalance = referrerData.balance || 0;
+              transaction.update(referrerRef, { balance: referrerBalance + 50 });
+              
+              transaction.update(userRef, { referralBonusAwarded: true });
+
+              const newTransactionRef = doc(collection(db, "transactions"));
+              transaction.set(newTransactionRef, {
+                userId: userData.referredBy,
+                type: "referral_bonus_received",
+                amount: 50,
+                referredUserId: userId,
+                referredUserName: userData.name,
+                createdAt: new Date(),
+              });
+            } else {
+                console.warn("Referrer user not found for referredBy:", userData.referredBy);
+            }
           }
         }
       });
       toast.success(`Payment ${action} successfully!`);
     } catch (error) {
       console.error(`Error ${action} payment:`, error);
-      toast.error(`Failed to ${action} payment.`);
+      toast.error(`Failed to ${action} payment. ${error.message}`);
     }
   };
 
@@ -221,6 +247,7 @@ const AdminDashboard = () => {
         {[
           { id: 'dashboard', label: 'Dashboard', icon: Settings },
           { id: 'allUsers', label: 'All Users', icon: Users },
+          { id: 'referrals', label: 'Referrals', icon: UserPlus }, // Added
           { id: 'barcodes', label: 'Barcode Management', icon: QrCode },
           { id: 'payments', label: 'Payment Approval', icon: CreditCard },
           { id: 'winners', label: 'Winner Announcement', icon: Trophy },
@@ -263,7 +290,9 @@ const AdminDashboard = () => {
             .replace('harufUpdate', 'Market Results')
             .replace('sliderUpdate', 'Carousel Slides')
             .replace('winGameBets', 'Win Game Bets')
-            .replace('profitLoss', 'Profit & Loss')}
+            .replace('profitLoss', 'Profit & Loss')
+            .replace('referrals', 'Referrals') // Added
+          }
         </h2>
       </div>
     </div>
@@ -282,6 +311,8 @@ const AdminDashboard = () => {
         return <DashboardView stats={stats} />;
       case 'allUsers':
         return <AllUsers />;
+      case 'referrals': // Added
+        return <Referrals />;
       case 'barcodes': 
         return <BarCodeUpdate />;
       case 'payments': 

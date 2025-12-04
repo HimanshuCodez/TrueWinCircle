@@ -79,7 +79,6 @@ const PhoneSignUp = () => {
       const userDocRef = doc(db, "users", user.uid);
 
       let referrerId = null;
-      let bonusAmount = 0;
       if (referralCodeInput) {
         const referrerQuery = query(collection(db, "users"), where("referralCode", "==", referralCodeInput));
         const referrerSnapshot = await getDocs(referrerQuery);
@@ -87,8 +86,7 @@ const PhoneSignUp = () => {
         if (!referrerSnapshot.empty) {
           const referrerDoc = referrerSnapshot.docs[0];
           referrerId = referrerDoc.id;
-          bonusAmount = 50;
-          toast.success(`Referral code applied! You received ₹${bonusAmount} bonus.`);
+          toast.success(`Referral code applied!`); // Removed bonus amount from toast
         } else {
           toast.warn("Invalid referral code. No bonus applied.");
         }
@@ -101,20 +99,13 @@ const PhoneSignUp = () => {
         role: 'user', // Explicitly set role for new users
         referralCode: generatedReferralCode,
         referredBy: referrerId,
-        balance: bonusAmount,
+        balance: 0, // Changed to 0, bonus is now for referrer on top-up
         winningMoney: 0,
         createdAt: new Date(),
+        referralBonusAwarded: false, // Added flag
       }, { merge: true });
 
-      if (bonusAmount > 0) {
-        await addDoc(collection(db, "transactions"), {
-          userId: user.uid,
-          type: "referral_bonus",
-          amount: bonusAmount,
-          description: `Referral bonus from ${referralCodeInput}`,
-          createdAt: new Date(),
-        });
-      }
+      // Removed block for adding initial referral bonus transaction
 
       toast.success("Sign in successful!");
       navigate("/");

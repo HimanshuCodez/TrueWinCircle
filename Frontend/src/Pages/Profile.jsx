@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { LogOut, Wallet, ArrowUpCircle, ArrowDownCircle, Copy } from "lucide-react";
+import { LogOut, Wallet, ArrowUpCircle, ArrowDownCircle, Copy, UserPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import useAuthStore from "../store/authStore";
 import { db } from "../firebase";
@@ -125,6 +125,10 @@ export default function ProfilePage() {
             <button onClick={() => navigate('/withdraw')} className="flex-1 py-2 md:py-3 bg-yellow-600 hover:bg-yellow-500 rounded-xl flex items-center justify-center space-x-2 font-semibold transition-colors">
               <ArrowUpCircle size={18} />
               <span>Withdraw</span>
+            </button>
+            <button onClick={() => navigate('/referrals')} className="flex-1 py-2 md:py-3 bg-blue-600 hover:bg-blue-500 rounded-xl flex items-center justify-center space-x-2 font-semibold transition-colors">
+              <UserPlus size={18} />
+              <span>Referred</span>
             </button>
           </div>
 
