@@ -85,8 +85,8 @@ resource.data.role);
     // DEPRECATED: These rules are for other games not currently being worked on.
     // They are kept for compatibility but might need review.
     match /bets/{betId} {
-      allow create: if request.auth != null;
-      allow read: if isAdmin();
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
     }
     match /harufBets/{betId} {
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;

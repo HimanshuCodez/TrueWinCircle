@@ -38,7 +38,7 @@ import SliderUpdate from './components/SliderUpdate';
 import WinnerApprove from './components/WinnerApprove';
 import WithdrawApproval from './components/WithdrawApproval';
 import ReferralComponent from './components/Refferal';
-import HarufUpdate from './components/HarufUpdate';
+import HarufUpdate from './components/HarufUpdate.jsx';
 
 
 const AdminDashboard = () => {
