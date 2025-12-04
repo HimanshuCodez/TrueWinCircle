@@ -104,16 +104,7 @@ export default function ProfitLoss() {
 
   return (
     <div className="w-full p-6 grid grid-cols-1 lg:grid-cols-2 gap-6 text-white">
-      {/* Per-Number Bet Tracking */}
-      <div className="rounded-2xl p-6 bg-gray-900 border border-gray-700 shadow-lg">
-        <h2 className="text-xl font-semibold flex items-center gap-2 mb-4">
-          <ListOrdered className="w-5 h-5" />
-          Per-Number Bet Tracking
-        </h2>
-        <div className="space-y-3 text-gray-300 text-sm">
-          <p>Feature coming soon...</p>
-        </div>
-      </div>
+     
 
       {/* Daily Game Summary */}
       <div className="rounded-2xl p-6 bg-gray-900 border border-gray-700 shadow-lg">
