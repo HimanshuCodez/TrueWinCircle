@@ -135,8 +135,6 @@ export default function ProfilePage() {
           </button>
         </div>
 
-        {/* Betting History Component */}
-        <BettingHistory />
 
       </div>
     </div>

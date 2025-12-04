@@ -2,16 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { db } from '../firebase'; // Import db from firebase.js
 import { collection, getDocs } from 'firebase/firestore'; // Import Firestore functions
 
-// Import Swiper React components
 import { Swiper, SwiperSlide } from 'swiper/react';
 
-// Import Swiper styles
+
 import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 import 'swiper/css/autoplay';
 
-// import required modules
 import { Pagination, Navigation, Autoplay } from 'swiper/modules';
 
 export default function Carousel() {
