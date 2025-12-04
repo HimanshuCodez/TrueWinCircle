@@ -27,7 +27,7 @@ import 'react-toastify/dist/ReactToastify.css';
 // Component Imports
 import AllUsers from './components/AllUsers';
 import BarCodeUpdate from './components/BarCodeUpdate';
-import HarufUpdate from './components/HarufUpdate';
+
 import Bets from './components/Bets';
 import DashboardView from './components/DashboardView';
 import MarqueeUpdate from './components/MarqueeUpdate';
@@ -37,6 +37,7 @@ import SliderUpdate from './components/SliderUpdate';
 import WinnerApprove from './components/WinnerApprove';
 import WithdrawApproval from './components/WithdrawApproval';
 import ReferralComponent from './components/Refferal';
+import Table from './components/Table';
 
 
 
@@ -338,7 +339,7 @@ const AdminDashboard = () => {
       case 'marquee':
         return <MarqueeUpdate />;
       case 'harufUpdate':
-        return <HarufUpdate />;
+        return <Table />;
       case 'sliderUpdate':
         return <SliderUpdate />;
       case 'winGameBets':
