@@ -38,7 +38,8 @@ import SliderUpdate from './components/SliderUpdate';
 import WinnerApprove from './components/WinnerApprove';
 import WithdrawApproval from './components/WithdrawApproval';
 import ReferralComponent from './components/Refferal';
-import HarufUpdate from './components/HarufUpdate.jsx';
+import HarufInc from './components/HarufUpdate';
+
 
 
 const AdminDashboard = () => {
@@ -338,7 +339,7 @@ const AdminDashboard = () => {
       case 'marquee':
         return <MarqueeUpdate />;
       case 'harufUpdate':
-        return <HarufUpdate/>;
+        return <HarufInc/>;
       case 'sliderUpdate':
         return <SliderUpdate />;
       case 'winGameBets':

@@ -14,7 +14,7 @@ const marketNames = [
   "GHAZIABAD",
 ];
 
-const HarufUpdate = () => {
+const HarufInc = () => {
   const [selectedMarket, setSelectedMarket] = useState(marketNames[0]);
   const [newResult, setNewResult] = useState('');
   const [currentYesterdayResult, setCurrentYesterdayResult] = useState('..');
@@ -207,4 +207,5 @@ const HarufUpdate = () => {
   );
 };
 
-export default HarufUpdate;
+export default HarufInc;
+
