@@ -29,7 +29,7 @@ import AllUsers from './components/AllUsers';
 import BarCodeUpdate from './components/BarCodeUpdate';
 import Bets from './components/Bets';
 import DashboardView from './components/DashboardView';
-import HarufUpdate from './components/HarufUpdate'; // Corrected casing
+
 import MarqueeUpdate from './components/MarqueeUpdate';
 import PaymentApproval from './components/PaymentApproval';
 import ProfitLoss from './components/ProfitLoss';
@@ -37,6 +37,7 @@ import Referrals from './components/Referrals'; // Added
 import SliderUpdate from './components/SliderUpdate';
 import WinnerApprove from './components/WinnerApprove';
 import WithdrawApproval from './components/WithdrawalApproval';
+import HarufUpdate from './components/HarufUpdate';
 
 
 const AdminDashboard = () => {
