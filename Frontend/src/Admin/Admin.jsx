@@ -33,11 +33,13 @@ import DashboardView from './components/DashboardView';
 import MarqueeUpdate from './components/MarqueeUpdate';
 import PaymentApproval from './components/PaymentApproval';
 import ProfitLoss from './components/ProfitLoss';
-import Referrals from './components/Referrals'; // Added
+
 import SliderUpdate from './components/SliderUpdate';
 import WinnerApprove from './components/WinnerApprove';
-import WithdrawApproval from './components/WithdrawalApproval';
+
 import HarufUpdate from './components/HarufUpdate';
+import WithdrawApproval from './components/WithdrawApproval';
+import ReferralComponent from './components/Refferal';
 
 
 const AdminDashboard = () => {
@@ -313,7 +315,7 @@ const AdminDashboard = () => {
       case 'allUsers':
         return <AllUsers />;
       case 'referrals': // Added
-        return <Referrals />;
+        return <ReferralComponent />;
       case 'barcodes': 
         return <BarCodeUpdate />;
       case 'payments': 
