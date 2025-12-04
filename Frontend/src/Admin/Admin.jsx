@@ -29,10 +29,11 @@ import WithdrawApproval from './components/WithdrawApproval';
 import DashboardView from './components/DashboardView';
 import MarqueeUpdate from './components/MarqueeUpdate';
 import AllUsers from './components/AllUsers';
-import HarufUpdate from './components/HarufUpdate';
+
 import Bets from './components/Bets';
 import SliderUpdate from './components/SliderUpdate';
 import ProfitLoss from './components/ProfitLoss'; // Import the new component
+import HarufUpdate from './components/harufUpdate';
 
 
 const AdminDashboard = () => {
