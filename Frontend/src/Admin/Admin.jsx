@@ -14,7 +14,8 @@ import {
   Bell,
   Settings,
   LogOut,
-  Menu
+  Menu,
+  TrendingUp,
 } from 'lucide-react';
 import { db, auth } from '../firebase';
 import { collection, query, onSnapshot, doc, runTransaction, getDocs, where, deleteDoc } from 'firebase/firestore';
@@ -27,10 +28,11 @@ import WinnerApprove from './components/WinnerApprove';
 import WithdrawApproval from './components/WithdrawApproval';
 import DashboardView from './components/DashboardView';
 import MarqueeUpdate from './components/MarqueeUpdate';
-import AllUsers from './components/AllUsers'; // Import the new component
-import HarufUpdate from './components/harufUpdate';
+import AllUsers from './components/AllUsers';
+import HarufUpdate from './components/HarufUpdate';
 import Bets from './components/Bets';
 import SliderUpdate from './components/SliderUpdate';
+import ProfitLoss from './components/ProfitLoss'; // Import the new component
 
 
 const AdminDashboard = () => {
@@ -217,7 +219,7 @@ const AdminDashboard = () => {
       <nav className="space-y-2">
         {[
           { id: 'dashboard', label: 'Dashboard', icon: Settings },
-          { id: 'allUsers', label: 'All Users', icon: Users }, // Add new nav item
+          { id: 'allUsers', label: 'All Users', icon: Users },
           { id: 'barcodes', label: 'Barcode Management', icon: QrCode },
           { id: 'payments', label: 'Payment Approval', icon: CreditCard },
           { id: 'winners', label: 'Winner Announcement', icon: Trophy },
@@ -225,7 +227,8 @@ const AdminDashboard = () => {
           { id: 'marquee', label: 'Screen Text', icon: Edit },
           { id: 'harufUpdate', label: 'Market Results', icon: Edit },
           { id: 'sliderUpdate', label: 'Carousel Slides', icon: Edit },
-          { id: 'winGameBets', label: 'Win Game Bets', icon: Trophy }
+          { id: 'winGameBets', label: 'Win Game Bets', icon: Trophy },
+          { id: 'profitLoss', label: 'Profit & Loss', icon: TrendingUp },
         ].map(item => (
           <button
             key={item.id}
@@ -237,7 +240,7 @@ const AdminDashboard = () => {
           </button>
         ))}
         <button 
-          onClick={handleLogout} // Changed onClick handler
+          onClick={handleLogout}
           className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-800 text-red-400"
         >
           <LogOut className="h-5 w-5" />
@@ -253,9 +256,15 @@ const AdminDashboard = () => {
         <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="md:hidden p-2">
             {isSidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
-        <h2 className="text-2xl font-semibold capitalize">{activeTab.replace('allUsers', 'All Users').replace('harufUpdate', 'Market Results')}</h2>
+        <h2 className="text-2xl font-semibold capitalize">
+          {activeTab
+            .replace('allUsers', 'All Users')
+            .replace('harufUpdate', 'Market Results')
+            .replace('sliderUpdate', 'Carousel Slides')
+            .replace('winGameBets', 'Win Game Bets')
+            .replace('profitLoss', 'Profit & Loss')}
+        </h2>
       </div>
-      
     </div>
   );
 
@@ -270,7 +279,7 @@ const AdminDashboard = () => {
     switch (activeTab) {
       case 'dashboard': 
         return <DashboardView stats={stats} />;
-      case 'allUsers': // Add new case
+      case 'allUsers':
         return <AllUsers />;
       case 'barcodes': 
         return <BarCodeUpdate />;
@@ -300,6 +309,8 @@ const AdminDashboard = () => {
         return <SliderUpdate />;
       case 'winGameBets':
         return <Bets />;
+      case 'profitLoss':
+        return <ProfitLoss />;
       default: 
         return <DashboardView stats={stats} />;
     }

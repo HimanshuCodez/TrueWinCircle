@@ -30,6 +30,7 @@ import History from './Pages/History';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import BettingHistory from './components/BettingHistory';
 import PhoneSignIn from './Pages/PhoneSignIn';
+import GameSummary from './Admin/components/ProfitLoss';
 
 const AppContent = () => {
   const location = useLocation();
@@ -78,6 +79,7 @@ const AppContent = () => {
         <Route path="/History" element={<History />} />
         <Route path="/Privacy" element={<PrivacyPolicy/>} />
         <Route path="/Profile" element={<ProfileCard />} />
+        <Route path="/p" element={<GameSummary />} />
         <Route path="/Reffer" element={<ReferralScreen />} />
         <Route path="/BettingHistory" element={<BettingHistory />} />
         <Route path="/Admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
