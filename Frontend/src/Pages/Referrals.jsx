@@ -3,7 +3,7 @@ import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firesto
 import { db } from '../firebase';
 import useAuthStore from '../store/authStore';
 import Loader from '../components/Loader';
-import { ArrowLeft, UserPlus, Wallet, ArrowRight } from "lucide-react";
+import { ArrowLeft, UserPlus, Wallet, ArrowRight, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from 'react-toastify';
 

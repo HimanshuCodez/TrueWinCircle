@@ -5,9 +5,11 @@ import useAuthStore from "../store/authStore";
 import { useEffect, useState } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
+import { useNavigate } from "react-router-dom";
 
 export default function ReferralScreen() {
   const user = useAuthStore((state) => state.user);
+  const navigate = useNavigate();
   const referralCode = user?.referralCode || "N/A";
   const [referrerName, setReferrerName] = useState(null);
 
@@ -63,7 +65,7 @@ export default function ReferralScreen() {
     <div className="min-h-screen bg-[#042346] text-white flex flex-col">
       {/* Header */}
       <header className="bg-yellow-600 px-4 py-4 flex items-center gap-3">
-        <button aria-label="back" className="text-white">
+        <button aria-label="back" className="text-white" onClick={() => navigate(-1)}>
           <ArrowLeft size={20} />
         </button>
         <h1 className="text-white font-semibold text-lg">Refer & Earn</h1>
