@@ -82,7 +82,7 @@ const AppContent = () => {
         <Route path="/Profile" element={<ProfileCard />} />
         <Route path="/p" element={<GameSummary />} />
         <Route path="/p" element={<GameSummary />} />
-        <Route path="/reffer" element={<Referrals />} />
+        <Route path="/refer" element={<Referrals />} />
         <Route path="/BettingHistory" element={<BettingHistory />} />
         <Route path="/Admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
         {/*  */}
