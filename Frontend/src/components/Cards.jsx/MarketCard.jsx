@@ -4,6 +4,7 @@ import { Play, BarChart2, X } from "lucide-react";
 import ResultChart from "../ResultChart";
 import { db } from "../../firebase";
 import { collection, query, where, getDocs, limit } from "firebase/firestore";
+import { toast } from "react-toastify";
 
 const MarketCard = ({ marketName, openTime, closeTime }) => {
   const [open, setOpen] = useState(false);
@@ -11,6 +12,68 @@ const MarketCard = ({ marketName, openTime, closeTime }) => {
   const [todayResult, setTodayResult] = useState("..");
   const [yesterdayResult, setYesterdayResult] = useState("..");
   const [loading, setLoading] = useState(true);
+  const [isMarketOpen, setIsMarketOpen] = useState(true);
+
+  const parseTime = (timeString) => {
+    const now = new Date();
+    const parts = timeString.match(/(\d+):(\d+)\s*(AM|PM)/i);
+    if (!parts) return null;
+
+    let hours = parseInt(parts[1], 10);
+    const minutes = parseInt(parts[2], 10);
+    const meridiem = parts[3].toUpperCase();
+
+    if (meridiem === "PM" && hours < 12) {
+      hours += 12;
+    } else if (meridiem === "AM" && hours === 12) {
+      hours = 0;
+    }
+
+    now.setHours(hours, minutes, 0, 0);
+    return now;
+  };
+
+  useEffect(() => {
+    const checkMarketStatus = () => {
+      const now = new Date();
+      const openDate = parseTime(openTime);
+      const closeDate = parseTime(closeTime);
+
+      if (!openDate || !closeDate) {
+        setIsMarketOpen(false);
+        return;
+      }
+
+      let currentlyOpen = false;
+      if (closeDate < openDate) {
+        if (now >= openDate || now < closeDate) {
+          currentlyOpen = true;
+        }
+      } else {
+        if (now >= openDate && now < closeDate) {
+          currentlyOpen = true;
+        }
+      }
+      setIsMarketOpen(currentlyOpen);
+    };
+
+    checkMarketStatus();
+    const interval = setInterval(checkMarketStatus, 60000); // Check every minute
+
+    return () => clearInterval(interval);
+  }, [openTime, closeTime]);
+
+
+  const handleCardClick = () => {
+    if (isMarketOpen) {
+      setOpen(true);
+    } else {
+      toast.info(
+        `Betting for ${marketName} is closed. It will open at ${openTime}.`
+      );
+    }
+  };
+
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -103,7 +166,7 @@ const MarketCard = ({ marketName, openTime, closeTime }) => {
     <div className="w-full max-w-md mx-auto">
       {/* Card */}
       <div
-        onClick={() => setOpen(true)}
+        onClick={handleCardClick}
         className="cursor-pointer rounded-xl border-2 border-blue-950 bg-white shadow-md overflow-hidden"
       >
         {/* Header */}
@@ -127,8 +190,8 @@ const MarketCard = ({ marketName, openTime, closeTime }) => {
           </div>
 
           {/* Market Running */}
-          <p className="text-green-600 font-semibold text-sm">
-            Market is Running
+          <p className={`${isMarketOpen ? 'text-green-600' : 'text-red-600'} font-semibold text-sm`}>
+            {isMarketOpen ? 'Market is Running' : 'Market is Closed'}
           </p>
 
           {/* Action row */}
@@ -147,7 +210,10 @@ const MarketCard = ({ marketName, openTime, closeTime }) => {
             {/* Right play button */}
             <button className="bg-[#042346]  p-3 rounded-full hover:bg-yellow-600">
               <Play
-                onClick={() => setOpen(true)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleCardClick();
+                }}
                 className="text-white"
                 size={24}
               />
