@@ -15,8 +15,7 @@ service cloud.firestore {
 
     // Rules for the users collection
     match /users/{userId} {
-      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
-      allow update: if request.auth != null && request.auth.uid == userId &&
+                allow read: if request.auth != null && (request.auth.uid == userId || isAdmin() || resource.data.referredBy == request.auth.uid);      allow update: if request.auth != null && request.auth.uid == userId &&
                       (!('role' in request.resource.data) || request.resource.data.role ==
 resource.data.role);
       allow delete: if request.auth != null && request.auth.uid == userId;
