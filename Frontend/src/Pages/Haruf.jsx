@@ -209,7 +209,9 @@ const HarufGrid = () => {
       const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
         if (docSnap.exists()) {
           const userData = docSnap.data();
-          setBalance((userData.balance || 0) + (userData.winningMoney || 0));
+          setBalance(
+            Number(userData.balance || 0) + Number(userData.winningMoney || 0)
+          );
         } else {
           setBalance(0);
         }
@@ -300,8 +302,8 @@ const HarufGrid = () => {
         if (!userDoc.exists()) throw new Error("User does not exist!");
 
         const userData = userDoc.data();
-        const currentBalance = userData.balance || 0;
-        const currentWinnings = userData.winningMoney || 0;
+        const currentBalance = Number(userData.balance || 0);
+        const currentWinnings = Number(userData.winningMoney || 0);
         const totalAvailable = currentBalance + currentWinnings;
 
         if (totalAvailable < totalBetAmount)
