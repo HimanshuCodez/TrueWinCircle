@@ -49,7 +49,7 @@ const HarufGrid = () => {
 
   const [lastWinningNumber, setLastWinningNumber] = useState(null);
 
-  const { user } = useAuthStore((state) => state.user);
+  const { user } = useAuthStore();
 
   const processHarufRounds = useCallback(async () => {
     const gameStateRef = doc(db, "game_state", "haruf_game");
@@ -209,9 +209,7 @@ const HarufGrid = () => {
       const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
         if (docSnap.exists()) {
           const userData = docSnap.data();
-          setBalance(
-            Number(userData.balance || 0) + Number(userData.winningMoney || 0)
-          );
+          setBalance(Number(userData.balance || 0));
         } else {
           setBalance(0);
         }
