@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { User, Menu, X, Wallet } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import useAuthStore from "../store/authStore";
 import { getAuth, signOut } from "firebase/auth";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "../firebase";
 
 export default function Navbar() {
   const [accountOpen, setAccountOpen] = useState(false);
@@ -11,6 +13,19 @@ export default function Navbar() {
   const setUser = useAuthStore((state) => state.setUser);
   const auth = getAuth();
   const location = useLocation();
+
+  useEffect(() => {
+    if (user?.uid) {
+      const userDocRef = doc(db, "users", user.uid);
+      const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const currentUser = useAuthStore.getState().user;
+          setUser({ ...currentUser, ...docSnap.data() });
+        }
+      });
+      return () => unsubscribe();
+    }
+  }, [user?.uid, setUser]);
 
   // Example wallet amount (replace with API/store value)
   const walletAmount = (user?.balance || 0) + (user?.winningMoney || 0);
