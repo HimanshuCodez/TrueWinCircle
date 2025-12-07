@@ -2,89 +2,103 @@ import React, { useState, useEffect } from "react";
 import {
   TrendingUp,
   TrendingDown,
-  Users,
   Receipt,
   CircleDollarSign,
-  ListOrdered,
   Calendar,
+  Gamepad2,
 } from "lucide-react";
 import { db } from "../../firebase";
 import { collection, query, where, getDocs, Timestamp } from "firebase/firestore";
 import Loader from "../../components/Loader";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 export default function ProfitLoss() {
-  const [dateFilter, setDateFilter] = useState("today");
+  const [gameFilter, setGameFilter] = useState("all");
   const [summary, setSummary] = useState({
     profit: 0,
     loss: 0,
     totalCollection: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [startDate, setStartDate] = useState(new Date());
+  const [endDate, setEndDate] = useState(new Date());
+
+  const setDateRange = (filter) => {
+    const now = new Date();
+    let start, end = new Date();
+
+    switch (filter) {
+      case "yesterday":
+        start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+        end = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+        break;
+      case "7days":
+        start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
+        break;
+      case "today":
+      default:
+        start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        break;
+    }
+    setStartDate(start);
+    setEndDate(end);
+  };
 
   useEffect(() => {
-    const calculateDateRange = () => {
-      const now = new Date();
-      let start, end;
-
-      switch (dateFilter) {
-        case "yesterday":
-          start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
-          end = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59, 999);
-          break;
-        case "7days":
-          start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
-          start.setHours(0, 0, 0, 0);
-          end = new Date(); // Now
-          break;
-        case "today":
-        default:
-          start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          end = new Date(); // Now
-          break;
-      }
-      return { start: Timestamp.fromDate(start), end: Timestamp.fromDate(end) };
-    };
-
     const fetchProfitLossData = async () => {
       setLoading(true);
-      const { start, end } = calculateDateRange();
+      
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      const firestoreStart = Timestamp.fromDate(start);
+
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      const firestoreEnd = Timestamp.fromDate(end);
 
       try {
-        const betCollections = [
-          { name: "wingame_bets", timeField: "createdAt", amountField: "amount" },
-          { name: "harufBets", timeField: "timestamp", amountField: "betAmount" },
-          { name: "rouletteBets", timeField: "timestamp", amountField: "betAmount" },
+        const allBetCollections = [
+          { name: "wingame_bets", gameId: "wingame", timeField: "createdAt", amountField: "amount" },
+          { name: "harufBets", gameId: "haruf", timeField: "timestamp", amountField: "betAmount" },
+          { name: "rouletteBets", gameId: "roulette", timeField: "timestamp", amountField: "betAmount" },
         ];
+
+        const betCollections = gameFilter === 'all'
+            ? allBetCollections
+            : allBetCollections.filter(c => c.gameId === gameFilter);
 
         let totalProfit = 0;
         let totalLoss = 0;
         let totalCollection = 0;
 
-        const promises = betCollections.map(c => {
-          const q = query(
-            collection(db, c.name),
-            where(c.timeField, ">=", start),
-            where(c.timeField, "<=", end)
-          );
-          return getDocs(q);
-        });
+        if (betCollections.length > 0) {
+            const promises = betCollections.map(c => {
+                const q = query(
+                    collection(db, c.name),
+                    where(c.timeField, ">=", firestoreStart),
+                    where(c.timeField, "<=", firestoreEnd)
+                );
+                return getDocs(q);
+            });
 
-        const snapshots = await Promise.all(promises);
+            const snapshots = await Promise.all(promises);
 
-        snapshots.forEach((snapshot, index) => {
-          const config = betCollections[index];
-          snapshot.forEach((doc) => {
-            const bet = doc.data();
-            const betAmount = bet[config.amountField] || 0;
-            totalCollection += betAmount;
+            snapshots.forEach((snapshot, index) => {
+            const config = betCollections[index];
+            snapshot.forEach((doc) => {
+                const bet = doc.data();
+                const betAmount = bet[config.amountField] || 0;
+                totalCollection += betAmount;
 
-            if (bet.status === "win") {
-              totalLoss += bet.winnings || 0;
-            } else if (bet.status === "loss") {
-              totalProfit += betAmount;
-            }
-          });
-        });
+                if (bet.status === "win") {
+                totalLoss += bet.winnings || 0;
+                } else if (bet.status === "loss") {
+                totalProfit += betAmount;
+                }
+            });
+            });
+        }
         
         setSummary({
           profit: totalProfit,
@@ -100,12 +114,10 @@ export default function ProfitLoss() {
     };
 
     fetchProfitLossData();
-  }, [dateFilter]);
+  }, [startDate, endDate, gameFilter]);
 
   return (
-    <div className="w-full p-6 grid grid-cols-1 lg:grid-cols-2 gap-6 text-white">
-     
-
+    <div className="w-full p-6 grid grid-cols-1 gap-6 text-white">
       {/* Daily Game Summary */}
       <div className="rounded-2xl p-6 bg-gray-900 border border-gray-700 shadow-lg">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
@@ -113,20 +125,56 @@ export default function ProfitLoss() {
             <CircleDollarSign className="w-5 h-5" />
             Game Summary
             </h2>
-            <div className="mt-3 sm:mt-0 p-2 rounded-xl bg-gray-800 text-gray-300 text-sm flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
+        </div>
+
+        <div className="mb-4 p-4 rounded-xl bg-gray-800 flex flex-wrap items-center justify-start gap-4">
+            {/* Game Filter */}
+            <div className="flex items-center gap-2">
+                <Gamepad2 className="w-4 h-4 text-gray-400" />
                 <select
-                    value={dateFilter}
-                    onChange={(e) => setDateFilter(e.target.value)}
-                    className="bg-transparent outline-none text-gray-200"
+                    value={gameFilter}
+                    onChange={(e) => setGameFilter(e.target.value)}
+                    className="p-2 rounded-md bg-gray-700 text-gray-200 outline-none"
                     disabled={loading}
                 >
-                    <option value="today">Today</option>
-                    <option value="yesterday">Yesterday</option>
-                    <option value="7days">Last 7 Days</option>
+                    <option value="all">All Games</option>
+                    <option value="wingame">Win Game</option>
+                    <option value="haruf">Haruf</option>
+                    <option value="roulette">Roulette</option>
                 </select>
             </div>
+
+            {/* Date Presets */}
+            <div className="flex items-center gap-2">
+                <button onClick={() => setDateRange("today")} className="p-2 rounded-md bg-gray-700 hover:bg-yellow-500 hover:text-black transition-colors">Today</button>
+                <button onClick={() => setDateRange("yesterday")} className="p-2 rounded-md bg-gray-700 hover:bg-yellow-500 hover:text-black transition-colors">Yesterday</button>
+                <button onClick={() => setDateRange("7days")} className="p-2 rounded-md bg-gray-700 hover:bg-yellow-500 hover:text-black transition-colors">Last 7 Days</button>
+            </div>
+            
+            {/* Date Pickers */}
+            <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-gray-400" />
+                <DatePicker
+                    selected={startDate}
+                    onChange={(date) => setStartDate(date)}
+                    selectsStart
+                    startDate={startDate}
+                    endDate={endDate}
+                    className="p-2 rounded-md bg-gray-700 text-gray-200 w-32"
+                />
+                <span className="text-gray-400">to</span>
+                <DatePicker
+                    selected={endDate}
+                    onChange={(date) => setEndDate(date)}
+                    selectsEnd
+                    startDate={startDate}
+                    endDate={endDate}
+                    minDate={startDate}
+                    className="p-2 rounded-md bg-gray-700 text-gray-200 w-32"
+                />
+            </div>
         </div>
+
 
         {loading ? (
           <div className="flex justify-center items-center h-48">
