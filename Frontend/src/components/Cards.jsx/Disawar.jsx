@@ -5,8 +5,6 @@ const DisawarCard = () => {
   return (
     <MarketCard
       marketName="DISAWAR"
-      openTime="03:00 PM"
-      closeTime="08:40 PM"
     />
   );
 };

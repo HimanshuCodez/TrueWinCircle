@@ -3,30 +3,70 @@ import HarufGrid from "../../Pages/Haruf";
 import { Play, BarChart2, X } from "lucide-react";
 import ResultChart from "../ResultChart";
 import { db } from "../../firebase";
-import { collection, query, where, getDocs, limit } from "firebase/firestore";
+import { collection, query, where, getDocs, limit, doc, onSnapshot } from "firebase/firestore";
 import { toast } from "react-toastify";
+import { markets } from "../../marketData";
 
-const MarketCard = ({ marketName, openTime, closeTime }) => {
+const MarketCard = ({ marketName }) => {
   const [open, setOpen] = useState(false);
   const [showChart, setShowChart] = useState(false);
   const [todayResult, setTodayResult] = useState("..");
   const [yesterdayResult, setYesterdayResult] = useState("..");
   const [loading, setLoading] = useState(true);
   const [isMarketOpen, setIsMarketOpen] = useState(true);
+  const [openTime, setOpenTime] = useState("..");
+  const [closeTime, setCloseTime] = useState("..");
+
+  useEffect(() => {
+    if (!marketName) return;
+
+    const marketInfo = markets.find(m => m.name === marketName);
+    const fallbackOpen = marketInfo?.openTime || "..";
+    const fallbackClose = marketInfo?.closeTime || "..";
+
+    setOpenTime(fallbackOpen);
+    setCloseTime(fallbackClose);
+
+    const timingDocRef = doc(db, 'market_timings', marketName);
+    const unsubscribe = onSnapshot(timingDocRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setOpenTime(data.openTime || fallbackOpen);
+        setCloseTime(data.closeTime || fallbackClose);
+      } else {
+        setOpenTime(fallbackOpen);
+        setCloseTime(fallbackClose);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [marketName]);
 
   const parseTime = (timeString) => {
+    if (!timeString || timeString === "..") return null;
+
     const now = new Date();
-    const parts = timeString.match(/(\d+):(\d+)\s*(AM|PM)/i);
-    if (!parts) return null;
+    // Support both 12-hour (AM/PM) and 24-hour format
+    const parts12 = timeString.match(/(\d+):(\d+)\s*(AM|PM)/i);
+    const parts24 = timeString.match(/(\d{1,2}):(\d{2})/);
 
-    let hours = parseInt(parts[1], 10);
-    const minutes = parseInt(parts[2], 10);
-    const meridiem = parts[3].toUpperCase();
+    let hours, minutes;
 
-    if (meridiem === "PM" && hours < 12) {
-      hours += 12;
-    } else if (meridiem === "AM" && hours === 12) {
-      hours = 0;
+    if (parts12) {
+        hours = parseInt(parts12[1], 10);
+        minutes = parseInt(parts12[2], 10);
+        const meridiem = parts12[3].toUpperCase();
+
+        if (meridiem === "PM" && hours < 12) {
+          hours += 12;
+        } else if (meridiem === "AM" && hours === 12) {
+          hours = 0;
+        }
+    } else if (parts24) {
+        hours = parseInt(parts24[1], 10);
+        minutes = parseInt(parts24[2], 10);
+    } else {
+        return null;
     }
 
     now.setHours(hours, minutes, 0, 0);
@@ -40,16 +80,17 @@ const MarketCard = ({ marketName, openTime, closeTime }) => {
       const closeDate = parseTime(closeTime);
 
       if (!openDate || !closeDate) {
-        setIsMarketOpen(false);
+        setIsMarketOpen(false); // Can't determine, assume closed
         return;
       }
 
       let currentlyOpen = false;
+      // Handles overnight markets (e.g., opens 8 PM, closes 5 AM)
       if (closeDate < openDate) {
         if (now >= openDate || now < closeDate) {
           currentlyOpen = true;
         }
-      } else {
+      } else { // Handles markets within the same day
         if (now >= openDate && now < closeDate) {
           currentlyOpen = true;
         }
@@ -57,8 +98,8 @@ const MarketCard = ({ marketName, openTime, closeTime }) => {
       setIsMarketOpen(currentlyOpen);
     };
 
-    checkMarketStatus();
-    const interval = setInterval(checkMarketStatus, 60000); // Check every minute
+    const interval = setInterval(checkMarketStatus, 1000); // Check every second
+    checkMarketStatus(); // Run once immediately
 
     return () => clearInterval(interval);
   }, [openTime, closeTime]);
@@ -103,11 +144,7 @@ const MarketCard = ({ marketName, openTime, closeTime }) => {
         if (todayResultDoc) {
           setTodayResult(todayResultDoc.number);
         } else {
-          setTodayResult(
-            Math.floor(Math.random() * 100)
-              .toString()
-              .padStart(2, "0")
-          );
+          setTodayResult("..");
         }
 
         // Filter for yesterday's result
@@ -124,11 +161,7 @@ const MarketCard = ({ marketName, openTime, closeTime }) => {
         }
       } catch (error) {
         console.error(`Error fetching results for ${marketName}:`, error);
-        setTodayResult(
-          Math.floor(Math.random() * 100)
-            .toString()
-            .padStart(2, "0")
-        );
+        setTodayResult("..");
         setYesterdayResult('..');
       } finally {
         setLoading(false);

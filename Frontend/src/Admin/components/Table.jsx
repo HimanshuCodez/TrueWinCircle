@@ -1,18 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase';
-import { collection, query, where, orderBy, limit, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, getDocs, addDoc, serverTimestamp, doc, setDoc, getDoc } from 'firebase/firestore';
 import { toast } from 'react-toastify';
+import { markets } from '../../marketData';
 import Loader from '../../components/Loader';
 
-const marketNames = [
-  "DELHI BAZAAR",
-  "DHAN KUBER",
-  "DISAWAR",
-  "FARIDABAD",
-  "GALI",
-  "SHREE GANESH",
-  "GHAZIABAD",
-];
+const marketNames = markets.map(m => m.name);
 
 const Table = () => {
   const [selectedMarket, setSelectedMarket] = useState(marketNames[0]);
@@ -22,6 +15,11 @@ const Table = () => {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [history, setHistory] = useState([]);
+
+  // Timing related states
+  const [openTime, setOpenTime] = useState('');
+  const [closeTime, setCloseTime] = useState('');
+  const [timingLoading, setTimingLoading] = useState(false);
 
   const fetchResultsAndHistory = async (market) => {
     setLoading(true);
@@ -85,6 +83,32 @@ const Table = () => {
   useEffect(() => {
     if (selectedMarket) {
         fetchResultsAndHistory(selectedMarket);
+
+        const fetchTimings = async () => {
+            setTimingLoading(true);
+            const timingDocRef = doc(db, 'market_timings', selectedMarket);
+            try {
+                const docSnap = await getDoc(timingDocRef);
+                if (docSnap.exists() && docSnap.data().openTime) {
+                    const data = docSnap.data();
+                    setOpenTime(data.openTime);
+                    setCloseTime(data.closeTime);
+                } else {
+                    const marketInfo = markets.find(m => m.name === selectedMarket);
+                    setOpenTime(marketInfo?.openTime || '');
+                    setCloseTime(marketInfo?.closeTime || '');
+                }
+            } catch (error) {
+                console.error("Error fetching timings:", error);
+                toast.error(`Failed to fetch timings for ${selectedMarket}.`);
+                const marketInfo = markets.find(m => m.name === selectedMarket);
+                setOpenTime(marketInfo?.openTime || '');
+                setCloseTime(marketInfo?.closeTime || '');
+            } finally {
+                setTimingLoading(false);
+            }
+        };
+        fetchTimings();
     }
   }, [selectedMarket]);
 
@@ -111,6 +135,21 @@ const Table = () => {
       setSubmitting(false);
     }
   };
+
+  const handleTimingUpdate = async () => {
+    setTimingLoading(true);
+    try {
+        const timingDocRef = doc(db, 'market_timings', selectedMarket);
+        await setDoc(timingDocRef, { openTime, closeTime }, { merge: true });
+        toast.success(`Timings for ${selectedMarket} updated successfully!`);
+    } catch (error) {
+        console.error("Error updating timings:", error);
+        toast.error("Failed to update timings.");
+    } finally {
+        setTimingLoading(false);
+    }
+  };
+
 
   return (
     <div className="p-6">
@@ -162,8 +201,43 @@ const Table = () => {
           disabled={submitting || loading}
           className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {submitting ? 'Updating...' : 'Update Result'}
+          {submitting ? 'Updating Result...' : 'Update Result'}
         </button>
+      </div>
+      
+      <div className="bg-white rounded-lg shadow-sm p-6 mt-6">
+        <h3 className="text-lg font-semibold mb-4">Update Market Timings for {selectedMarket}</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label htmlFor="open-time" className="block text-sm font-medium text-gray-700">Open Time</label>
+                <input
+                    type="time"
+                    id="open-time"
+                    value={openTime}
+                    onChange={(e) => setOpenTime(e.target.value)}
+                    className="mt-1 block w-full pl-3 pr-2 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                />
+            </div>
+            <div>
+                <label htmlFor="close-time" className="block text-sm font-medium text-gray-700">Close Time</label>
+                <input
+                    type="time"
+                    id="close-time"
+                    value={closeTime}
+                    onChange={(e) => setCloseTime(e.target.value)}
+                    className="mt-1 block w-full pl-3 pr-2 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                />
+            </div>
+        </div>
+        <div className="mt-4">
+            <button
+              onClick={handleTimingUpdate}
+              disabled={timingLoading || loading}
+              className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {timingLoading ? 'Updating Timings...' : 'Update Timings'}
+            </button>
+        </div>
       </div>
 
       <div className="mt-6">
