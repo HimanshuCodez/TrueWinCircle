@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, where, doc } from 'firebase/firestore';
+import { collection, query, onSnapshot, where, doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { Loader2 } from 'lucide-react';
 
@@ -14,6 +14,47 @@ const Bets = () => {
   const [roundEndTime, setRoundEndTime] = useState(null);
   const [remainingTime, setRemainingTime] = useState(null);
   const [stage, setStage] = useState('loading'); // 'loading', 'betting', 'waiting'
+
+  const [market, setMarket] = useState('haruf_game');
+  const [openTime, setOpenTime] = useState('');
+  const [closeTime, setCloseTime] = useState('');
+  const [timingLoading, setTimingLoading] = useState(false);
+
+  useEffect(() => {
+    if (!market) return;
+    const fetchTimings = async () => {
+      const timingDocRef = doc(db, 'market_timings', market);
+      try {
+        const docSnap = await getDoc(timingDocRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setOpenTime(data.openTime || '');
+          setCloseTime(data.closeTime || '');
+        } else {
+          setOpenTime('');
+          setCloseTime('');
+        }
+      } catch (error) {
+        console.error("Error fetching market timings:", error);
+      }
+    };
+    fetchTimings();
+  }, [market]);
+
+  const handleTimingUpdate = async () => {
+    setTimingLoading(true);
+    try {
+      const timingDocRef = doc(db, 'market_timings', market);
+      await setDoc(timingDocRef, { openTime, closeTime }, { merge: true });
+      alert('Timings updated successfully!');
+    } catch (error) {
+      console.error("Error updating timings:", error);
+      alert('Failed to update timings.');
+    } finally {
+      setTimingLoading(false);
+    }
+  };
+
 
   useEffect(() => {
     const gameStateRef = doc(db, 'game_state', 'win_game_1_to_12');
@@ -152,6 +193,53 @@ const Bets = () => {
       {currentRoundId === null && !loading && (
         <p className="text-red-500 mt-4">No active game round found. Please ensure the game is running.</p>
       )}
+
+      <div className="mt-8 p-4 border-t border-gray-200">
+        <h3 className="text-xl font-semibold mb-4">Market Timing Management</h3>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+          <div>
+            <label htmlFor="market-select" className="block text-sm font-medium text-gray-700">Market</label>
+            <select
+              id="market-select"
+              value={market}
+              onChange={(e) => setMarket(e.target.value)}
+              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+            >
+              <option value="haruf_game">Haruf Game</option>
+              {/* Add other games here if needed */}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="open-time" className="block text-sm font-medium text-gray-700">Open Time</label>
+            <input
+              type="time"
+              id="open-time"
+              value={openTime}
+              onChange={(e) => setOpenTime(e.target.value)}
+              className="mt-1 block w-full pl-3 pr-2 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+            />
+          </div>
+          <div>
+            <label htmlFor="close-time" className="block text-sm font-medium text-gray-700">Close Time</label>
+            <input
+              type="time"
+              id="close-time"
+              value={closeTime}
+              onChange={(e) => setCloseTime(e.target.value)}
+              className="mt-1 block w-full pl-3 pr-2 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+            />
+          </div>
+          <div>
+            <button
+              onClick={handleTimingUpdate}
+              disabled={timingLoading || !market}
+              className="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400"
+            >
+              {timingLoading ? 'Saving...' : 'Save Timings'}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

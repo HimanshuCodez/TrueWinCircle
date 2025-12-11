@@ -42,143 +42,164 @@ const BetBox = ({ num, value, onChange }) => (
 
 const HarufGrid = () => {
   const [bets, setBets] = useState({});
-
   const [bettingLoading, setBettingLoading] = useState(false);
-
   const [balance, setBalance] = useState(0);
-
   const [lastWinningNumber, setLastWinningNumber] = useState(null);
-
   const { user } = useAuthStore();
+  const [marketTimings, setMarketTimings] = useState({ openTime: null, closeTime: null });
+  const [marketStatus, setMarketStatus] = useState({ isOpen: true, message: "Loading..." });
+
+  useEffect(() => {
+    const timingDocRef = doc(db, "market_timings", "haruf_game");
+    const unsubscribe = onSnapshot(timingDocRef, (docSnap) => {
+      if (docSnap.exists() && docSnap.data().openTime && docSnap.data().closeTime) {
+        setMarketTimings(docSnap.data());
+      } else {
+        setMarketTimings({ openTime: null, closeTime: null });
+      }
+    });
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    const checkMarketStatus = () => {
+      const { openTime, closeTime } = marketTimings;
+      if (openTime && closeTime) {
+        const now = new Date();
+        const open = new Date(now.toDateString() + " " + openTime);
+        const close = new Date(now.toDateString() + " " + closeTime);
+        const isOpen = now >= open && now < close;
+        let message;
+        if (isOpen) {
+          message = `Market is open from ${openTime} to ${closeTime}.`;
+        } else {
+          message = `Market is currently closed. Open from ${openTime} to ${closeTime}.`;
+        }
+        setMarketStatus({ isOpen, message });
+      } else {
+        setMarketStatus({ isOpen: true, message: "Market is open 24/7." });
+      }
+    };
+    const intervalId = setInterval(checkMarketStatus, 1000);
+    checkMarketStatus();
+    return () => clearInterval(intervalId);
+  }, [marketTimings]);
 
   const processHarufRounds = useCallback(async () => {
     const gameStateRef = doc(db, "game_state", "haruf_game");
+    
+    const isMarketOpen = () => {
+      const { openTime, closeTime } = marketTimings;
+      if (!openTime || !closeTime) return true;
+      const now = new Date();
+      const open = new Date(now.toDateString() + " " + openTime);
+      const close = new Date(now.toDateString() + " " + closeTime);
+      return now >= open && now < close;
+    };
 
     try {
       await runTransaction(db, async (transaction) => {
         const gameStateDoc = await transaction.get(gameStateRef);
 
-        let currentRoundId;
-
         if (!gameStateDoc.exists()) {
           console.log("Haruf game state not found, initializing...");
-
-          const now = new Date();
-
-          currentRoundId = now.getTime();
-
-          const roundEndsAt = new Date(
-            currentRoundId + ROUND_DURATION_MINUTES * 60 * 1000
-          );
-
-          transaction.set(gameStateRef, {
-            roundId: currentRoundId,
-
-            roundEndsAt: roundEndsAt,
-
-            lastRoundProcessed: null,
-          });
-
+          if (isMarketOpen()) {
+            const now = new Date();
+            const currentRoundId = now.getTime();
+            const roundEndsAt = new Date(currentRoundId + ROUND_DURATION_MINUTES * 60 * 1000);
+            transaction.set(gameStateRef, {
+              roundId: currentRoundId,
+              roundEndsAt: roundEndsAt,
+              lastRoundProcessed: null,
+            });
+          } else {
+            transaction.set(gameStateRef, {
+              roundId: null,
+              roundEndsAt: new Date(),
+              lastRoundProcessed: null,
+            });
+          }
           return;
         }
 
         const gameState = gameStateDoc.data();
+        const { roundId, roundEndsAt } = gameState;
 
-        const roundEndsAt = gameState.roundEndsAt.toDate();
+        if (!roundId) {
+          if (isMarketOpen()) {
+            const newRoundId = new Date().getTime();
+            const newRoundEndsAt = new Date(newRoundId + ROUND_DURATION_MINUTES * 60 * 1000);
+            transaction.update(gameStateRef, { roundId: newRoundId, roundEndsAt: newRoundEndsAt });
+          }
+          return;
+        }
+        
+        const roundEndTime = roundEndsAt.toDate();
 
-        currentRoundId = gameState.roundId;
-
-        if (new Date() < roundEndsAt) {
+        if (new Date() < roundEndTime) {
           return; // Current round is still active.
         }
 
         // --- Round has ended, process winnings ---
-
-        console.log(`Processing Haruf round: ${currentRoundId}`);
+        console.log(`Processing Haruf round: ${roundId}`);
 
         const winningNumber = Math.floor(Math.random() * 100) + 1;
-
-        console.log(
-          `Haruf winning number for round ${currentRoundId} is: ${winningNumber}`
-        );
+        console.log(`Haruf winning number for round ${roundId} is: ${winningNumber}`);
 
         const betsRef = collection(db, "harufBets");
-
-        const q = query(
-          betsRef,
-          where("roundId", "==", currentRoundId),
-          where("status", "==", "pending")
-        );
-
-        // Reading documents must be done before writing in a transaction.
-
+        const q = query(betsRef, where("roundId", "==", roundId), where("status", "==", "pending"));
         const betsSnapshot = await getDocs(q);
-
         const userWinnings = {};
 
         betsSnapshot.forEach((betDoc) => {
           const bet = betDoc.data();
-
           if (parseInt(bet.selectedNumber) === winningNumber) {
             const winnings = bet.betAmount * HARUF_PAYOUT_MULTIPLIER;
-
-            userWinnings[bet.userId] =
-              (userWinnings[bet.userId] || 0) + winnings;
-
+            userWinnings[bet.userId] = (userWinnings[bet.userId] || 0) + winnings;
             transaction.update(betDoc.ref, { status: "win", winnings });
           } else {
             transaction.update(betDoc.ref, { status: "loss", winnings: 0 });
           }
         });
 
-        // Credit winnings to users
-
         for (const userId in userWinnings) {
           const amountToCredit = userWinnings[userId];
-
           if (amountToCredit > 0) {
             const userDocRef = doc(db, "users", userId);
-
             const userDoc = await transaction.get(userDocRef);
-
             if (userDoc.exists()) {
               const currentWinnings = userDoc.data().winningMoney || 0;
-
               const newWinnings = currentWinnings + amountToCredit;
-
               transaction.update(userDocRef, { winningMoney: newWinnings });
-
               if (userId === user?.uid) {
                 toast.success(`You won ₹${amountToCredit.toFixed(2)}!`);
               }
             }
           }
         }
-
-        // Start a new round
-
-        const newRoundId = new Date().getTime();
-
-        const newRoundEndsAt = new Date(
-          newRoundId + ROUND_DURATION_MINUTES * 60 * 1000
-        );
-
-        transaction.update(gameStateRef, {
-          roundId: newRoundId,
-
-          roundEndsAt: newRoundEndsAt,
-
+        
+        const updates = {
           lastWinningNumber: winningNumber,
+          lastRoundProcessed: roundId,
+        };
 
-          lastRoundProcessed: currentRoundId,
-        });
+        if (isMarketOpen()) {
+          const newRoundId = new Date().getTime();
+          const newRoundEndsAt = new Date(newRoundId + ROUND_DURATION_MINUTES * 60 * 1000);
+          updates.roundId = newRoundId;
+          updates.roundEndsAt = newRoundEndsAt;
+        } else {
+          updates.roundId = null;
+        }
+
+        transaction.update(gameStateRef, updates);
       });
     } catch (error) {
       if (error.code !== "aborted") {
         console.error("Error in Haruf round processing:", error);
       }
     }
-  }, [user]);
+  }, [user, marketTimings]);
 
   useEffect(() => {
     const gameStateRef = doc(db, "game_state", "haruf_game");
@@ -197,7 +218,6 @@ const HarufGrid = () => {
 
     return () => {
       clearInterval(intervalId);
-
       unsubscribe();
     };
   }, [processHarufRounds]);
@@ -221,11 +241,13 @@ const HarufGrid = () => {
 
   const handleInputChange = (num, value) => {
     const sanitizedValue = value.replace(/[^0-9]/g, "");
-
     setBets((prev) => ({ ...prev, [num]: sanitizedValue }));
   };
 
   const handlePlaceBet = async () => {
+    if (!marketStatus.isOpen) {
+      return toast.error("Market is currently closed.");
+    }
     const { user } = useAuthStore.getState();
 
     if (!user) return toast.error("You must be logged in to place a bet.");
@@ -234,8 +256,8 @@ const HarufGrid = () => {
 
     const gameStateSnap = await getDoc(gameStateRef);
 
-    if (!gameStateSnap.exists()) {
-      return toast.error("Game is not ready. Please try again in a moment.");
+    if (!gameStateSnap.exists() || !gameStateSnap.data().roundId) {
+      return toast.error("Game is not ready or market is closed. Please try again in a moment.");
     }
 
     const { roundId, roundEndsAt } = gameStateSnap.data();
@@ -334,17 +356,11 @@ const HarufGrid = () => {
           if (roundedAmount > 0) {
             transaction.set(doc(betsCollectionRef), {
               userId: user.uid,
-
               roundId: roundId,
-
               betType: "Haruf",
-
               selectedNumber: num,
-
               betAmount: roundedAmount,
-
               timestamp: serverTimestamp(),
-
               status: "pending",
             });
           }
@@ -365,6 +381,11 @@ const HarufGrid = () => {
 
   return (
     <div className="flex flex-col items-center w-full pb-20 pt-10">
+      <div className="w-full px-2 mb-4">
+        <p className={`text-center font-semibold ${marketStatus.isOpen ? 'text-green-600' : 'text-red-600'}`}>
+          {marketStatus.message}
+        </p>
+      </div>
       <div className="grid grid-cols-10 gap-2 p-2">
         {Array.from({ length: 100 }, (_, i) => (
           <BetBox
@@ -431,11 +452,13 @@ const HarufGrid = () => {
       <div className="fixed bottom-0 left-0 right-0 bg-white p-3 shadow-lg">
         <button
           onClick={handlePlaceBet}
-          disabled={bettingLoading}
+          disabled={bettingLoading || !marketStatus.isOpen}
           className="w-full bg-red-600 text-white font-bold py-3 rounded-md hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
           {bettingLoading
             ? "Placing Bets..."
+            : !marketStatus.isOpen
+            ? "Market Closed"
             : `Place Bid (₹${Object.values(bets).reduce(
                 (a, b) => a + (parseInt(b) || 0),
                 0
