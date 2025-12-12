@@ -24,9 +24,6 @@ const MarketCard = ({ marketName }) => {
     const fallbackOpen = marketInfo?.openTime || "..";
     const fallbackClose = marketInfo?.closeTime || "..";
 
-    setOpenTime(fallbackOpen);
-    setCloseTime(fallbackClose);
-
     const timingDocRef = doc(db, 'market_timings', marketName);
     const unsubscribe = onSnapshot(timingDocRef, (docSnap) => {
       if (docSnap.exists()) {

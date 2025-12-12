@@ -89,10 +89,10 @@ const Table = () => {
             const timingDocRef = doc(db, 'market_timings', selectedMarket);
             try {
                 const docSnap = await getDoc(timingDocRef);
-                if (docSnap.exists() && docSnap.data().openTime) {
+                if (docSnap.exists()) {
                     const data = docSnap.data();
-                    setOpenTime(data.openTime);
-                    setCloseTime(data.closeTime);
+                    setOpenTime(data.openTime || '');
+                    setCloseTime(data.closeTime || '');
                 } else {
                     const marketInfo = markets.find(m => m.name === selectedMarket);
                     setOpenTime(marketInfo?.openTime || '');
