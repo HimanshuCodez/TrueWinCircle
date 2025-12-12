@@ -7,6 +7,23 @@ import { collection, query, where, getDocs, limit, doc, onSnapshot } from "fireb
 import { toast } from "react-toastify";
 import { markets } from "../../marketData";
 
+const formatTime12h = (timeString) => {
+  if (!timeString || timeString === '..') {
+    return '..';
+  }
+  const [hours, minutes] = timeString.split(':');
+  if (!minutes) { 
+      return timeString;
+  }
+  const h = parseInt(hours, 10);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  let h12 = h % 12;
+  if (h12 === 0) {
+    h12 = 12;
+  }
+  return `${h12}:${minutes} ${ampm}`;
+};
+
 const MarketCard = ({ marketName }) => {
   const [open, setOpen] = useState(false);
   const [showChart, setShowChart] = useState(false);
@@ -107,7 +124,7 @@ const MarketCard = ({ marketName }) => {
       setOpen(true);
     } else {
       toast.info(
-        `Betting for ${marketName} is closed. It will open at ${openTime}.`
+        `Betting for ${marketName} is closed. It will open at ${formatTime12h(openTime)}.`
       );
     }
   };
@@ -253,10 +270,10 @@ const MarketCard = ({ marketName }) => {
           {/* Timings */}
           <div className="flex justify-between text-sm text-gray-700 w-full mt-3">
             <p>
-              <span className="font-medium">Open:</span> {openTime}
+              <span className="font-medium">Open:</span> {formatTime12h(openTime)}
             </p>
             <p>
-              <span className="font-medium">Close:</span> {closeTime}
+              <span className="font-medium">Close:</span> {formatTime12h(closeTime)}
             </p>
           </div>
         </div>

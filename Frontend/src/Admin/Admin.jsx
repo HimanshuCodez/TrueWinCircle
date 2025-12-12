@@ -250,7 +250,7 @@ const AdminDashboard = () => {
         {[
           { id: 'dashboard', label: 'Dashboard', icon: Settings },
           { id: 'allUsers', label: 'All Users', icon: Users },
-          { id: 'referrals', label: 'Referrals', icon: UserPlus }, // Added
+
           { id: 'barcodes', label: 'Barcode Management', icon: QrCode },
           { id: 'payments', label: 'Payment Approvals', icon: CreditCard },
           { id: 'winners', label: 'Winner Announcement', icon: Trophy },
