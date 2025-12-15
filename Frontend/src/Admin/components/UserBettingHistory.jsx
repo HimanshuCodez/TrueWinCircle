@@ -1,69 +1,119 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, orderBy, getDocs, doc, documentId } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase';
 import Loader from '../../components/Loader';
+
+// Helper to format date and time
+const formatTimestamp = (timestamp) => {
+  if (!timestamp || !timestamp.toDate) {
+    return { date: 'N/A', time: 'N/A' };
+  }
+  const d = timestamp.toDate();
+  return {
+    date: d.toLocaleDateString(),
+    time: d.toLocaleTimeString(),
+  };
+};
+
+// Fetch functions for each game type
+const fetchWinGameBets = async (userId) => {
+  const betsQuery = query(collection(db, 'wingame_bets'), where('userId', '==', userId));
+  const snapshot = await getDocs(betsQuery);
+  return snapshot.docs.map(doc => {
+    const data = doc.data();
+    const { date, time } = formatTimestamp(data.createdAt);
+    return {
+      id: doc.id,
+      gameName: '1 to 12 Win',
+      date,
+      time,
+      number: data.number,
+      amount: data.amount,
+      status: data.status || 'pending',
+      payout: data.status === 'win' ? data.winnings : (data.status === 'loss' ? -data.amount : 0),
+      rawDate: data.createdAt?.toDate() || null
+    };
+  });
+};
+
+const fetchHarufBets = async (userId) => {
+  const betsQuery = query(collection(db, 'harufBets'), where('userId', '==', userId));
+  const snapshot = await getDocs(betsQuery);
+  return snapshot.docs.map(doc => {
+    const data = doc.data();
+    const { date, time } = formatTimestamp(data.timestamp);
+    return {
+      id: doc.id,
+      gameName: 'Haruf Game',
+      date,
+      time,
+      number: data.selectedNumber,
+      amount: data.betAmount,
+      status: data.status || 'pending',
+      payout: data.status === 'win' ? data.winnings : (data.status === 'loss' ? -data.betAmount : 0),
+      rawDate: data.timestamp?.toDate() || null
+    };
+  });
+};
+
+const fetchRouletteBets = async (userId) => {
+  const betsQuery = query(collection(db, 'rouletteBets'), where('userId', '==', userId));
+  const snapshot = await getDocs(betsQuery);
+  return snapshot.docs.map(doc => {
+    const data = doc.data();
+    // Roulette bets don't have a reliable win/loss status in the DB
+    // We can't calculate payout accurately. We'll mark as 'processed'.
+    const { date, time } = formatTimestamp(data.timestamp);
+    return {
+      id: doc.id,
+      gameName: 'Roulette',
+      date,
+      time,
+      number: data.betType, // In Roulette, the 'betType' is what was bet on
+      amount: data.betAmount,
+      status: 'processed', // Status is not updated in the DB for this game
+      payout: 'N/A', // Cannot determine
+      rawDate: data.timestamp?.toDate() || null
+    };
+  });
+};
+
 
 const UserBettingHistory = ({ userId }) => {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchBetHistory = async () => {
+    const fetchAllBetHistory = async () => {
       if (!userId) {
         setLoading(false);
         return;
       }
 
+      setLoading(true);
       try {
-        const betsQuery = query(
-          collection(db, 'wingame_bets'),
-          where('userId', '==', userId)
-        );
-        const betsSnapshot = await getDocs(betsQuery);
-        const userBets = betsSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        // Fetch from all collections in parallel
+        const [winGameBets, harufBets, rouletteBets] = await Promise.all([
+          fetchWinGameBets(userId),
+          fetchHarufBets(userId),
+          fetchRouletteBets(userId),
+        ]);
 
-        // Sort on the client-side to avoid needing a composite index
-        userBets.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+        const allBets = [...winGameBets, ...harufBets, ...rouletteBets];
 
-        if (userBets.length === 0) {
-          setHistory([]);
-          setLoading(false);
-          return;
-        }
+        // Sort all bets by date, descending
+        allBets.sort((a, b) => (b.rawDate || 0) - (a.rawDate || 0));
 
-        const roundIds = [...new Set(userBets.map(bet => String(bet.roundId)))];
-        if (roundIds.length > 0) {
-            const roundsQuery = query(
-              collection(db, 'wingame_rounds'),
-              where(documentId(), 'in', roundIds)
-            );
-            const roundsSnapshot = await getDocs(roundsQuery);
-            const resultsMap = {};
-            roundsSnapshot.forEach(doc => {
-              resultsMap[doc.id] = doc.data().winningNumber;
-            });
-
-            const fullHistory = userBets.map(bet => {
-              if (!bet.createdAt?.toDate) return null;
-              return {
-                ...bet,
-                resultNumber: resultsMap[bet.roundId] ?? 'N/A',
-                createdAt: bet.createdAt.toDate(),
-              };
-            }).filter(Boolean);
-            setHistory(fullHistory);
-        } else {
-            setHistory([]);
-        }
+        setHistory(allBets);
 
       } catch (error) {
-        console.error("Error fetching bet history:", error);
+        console.error("Error fetching combined bet history:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchBetHistory();
+    fetchAllBetHistory();
   }, [userId]);
 
   if (loading) {
@@ -73,12 +123,12 @@ const UserBettingHistory = ({ userId }) => {
   // Calculate totals
   const totalWins = history.filter(bet => bet.status === 'win').length;
   const totalLosses = history.filter(bet => bet.status === 'loss').length;
-  const totalWinnings = history.reduce((acc, bet) => (bet.status === 'win' ? acc + bet.winnings : acc), 0);
-  const totalLossAmount = history.reduce((acc, bet) => (bet.status === 'loss' ? acc + bet.amount : acc), 0);
+  const totalWinnings = history.reduce((acc, bet) => (bet.status === 'win' && typeof bet.payout === 'number' ? acc + bet.payout : acc), 0);
+  const totalLossAmount = history.reduce((acc, bet) => (bet.status === 'loss' && typeof bet.payout === 'number' ? acc - bet.payout : acc), 0);
 
   return (
     <div className="bg-gray-50 p-4 md:p-6 rounded-lg shadow-lg mt-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">Betting History</h2>
+      <h2 className="text-2xl font-bold text-gray-800 mb-4">Combined Betting History</h2>
 
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div className="bg-green-100 p-4 rounded-lg">
@@ -97,12 +147,12 @@ const UserBettingHistory = ({ userId }) => {
         <p className="text-gray-500 text-center py-4">No betting history found for this user.</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-left min-w-[600px]">
+          <table className="w-full text-left min-w-[700px]">
             <thead>
               <tr className="border-b border-gray-200 text-gray-600 text-sm">
-                <th className="p-3">Round ID</th>
-                <th className="p-3 text-center">Bet Number</th>
-                <th className="p-3 text-center">Result</th>
+                <th className="p-3">Game</th>
+                <th className="p-3">Date/Time</th>
+                <th className="p-3 text-center">Bet</th>
                 <th className="p-3 text-right">Amount</th>
                 <th className="p-3 text-center">Status</th>
                 <th className="p-3 text-right">Win/Loss</th>
@@ -110,20 +160,29 @@ const UserBettingHistory = ({ userId }) => {
             </thead>
             <tbody>
               {history.map(bet => (
-                <tr key={bet.id} className="border-b border-gray-200 last:border-0">
-                  <td className="p-3 text-xs text-gray-500">{bet.roundId}</td>
-                  <td className="p-3 text-center font-bold text-lg">{bet.number}</td>
-                  <td className="p-3 text-center font-bold text-lg text-blue-600">{bet.resultNumber}</td>
+                <tr key={bet.id} className="border-b border-gray-200 last:border-0 hover:bg-gray-100">
+                  <td className="p-3 font-semibold">{bet.gameName}</td>
+                  <td className="p-3 text-xs text-gray-600">
+                    <div>{bet.date}</div>
+                    <div>{bet.time}</div>
+                  </td>
+                  <td className="p-3 text-center font-bold text-lg">{String(bet.number)}</td>
                   <td className="p-3 text-right">₹{bet.amount.toFixed(2)}</td>
-                  <td className={`p-3 text-center font-semibold ${
-                    bet.status === 'win' ? 'text-green-500' : 'text-red-500'
+                  <td className={`p-3 text-center font-semibold capitalize ${
+                    bet.status === 'win' ? 'text-green-500' : 
+                    bet.status === 'loss' ? 'text-red-500' :
+                    'text-gray-500'
                   }`}>
-                    {bet.status === 'win' ? 'Win' : 'Loss'}
+                    {bet.status}
                   </td>
                   <td className={`p-3 text-right font-bold ${
-                    bet.status === 'win' ? 'text-green-500' : 'text-red-500'
+                    bet.status === 'win' ? 'text-green-500' : 
+                    bet.status === 'loss' ? 'text-red-500' :
+                    'text-gray-500'
                   }`}>
-                    {bet.status === 'win' ? `+₹${bet.winnings.toFixed(2)}` : `-₹${bet.amount.toFixed(2)}`}
+                    {bet.status === 'win' ? `+₹${bet.payout.toFixed(2)}` : 
+                     bet.status === 'loss' ? `-₹${Math.abs(bet.payout).toFixed(2)}` :
+                     'N/A'}
                   </td>
                 </tr>
               ))}

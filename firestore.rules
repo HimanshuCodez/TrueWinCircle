@@ -7,11 +7,19 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Rules for the results collection
-    match /results/{resultId} {
-      allow read: if true; // Allow public read access to results
-      allow write: if isAdmin(); // Only admins can write new results
-    }
+        // Rules for the results collection
+        match /results/{resultId} {
+          allow read: if true; // Allow public read access to results
+          allow write: if isAdmin(); // Only admins can write new results
+        }
+
+        // Rules for market timings
+        match /market_timings/{marketId} {
+          allow read: if true; // Allow public read access
+          allow write: if isAdmin(); // Only admins can update timings
+        }
+        
+        // * END OF NEW RULE *
 
     // Rules for the users collection
     match /users/{userId} {

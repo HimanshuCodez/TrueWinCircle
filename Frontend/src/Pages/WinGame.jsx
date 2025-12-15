@@ -1,21 +1,21 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { doc, collection, addDoc, runTransaction, onSnapshot, serverTimestamp, query, where, getDocs, writeBatch, setDoc } from 'firebase/firestore';
+import { doc, collection, addDoc, runTransaction, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import useAuthStore from '../store/authStore';
 import { toast } from 'react-toastify';
-import { Zap, Clock, Gift, Loader2 } from 'lucide-react';
+import { Zap, Loader2 } from 'lucide-react';
 
 // --- IMPORTANT --- 
-// This file contains game logic that should be on a backend server (like a Firebase Cloud Function).
-// Running this on the client is insecure and unreliable. This is a temporary solution to make the game functional.
-
-const GAME_DURATION_SECONDS = 120;
-const BETTING_PERIOD_SECONDS = 60;
+// The game logic is now driven by an admin from a backend or admin panel.
+// The admin is responsible for closing betting, calculating results, and starting a new round.
+// This client-side component just reflects the state from Firestore.
 
 const WinGame = () => {
   const { user } = useAuthStore();
   
-  const [gameState, setGameState] = useState({ stage: 'loading', timeLeft: 0, roundId: null });
+  // Simplified game state. 'isBettingOpen' is the primary driver.
+  const [isBettingOpen, setIsBettingOpen] = useState(false);
+  const [roundId, setRoundId] = useState(null);
   const [lastWinningNumber, setLastWinningNumber] = useState(null);
   const [walletBalance, setWalletBalance] = useState(0);
 
@@ -28,123 +28,19 @@ const WinGame = () => {
     setSelectedNumber(number);
   };
 
-  // --- BACKEND LOGIC (RUNNING ON CLIENT AS A TEMPORARY SOLUTION) ---
-  const calculateAndDistributeWinnings = async (roundId) => {
-    console.log(`Calculating results for round: ${roundId}`);
-    const betsRef = collection(db, "wingame_bets");
-    const q = query(betsRef, where("roundId", "==", roundId));
-    const querySnapshot = await getDocs(q);
-
-    if (querySnapshot.empty) {
-      console.log("No bets in this round.");
-      return Math.floor(Math.random() * 12) + 1;
-    }
-
-    const numberTotals = {};
-    querySnapshot.forEach(doc => {
-      const bet = doc.data();
-      numberTotals[bet.number] = (numberTotals[bet.number] || 0) + bet.amount;
-    });
-
-    let minBetAmount = Infinity;
-    let potentialWinners = [];
-    for (let i = 1; i <= 12; i++) {
-      const total = numberTotals[i] || 0;
-      if (total < minBetAmount) {
-        minBetAmount = total;
-        potentialWinners = [i];
-      } else if (total === minBetAmount) {
-        potentialWinners.push(i);
-      }
-    }
-
-    const winningNumber = potentialWinners[Math.floor(Math.random() * potentialWinners.length)];
-    console.log(`Winning number is: ${winningNumber}`);
-
-    const batch = writeBatch(db);
-    const roundResultRef = doc(db, 'wingame_rounds', String(roundId));
-    batch.set(roundResultRef, { winningNumber: winningNumber, createdAt: serverTimestamp() });
-
-    const userWinnings = {};
-    querySnapshot.forEach(doc => {
-      const bet = doc.data();
-      const betRef = doc.ref;
-      if (bet.number === winningNumber) {
-        const winnings = bet.amount * 10;
-        batch.update(betRef, { status: 'win', winnings });
-        userWinnings[bet.userId] = (userWinnings[bet.userId] || 0) + winnings;
-      } else {
-        batch.update(betRef, { status: 'loss', winnings: 0 });
-      }
-    });
-
-    await batch.commit();
-    console.log("All bets updated with win/loss status.");
-
-    for (const userId in userWinnings) {
-      const amountToCredit = userWinnings[userId];
-      try {
-        // Create a 'winner' document for admin approval instead of directly crediting the user.
-        await addDoc(collection(db, 'winners'), {
-          userId: userId,
-          gameName: '1 to 12 Win',
-          prize: amountToCredit,
-          timestamp: serverTimestamp(),
-          status: 'pending_approval'
-        });
-      } catch (e) {
-        console.error(`Failed to create winner document for user ${userId}:`, e);
-      }
-    }
-    
-    return winningNumber;
-  };
-
-  const initiateRoundEndProcess = useCallback(async (roundId) => {
-    if (!roundId) return;
-    const gameStateRef = doc(db, 'game_state', 'win_game_1_to_12');
-    
-    try {
-      await runTransaction(db, async (transaction) => {
-        const gameStateDoc = await transaction.get(gameStateRef);
-        if (!gameStateDoc.exists()) throw new Error("Game state document not found!");
-        if (gameStateDoc.data().lastRoundProcessed === roundId) {
-          return; // Round already processed
-        }
-        transaction.update(gameStateRef, { lastRoundProcessed: roundId });
-      });
-
-      const winningNumber = await calculateAndDistributeWinnings(roundId);
-
-      const newRoundId = Date.now();
-      const newRoundEndTime = new Date(newRoundId + GAME_DURATION_SECONDS * 1000);
-      
-      await setDoc(gameStateRef, {
-        lastWinningNumber: winningNumber,
-        roundId: newRoundId,
-        roundEndsAt: newRoundEndTime,
-      }, { merge: true });
-
-    } catch (error) {
-      if (error.code !== 'aborted') {
-        console.error("Error in round-end process:", error);
-      }
-    }
-  }, []);
-
+  // This function is for a first-time setup by any client, to ensure the game has a starting state.
   const initializeGameState = useCallback(async () => {
     const gameStateRef = doc(db, 'game_state', 'win_game_1_to_12');
     try {
         await runTransaction(db, async (transaction) => {
             const gameStateDoc = await transaction.get(gameStateRef);
             if (gameStateDoc.exists()) {
-                return; // Already initialized by another client
+                return; // Already initialized
             }
             const now = Date.now();
             const initialData = {
                 roundId: now,
-                roundEndsAt: new Date(now + GAME_DURATION_SECONDS * 1000),
-                lastRoundProcessed: 0,
+                isBettingOpen: true,
                 lastWinningNumber: null,
             };
             transaction.set(gameStateRef, initialData);
@@ -162,63 +58,37 @@ const WinGame = () => {
     if (!user) return;
     const userDocRef = doc(db, 'users', user.uid);
     const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
-      if (docSnap.exists()) setWalletBalance(docSnap.data().balance || 0); // CORRECTED
+      if (docSnap.exists()) setWalletBalance(docSnap.data().balance || 0);
     });
     return unsubscribe;
   }, [user]);
 
-  // This effect syncs game state from Firestore and handles the countdown timer.
+  // This effect syncs game state from Firestore. It's now much simpler without a timer.
   useEffect(() => {
     const gameStateRef = doc(db, 'game_state', 'win_game_1_to_12');
-    let timerId = null;
 
     const unsubscribe = onSnapshot(gameStateRef, (docSnap) => {
-      if (timerId) clearInterval(timerId);
-
       if (!docSnap.exists()) {
         console.log("Game state not found, attempting to initialize...");
-        setGameState(prev => ({ ...prev, stage: 'loading' }));
         initializeGameState();
         return;
       }
       
       const data = docSnap.data();
-      const roundEndTime = data.roundEndsAt.toDate();
-      const currentRoundId = data.roundId;
-
+      setIsBettingOpen(data.isBettingOpen || false);
+      setRoundId(data.roundId || null);
       setLastWinningNumber(data.lastWinningNumber || null);
-
-      const updateTimer = () => {
-        const now = new Date();
-        const diffSeconds = Math.floor((roundEndTime - now) / 1000);
-
-        if (diffSeconds <= 0) {
-          if (timerId) clearInterval(timerId);
-          setGameState({ stage: 'waiting', timeLeft: 0, roundId: currentRoundId });
-          initiateRoundEndProcess(currentRoundId);
-        } else if (diffSeconds <= (GAME_DURATION_SECONDS - BETTING_PERIOD_SECONDS)) {
-          setGameState({ stage: 'waiting', timeLeft: diffSeconds, roundId: currentRoundId });
-        } else {
-          setGameState({ stage: 'betting', timeLeft: diffSeconds - (GAME_DURATION_SECONDS - BETTING_PERIOD_SECONDS), roundId: currentRoundId });
-        }
-      };
-
-      updateTimer();
-      timerId = setInterval(updateTimer, 1000);
     });
 
-    return () => {
-      unsubscribe();
-      if (timerId) clearInterval(timerId);
-    };
-  }, [initiateRoundEndProcess, initializeGameState]);
+    return () => unsubscribe();
+  }, [initializeGameState]);
 
   const handleBetSubmit = async () => {
     if (!user) return toast.error('Please log in to bet.');
     if (selectedNumber === null) return toast.error('Please select a number.');
     if (betAmount < 10) return toast.error('Minimum bet is ₹10.');
     if (walletBalance < betAmount) return toast.error('Insufficient balance.');
-    if (gameState.stage !== 'betting') {
+    if (!isBettingOpen) {
       setIsBettingClosedModalOpen(true);
       return;
     }
@@ -228,16 +98,16 @@ const WinGame = () => {
       await runTransaction(db, async (transaction) => {
         const userDocRef = doc(db, 'users', user.uid);
         const userDoc = await transaction.get(userDocRef);
-        if (!userDoc.exists() || (userDoc.data().balance || 0) < betAmount) { // CORRECTED
+        if (!userDoc.exists() || (userDoc.data().balance || 0) < betAmount) {
           throw new Error('Insufficient balance.');
         }
-        const newBalance = userDoc.data().balance - betAmount; // CORRECTED
-        transaction.update(userDocRef, { balance: newBalance }); // CORRECTED
+        const newBalance = userDoc.data().balance - betAmount;
+        transaction.update(userDocRef, { balance: newBalance });
 
         const betDocRef = doc(collection(db, 'wingame_bets'));
         transaction.set(betDocRef, {
           userId: user.uid,
-          roundId: gameState.roundId,
+          roundId: roundId, // Use the roundId from state
           number: selectedNumber,
           amount: betAmount,
           createdAt: serverTimestamp(),
@@ -264,13 +134,11 @@ const WinGame = () => {
         <div className="bg-gray-800 rounded-xl shadow-lg p-4 mb-6 flex justify-around items-center">
           <div className="text-center">
             <p className="text-sm text-gray-400">Status</p>
-            {gameState.stage === 'betting' && <p className="text-lg font-bold text-green-400 animate-pulse">Betting Open</p>}
-            {gameState.stage === 'waiting' && <p className="text-lg font-bold text-red-400">Waiting for Result</p>}
-            {gameState.stage === 'loading' && <p className="text-lg font-bold text-gray-400">Loading...</p>}
-          </div>
-          <div className="text-center">
-            <p className="text-sm text-gray-400">{gameState.stage === 'betting' ? 'Time to Bet' : 'Result In'}</p>
-            <p className="text-3xl font-bold text-white">{String(gameState.timeLeft).padStart(2, '0')}s</p>
+            {isBettingOpen ? (
+              <p className="text-lg font-bold text-green-400 animate-pulse">Betting Open</p>
+            ) : (
+              <p className="text-lg font-bold text-red-400">Waiting For Admin Approval</p>
+            )}
           </div>
           <div className="text-center">
             <p className="text-sm text-gray-400">Last Winning Number</p>
@@ -283,12 +151,13 @@ const WinGame = () => {
             <button
               key={i + 1}
               onClick={() => handleNumberClick(i + 1)}
+              disabled={!isBettingOpen}
               className={`py-5 rounded-lg text-2xl font-bold transition-all text-black duration-200 shadow-md ${
                 selectedNumber === i + 1
                   ? 'bg-yellow-500 text-black scale-110'
                   : 'bg-gray-100'
               } ${
-                gameState.stage !== 'betting'
+                !isBettingOpen
                   ? 'opacity-50 cursor-not-allowed'
                   : 'hover:bg-gray-600'
               }`}
@@ -318,7 +187,7 @@ const WinGame = () => {
                             />            </div>
             <button 
               onClick={handleBetSubmit}
-              disabled={isSubmitting}
+              disabled={isSubmitting || !isBettingOpen}
               className="w-full bg-green-600 text-white font-bold py-3 rounded-lg text-xl flex items-center justify-center hover:bg-green-700 transition-colors disabled:bg-gray-500">
               {isSubmitting ? <Loader2 className="animate-spin" /> : <Zap />}
               <span className="ml-2">Place Bet</span>
