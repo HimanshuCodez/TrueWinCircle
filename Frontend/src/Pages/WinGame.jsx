@@ -22,7 +22,6 @@ const WinGame = () => {
   const [selectedNumber, setSelectedNumber] = useState(null);
   const [betAmount, setBetAmount] = useState(10);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isBettingClosedModalOpen, setIsBettingClosedModalOpen] = useState(false);
 
   const handleNumberClick = (number) => {
     setSelectedNumber(number);
@@ -88,10 +87,7 @@ const WinGame = () => {
     if (selectedNumber === null) return toast.error('Please select a number.');
     if (betAmount < 10) return toast.error('Minimum bet is ₹10.');
     if (walletBalance < betAmount) return toast.error('Insufficient balance.');
-    if (!isBettingOpen) {
-      setIsBettingClosedModalOpen(true);
-      return;
-    }
+
 
     setIsSubmitting(true);
     try {
@@ -104,16 +100,20 @@ const WinGame = () => {
         const newBalance = userDoc.data().balance - betAmount;
         transaction.update(userDocRef, { balance: newBalance });
 
-        const betDocRef = doc(collection(db, 'wingame_bets'));
+        const betStatus = isBettingOpen ? 'open' : 'pending_approval';
         transaction.set(betDocRef, {
           userId: user.uid,
           roundId: roundId, // Use the roundId from state
           number: selectedNumber,
           amount: betAmount,
           createdAt: serverTimestamp(),
+          status: betStatus,
         });
       });
-      toast.success(`Bet of ₹${betAmount} placed on ${selectedNumber}!`);
+      const toastMessage = isBettingOpen
+        ? `Bet of ₹${betAmount} placed on ${selectedNumber}!`
+        : `Bet of ₹${betAmount} placed on ${selectedNumber}! Awaiting admin approval.`;
+      toast.success(toastMessage);
       setSelectedNumber(null);
       setBetAmount(10);
     } catch (error) {
@@ -137,7 +137,7 @@ const WinGame = () => {
             {isBettingOpen ? (
               <p className="text-lg font-bold text-green-400 animate-pulse">Betting Open</p>
             ) : (
-              <p className="text-lg font-bold text-red-400">Waiting For Admin Approval</p>
+              <p className="text-lg font-bold text-red-400">Bets Pending Admin Approval</p>
             )}
           </div>
           <div className="text-center">
@@ -151,16 +151,11 @@ const WinGame = () => {
             <button
               key={i + 1}
               onClick={() => handleNumberClick(i + 1)}
-              disabled={!isBettingOpen}
               className={`py-5 rounded-lg text-2xl font-bold transition-all text-black duration-200 shadow-md ${
                 selectedNumber === i + 1
                   ? 'bg-yellow-500 text-black scale-110'
                   : 'bg-gray-100'
-              } ${
-                !isBettingOpen
-                  ? 'opacity-50 cursor-not-allowed'
-                  : 'hover:bg-gray-600'
-              }`}
+              } hover:bg-gray-600`}
             >
               {i + 1}
             </button>
@@ -187,7 +182,7 @@ const WinGame = () => {
                             />            </div>
             <button 
               onClick={handleBetSubmit}
-              disabled={isSubmitting || !isBettingOpen}
+              disabled={isSubmitting}
               className="w-full bg-green-600 text-white font-bold py-3 rounded-lg text-xl flex items-center justify-center hover:bg-green-700 transition-colors disabled:bg-gray-500">
               {isSubmitting ? <Loader2 className="animate-spin" /> : <Zap />}
               <span className="ml-2">Place Bet</span>
@@ -196,20 +191,7 @@ const WinGame = () => {
         </div>
 
       </div>
-      {isBettingClosedModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg shadow-xl p-6 w-11/12 max-w-sm text-center">
-            <h3 className="text-xl font-bold text-yellow-400 mb-4">Betting Closed</h3>
-            <p className="text-gray-300 mb-6">The betting window for this round is closed. Please wait for the next round to begin.</p>
-            <button
-              onClick={() => setIsBettingClosedModalOpen(false)}
-              className="bg-yellow-500 text-black font-bold py-2 px-6 rounded-lg hover:bg-yellow-600 transition-colors"
-            >
-              OK
-            </button>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };
