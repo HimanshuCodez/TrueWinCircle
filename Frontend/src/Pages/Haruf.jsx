@@ -22,23 +22,27 @@ const ROUND_DURATION_MINUTES = 1; // Each round lasts for 1 minute.
 
 // BetBox component moved outside of HarufGrid to prevent re-rendering on every state change.
 
-const BetBox = ({ num, value, onChange }) => (
-  <div className="flex flex-col items-center">
-    <div className="h-8 w-8 flex items-center justify-center bg-red-600 text-white text-xs font-bold rounded-sm">
-      {num.toString().padStart(2, "0")}
-    </div>
+const BetBox = ({ num, value, onChange }) => {
+  const displayNum = num === 100 ? "00" : num.toString().padStart(2, "0");
 
-    <input
-      type="number"
-      pattern="[0-9]*"
-      inputMode="numeric"
-      min="0"
-      value={value || ""}
-      onChange={(e) => onChange(num, e.target.value)}
-      className="mt-1 w-8 h-10 text-xs border border-gray-300 rounded-sm text-center"
-    />
-  </div>
-);
+  return (
+    <div className="flex flex-col items-center">
+      <div className="h-8 w-8 flex items-center justify-center bg-red-600 text-white text-xs font-bold rounded-sm">
+        {displayNum}
+      </div>
+
+      <input
+        type="number"
+        pattern="[0-9]*"
+        inputMode="numeric"
+        min="0"
+        value={value || ""}
+        onChange={(e) => onChange(num, e.target.value)}
+        className="mt-1 w-8 h-10 text-xs border border-gray-300 rounded-sm text-center"
+      />
+    </div>
+  );
+};
 
 const HarufGrid = () => {
   const [bets, setBets] = useState({});
@@ -77,7 +81,7 @@ const HarufGrid = () => {
         }
         setMarketStatus({ isOpen, message });
       } else {
-        setMarketStatus({ isOpen: true, message: "Market is open 24/7." });
+        setMarketStatus({ isOpen: true });
       }
     };
     const intervalId = setInterval(checkMarketStatus, 1000);
