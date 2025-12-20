@@ -20,7 +20,7 @@ const WinGame = () => {
   const [walletBalance, setWalletBalance] = useState(0);
 
   const [selectedNumber, setSelectedNumber] = useState(null);
-  const [betAmount, setBetAmount] = useState(10);
+  const [betAmount, setBetAmount] = useState();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleNumberClick = (number) => {
