@@ -18,6 +18,10 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const fetchProfileData = async () => {
+      if (!user) {
+        navigate("/login");
+        return;
+      }
       if (user?.uid) {
         setLoading(true);
         try {
@@ -49,7 +53,7 @@ export default function ProfilePage() {
     };
 
     fetchProfileData();
-  }, [user?.uid]);
+  }, [user, navigate]);
 
   const handleCopy = (text) => {
     if (text) {

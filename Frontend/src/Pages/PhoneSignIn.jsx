@@ -2,7 +2,9 @@ import React, { useState, useEffect } from "react";
 import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { auth } from "../firebase";
+import { auth, db } from "../firebase";
+import { doc, getDoc } from "firebase/firestore";
+import useAuthStore from "../store/authStore";
 
 const PhoneSignIn = () => {
   const [phone, setPhone] = useState("");
@@ -11,6 +13,7 @@ const PhoneSignIn = () => {
   const [confirmationResult, setConfirmationResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const login = useAuthStore((state) => state.login);
 
   useEffect(() => {
     if (!window.recaptchaVerifier) {
@@ -51,9 +54,18 @@ const PhoneSignIn = () => {
     if (!otp) return toast.error("Enter OTP");
     setLoading(true);
     try {
-      await confirmationResult.confirm(otp);
-      toast.success("Sign in successful!");
-      navigate("/");
+      const result = await confirmationResult.confirm(otp);
+      const user = result.user;
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (userSnap.exists()) {
+        login({ uid: user.uid, ...userSnap.data() });
+        toast.success("Sign in successful!");
+        navigate("/");
+      } else {
+        toast.error("User data not found in database.");
+      }
     } catch (err) {
       console.error("OTP verify error:", err);
       toast.error(err.message);
@@ -70,7 +82,9 @@ const PhoneSignIn = () => {
             TrueWin<span className="text-yellow-500">Circle</span>
           </h1>
           <p className="text-gray-300">
-            {step === 1 ? "Enter your phone number to log in" : "Enter the OTP sent to your phone"}
+            {step === 1
+              ? "Enter your phone number to log in"
+              : "Enter the OTP sent to your phone"}
           </p>
         </div>
 
