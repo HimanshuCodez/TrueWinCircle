@@ -93,9 +93,9 @@ const AppContent = () => {
 }
 
 const App = () => {
-  const { setUser } = useAuthStore();
+  const { login, user } = useAuthStore();
   const auth = getAuth();
-  const [loadingAuth, setLoadingAuth] = useState(true);
+  const [loadingAuth, setLoadingAuth] = useState(!user);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (userAuth) => {
@@ -103,30 +103,28 @@ const App = () => {
         const userRef = doc(db, "users", userAuth.uid);
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
-          setUser({ ...userAuth, ...userSnap.data() });
+          login({ ...userAuth, ...userSnap.data() });
         } else {
-          setUser(userAuth);
+          login(userAuth);
         }
       } else {
-        setUser(null);
+        login(null);
       }
       setLoadingAuth(false); // Auth state determined
     });
 
     return () => unsubscribe();
-  }, [auth, setUser]);
+  }, [auth, login]);
 
   if (loadingAuth) {
     return (
       <div className="min-h-screen bg-[#042346] text-white flex items-center justify-center">
-        <Spinner/>
+        <Spinner />
       </div>
     );
   }
 
-  return (
-    <AppContent />
-  );
+  return <AppContent />;
 };
 
 export default App;
