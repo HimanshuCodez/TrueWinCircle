@@ -100,6 +100,9 @@ const WinGame = () => {
         const newBalance = userDoc.data().balance - betAmount;
         transaction.update(userDocRef, { balance: newBalance });
 
+        const betsCollectionRef = collection(db, 'bets');
+        const betDocRef = doc(betsCollectionRef); // Create a new document reference with an auto-generated ID
+
         const betStatus = isBettingOpen ? 'open' : 'pending_approval';
         transaction.set(betDocRef, {
           userId: user.uid,
