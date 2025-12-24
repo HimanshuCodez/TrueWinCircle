@@ -193,34 +193,7 @@ export default function Navbar() {
           >
             Home
           </Link>
-         <Link to="/Profile" className="block px-4 py-2 hover:bg-gray-100">
-          Profile
-        </Link>
-        <Link to="/Wallet" className="block px-4 py-2 hover:bg-gray-100">
-          Wallet
-        </Link>
-        <Link to="/Withdraw" className="block px-4 py-2 hover:bg-gray-100">
-          Withdraw
-        </Link>
-        <Link to="/refer" className="block px-4 py-2 hover:bg-gray-100">
-          Reffer & Earn
-        </Link>
-        <Link to="/AddCash" className="block px-4 py-2 hover:bg-gray-100">
-          Add Cash
-        </Link>
-        <Link to="/History" className="block px-4 py-2 hover:bg-gray-100">
-          History
-        </Link>
-        <Link to="/Support" className="block px-4 py-2 hover:bg-gray-100">
-          Support
-        </Link>
-          <Link
-            to="/Privacy"
-            className="hover:text-yellow-500"
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            Terms & Conditions
-          </Link>
+        
           <div className="w-3/4 border-t border-gray-700 my-1"></div>
 
           {user ? (
