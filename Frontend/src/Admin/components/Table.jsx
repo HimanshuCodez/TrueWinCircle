@@ -165,18 +165,17 @@ const Table = () => {
 
     try {
         await runTransaction(db, async (transaction) => {
-            const userWinnings = {};
-            
+            // --- READ PHASE ---
             const betDocRefs = pendingBetsSnapshot.docs.map(d => d.ref);
             const betDocs = await Promise.all(betDocRefs.map(ref => transaction.get(ref)));
 
+            const userWinnings = {};
+            const betsToUpdate = [];
             for (const betDoc of betDocs) {
                 if (!betDoc.exists() || betDoc.data().status !== 'pending') {
                     continue;
                 }
-
                 const bet = betDoc.data();
-                
                 let betNumber = bet.selectedNumber;
                 if (betNumber === "100") betNumber = "00";
                 else betNumber = String(betNumber).padStart(2, '0');
@@ -184,26 +183,29 @@ const Table = () => {
                 if (betNumber === winningNumber) {
                     const winnings = bet.betAmount * PAYOUT_MULTIPLIER;
                     userWinnings[bet.userId] = (userWinnings[bet.userId] || 0) + winnings;
-                    transaction.update(betDoc.ref, { status: "win", winnings });
+                    betsToUpdate.push({ ref: betDoc.ref, data: { status: "win", winnings } });
                 } else {
-                    transaction.update(betDoc.ref, { status: "loss", winnings: 0 });
+                    betsToUpdate.push({ ref: betDoc.ref, data: { status: "loss", winnings: 0 } });
                 }
             }
 
             const userIds = Object.keys(userWinnings);
-            if (userIds.length > 0) {
-                const userRefs = userIds.map(id => doc(db, "users", id));
-                const userDocs = await Promise.all(userRefs.map(ref => transaction.get(ref)));
+            const userRefs = userIds.map(id => doc(db, "users", id));
+            const userDocs = userIds.length > 0 ? await Promise.all(userRefs.map(ref => transaction.get(ref))) : [];
 
-                for (let i = 0; i < userDocs.length; i++) {
-                    const userDoc = userDocs[i];
-                    const userId = userIds[i];
-                    if (userDoc.exists()) {
-                        const currentWinnings = userDoc.data().winningMoney || 0;
-                        const amountToCredit = userWinnings[userId];
-                        const newWinnings = currentWinnings + amountToCredit;
-                        transaction.update(userDoc.ref, { winningMoney: newWinnings });
-                    }
+            // --- WRITE PHASE ---
+            betsToUpdate.forEach(betUpdate => {
+                transaction.update(betUpdate.ref, betUpdate.data);
+            });
+
+            for (let i = 0; i < userDocs.length; i++) {
+                const userDoc = userDocs[i];
+                const userId = userIds[i];
+                if (userDoc.exists()) {
+                    const currentWinnings = userDoc.data().winningMoney || 0;
+                    const amountToCredit = userWinnings[userId];
+                    const newWinnings = currentWinnings + amountToCredit;
+                    transaction.update(userDoc.ref, { winningMoney: newWinnings });
                 }
             }
         });
