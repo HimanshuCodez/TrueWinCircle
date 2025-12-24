@@ -9,7 +9,6 @@ const PhoneSignUp = () => {
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
   const [referralCodeInput, setReferralCodeInput] = useState("");
   const [generatedReferralCode, setGeneratedReferralCode] = useState("");
   const [step, setStep] = useState(1);
@@ -43,7 +42,6 @@ const PhoneSignUp = () => {
 
   const sendOtp = async () => {
     if (!name) return toast.error("Enter your name");
-    if (!email) return toast.error("Enter your email");
     if (!phone) return toast.error("Enter phone number");
     setLoading(true);
     try {
@@ -95,7 +93,6 @@ const PhoneSignUp = () => {
       await setDoc(userDocRef, {
         phoneNumber: user.phoneNumber,
         name: name,
-        email: email,
         role: 'user', // Explicitly set role for new users
         referralCode: generatedReferralCode,
         referredBy: referrerId,
@@ -138,13 +135,7 @@ const PhoneSignUp = () => {
               onChange={(e) => setName(e.target.value)}
               className="w-full px-4 py-3 bg-[#042346] border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
             />
-            <input
-              type="email"
-              placeholder="Enter Your Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 bg-[#042346] border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
-            />
+
             <input
               type="tel"
               placeholder="Enter Phone Number"
