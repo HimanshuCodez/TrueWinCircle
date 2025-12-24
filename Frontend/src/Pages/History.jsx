@@ -130,11 +130,13 @@ const History = () => {
             type = 'loss';
           }
 
+          const betOn = data.marketName ? `${data.marketName} on ${data.selectedNumber}` : `Haruf on ${data.selectedNumber}`;
+
           return {
             id: doc.id,
             type: type,
             amount: displayAmount,
-            status: `Haruf on ${data.selectedNumber}`,
+            status: betOn,
             date: date,
           };
         }).filter(Boolean);

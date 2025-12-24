@@ -204,7 +204,7 @@ const MarketCard = ({ marketName }) => {
             <X size={24} />
           </button>
         </div>
-        <HarufGrid />
+        <HarufGrid marketName={marketName} />
       </div>
     );
   }

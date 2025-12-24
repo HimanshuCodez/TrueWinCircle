@@ -126,6 +126,7 @@ const Table = () => {
         date: serverTimestamp(),
       });
       toast.success(`Result for ${selectedMarket} updated successfully!`);
+      await processMarketWinners(selectedMarket, parseInt(newResult).toString().padStart(2, '0'));
       setNewResult('');
       fetchResultsAndHistory(selectedMarket); // Refresh results and history
     } catch (error) {
@@ -149,6 +150,70 @@ const Table = () => {
         setTimingLoading(false);
     }
   };
+
+  const processMarketWinners = async (marketName, winningNumber) => {
+    const PAYOUT_MULTIPLIER = 90;
+    const betsRef = collection(db, "harufBets");
+    const betsQuery = query(betsRef, where("marketName", "==", marketName), where("status", "==", "pending"), where("betType", "==", "Haruf"));
+    
+    const pendingBetsSnapshot = await getDocs(betsQuery);
+
+    if (pendingBetsSnapshot.empty) {
+        console.log(`No pending Haruf bets found for market ${marketName}.`);
+        return;
+    }
+
+    try {
+        await runTransaction(db, async (transaction) => {
+            const userWinnings = {};
+            
+            const betDocRefs = pendingBetsSnapshot.docs.map(d => d.ref);
+            const betDocs = await Promise.all(betDocRefs.map(ref => transaction.get(ref)));
+
+            for (const betDoc of betDocs) {
+                if (!betDoc.exists() || betDoc.data().status !== 'pending') {
+                    continue;
+                }
+
+                const bet = betDoc.data();
+                
+                let betNumber = bet.selectedNumber;
+                if (betNumber === "100") betNumber = "00";
+                else betNumber = String(betNumber).padStart(2, '0');
+
+                if (betNumber === winningNumber) {
+                    const winnings = bet.betAmount * PAYOUT_MULTIPLIER;
+                    userWinnings[bet.userId] = (userWinnings[bet.userId] || 0) + winnings;
+                    transaction.update(betDoc.ref, { status: "win", winnings });
+                } else {
+                    transaction.update(betDoc.ref, { status: "loss", winnings: 0 });
+                }
+            }
+
+            const userIds = Object.keys(userWinnings);
+            if (userIds.length > 0) {
+                const userRefs = userIds.map(id => doc(db, "users", id));
+                const userDocs = await Promise.all(userRefs.map(ref => transaction.get(ref)));
+
+                for (let i = 0; i < userDocs.length; i++) {
+                    const userDoc = userDocs[i];
+                    const userId = userIds[i];
+                    if (userDoc.exists()) {
+                        const currentWinnings = userDoc.data().winningMoney || 0;
+                        const amountToCredit = userWinnings[userId];
+                        const newWinnings = currentWinnings + amountToCredit;
+                        transaction.update(userDoc.ref, { winningMoney: newWinnings });
+                    }
+                }
+            }
+        });
+        toast.success(`Pending bets for ${marketName} processed successfully.`);
+    } catch (e) {
+        console.error(`Transaction failed for processing ${marketName} winners: `, e);
+        toast.error(`Failed to process bets for ${marketName}. Please check logs.`);
+    }
+  };
+
 
 
   return (
