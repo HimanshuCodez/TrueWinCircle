@@ -48,6 +48,7 @@ const BetBox = ({ num, value, onChange }) => {
 const HarufGrid = ({ marketName }) => {
   const [bets, setBets] = useState({});
   const [bettingLoading, setBettingLoading] = useState(false);
+  const [balance, setBalance] = useState(0);
   const { user } = useAuthStore();
   const [marketTimings, setMarketTimings] = useState({ openTime: null, closeTime: null });
   const [marketStatus, setMarketStatus] = useState({ isOpen: true, message: "Loading..." });
