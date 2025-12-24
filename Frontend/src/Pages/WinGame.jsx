@@ -155,7 +155,7 @@ const WinGame = () => {
             }
         }, (error) => {
             console.error("Error listening to game state:", error);
-            toast.error("Could not connect to the game. Please check your connection and login status.");
+           
             setPhase('error');
         });
         return () => unsubscribe();
