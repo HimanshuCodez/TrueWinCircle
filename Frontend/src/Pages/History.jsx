@@ -138,6 +138,7 @@ const History = () => {
             amount: displayAmount,
             status: betOn,
             date: date,
+            marketName: data.marketName,
           };
         }).filter(Boolean);
 
@@ -201,7 +202,7 @@ const History = () => {
         break;
       case 'win':
         Icon = <Trophy className="text-yellow-500" />;
-        title = 'Game Win';
+        title = item.marketName ? `${item.marketName} Win` : 'Game Win';
         amountColor = 'text-yellow-500';
         sign = '+';
         statusText = item.status;
@@ -209,7 +210,7 @@ const History = () => {
         break;
       case 'loss':
         Icon = <ShieldX className="text-gray-500" />;
-        title = 'Game Loss';
+        title = item.marketName ? `${item.marketName} Loss` : 'Game Loss';
         amountColor = 'text-gray-500';
         sign = '-';
         statusText = item.status;
@@ -217,7 +218,7 @@ const History = () => {
         break;
       case 'bet_placed':
         Icon = <Clock className="text-blue-400" />;
-        title = 'Bet Placed';
+        title = item.marketName ? `${item.marketName} Bet` : 'Bet Placed';
         amountColor = 'text-gray-400';
         sign = '-';
         statusText = item.status;
