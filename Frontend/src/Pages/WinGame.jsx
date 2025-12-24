@@ -15,7 +15,7 @@ const WinGame = () => {
     const { user } = useAuthStore();
     
     // Game state
-    const [phase, setPhase] = useState('loading'); // loading, betting, results
+    const [phase, setPhase] = useState('loading'); // loading, betting, results, error
     const [timer, setTimer] = useState(0);
     const [roundId, setRoundId] = useState(null);
     const [lastWinningNumber, setLastWinningNumber] = useState(null);
@@ -144,6 +144,10 @@ const WinGame = () => {
                     lastWinningNumber: null,
                 }).catch(err => console.error("Failed to initialize game state:", err));
             }
+        }, (error) => {
+            console.error("Error listening to game state:", error);
+            toast.error("Could not connect to the game. Please check your connection and login status.");
+            setPhase('error');
         });
         return () => unsubscribe();
     }, [gameStateRef, phase, roundId]);
@@ -281,6 +285,7 @@ const WinGame = () => {
                         {phase === 'betting' && <p className="text-lg font-bold text-green-400 animate-pulse">Betting Open</p>}
                         {phase === 'results' && <p className="text-lg font-bold text-red-400">Calculating Results...</p>}
                         {phase === 'loading' && <p className="text-lg font-bold text-gray-400">Loading...</p>}
+                        {phase === 'error' && <p className="text-lg font-bold text-red-600">Connection Error</p>}
                     </div>
                     <div className="text-center">
                         <p className="text-sm text-gray-400">{phase === 'betting' ? 'Time Remaining' : 'Next Round In'}</p>
