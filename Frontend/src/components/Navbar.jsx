@@ -52,31 +52,59 @@ export default function Navbar() {
     <div className="fixed top-0 left-0 w-full bg-[#042346] text-white px-4 md:px-8 py-3 flex justify-between items-center shadow-md z-50">
       {/* Logo */}
       <div className="flex items-center gap-2">
-        <Link to={"/"} onClick={handleLogoClick} className="flex items-center gap-2">
-        <div className="w-6 h-6 border-2 border-yellow-500 rounded-full"></div>
-        <span className="font-bold text-lg">
-          TrueWin<span className="text-yellow-500">Circle</span>
-        </span></Link>
+        <Link
+          to={"/"}
+          onClick={handleLogoClick}
+          className="flex items-center gap-2"
+        >
+          <div className="w-6 h-6 border-2 border-yellow-500 rounded-full"></div>
+          <span className="font-bold text-lg">
+            TrueWin<span className="text-yellow-500">Circle</span>
+          </span>
+        </Link>
       </div>
 
       {/* Desktop Menu */}
       <div className="hidden md:flex items-center gap-6">
-        <Link to="/" className="hover:text-yellow-500">Home</Link>
-          <Link to="/Profile" className="block px-4 py-2 hover:bg-gray-100">Profile</Link>
-                  <Link to="/Wallet" className="block px-4 py-2 hover:bg-gray-100">Wallet</Link>
-                  <Link to="/Withdraw" className="block px-4 py-2 hover:bg-gray-100">Withdraw</Link>
-                  <Link to="/refer" className="block px-4 py-2 hover:bg-gray-100">Reffer & Earn</Link>
-                  <Link to="/AddCash" className="block px-4 py-2 hover:bg-gray-100">Add Cash</Link>
-                  <Link to="/History" className="block px-4 py-2 hover:bg-gray-100">History</Link>
-                  <Link to="/Support" className="block px-4 py-2 hover:bg-gray-100">Support</Link>
-     
-        <Link to="/Support" className="hover:text-yellow-500">Support</Link>
-        <Link to="/Privacy" className="hover:text-yellow-500">Terms & Conditions</Link>
+        <Link to="/" className="hover:text-yellow-500">
+          Home
+        </Link>
+        <Link to="/Profile" className="block px-4 py-2 hover:bg-gray-100">
+          Profile
+        </Link>
+        <Link to="/Wallet" className="block px-4 py-2 hover:bg-gray-100">
+          Wallet
+        </Link>
+        <Link to="/Withdraw" className="block px-4 py-2 hover:bg-gray-100">
+          Withdraw
+        </Link>
+        <Link to="/refer" className="block px-4 py-2 hover:bg-gray-100">
+          Reffer & Earn
+        </Link>
+        <Link to="/AddCash" className="block px-4 py-2 hover:bg-gray-100">
+          Add Cash
+        </Link>
+        <Link to="/History" className="block px-4 py-2 hover:bg-gray-100">
+          History
+        </Link>
+        <Link to="/Support" className="block px-4 py-2 hover:bg-gray-100">
+          Support
+        </Link>
+
+        <Link to="/Support" className="hover:text-yellow-500">
+          Support
+        </Link>
+        <Link to="/Privacy" className="hover:text-yellow-500">
+          Terms & Conditions
+        </Link>
 
         {user ? (
           <>
             {/* Wallet Icon with Amount */}
-            <Link to="/Wallet" className="relative flex items-center hover:text-yellow-500">
+            <Link
+              to="/Wallet"
+              className="relative flex items-center hover:text-yellow-500"
+            >
               <Wallet size={24} />
               <span className="ml-1 font-semibold">₹{walletAmount}</span>
             </Link>
@@ -91,14 +119,54 @@ export default function Navbar() {
               </button>
               {accountOpen && (
                 <div className="absolute right-0 mt-2 w-40 bg-white text-black rounded-md shadow-lg z-10">
-                  <Link to="/Profile" className="block px-4 py-2 hover:bg-gray-100">Profile</Link>
-                  <Link to="/Wallet" className="block px-4 py-2 hover:bg-gray-100">Wallet</Link>
-                  <Link to="/Withdraw" className="block px-4 py-2 hover:bg-gray-100">Withdraw</Link>
-                  <Link to="/refer" className="block px-4 py-2 hover:bg-gray-100">Reffer & Earn</Link>
-                  <Link to="/AddCash" className="block px-4 py-2 hover:bg-gray-100">Add Cash</Link>
-                  <Link to="/History" className="block px-4 py-2 hover:bg-gray-100">History</Link>
-                  <Link to="/Support" className="block px-4 py-2 hover:bg-gray-100">Support</Link>
-                  <button onClick={handleLogout} className="block w-full text-left px-4 py-2 hover:bg-gray-100">Logout</button>
+                  <Link
+                    to="/Profile"
+                    className="block px-4 py-2 hover:bg-gray-100"
+                  >
+                    Profile
+                  </Link>
+                  <Link
+                    to="/Wallet"
+                    className="block px-4 py-2 hover:bg-gray-100"
+                  >
+                    Wallet
+                  </Link>
+                  <Link
+                    to="/Withdraw"
+                    className="block px-4 py-2 hover:bg-gray-100"
+                  >
+                    Withdraw
+                  </Link>
+                  <Link
+                    to="/refer"
+                    className="block px-4 py-2 hover:bg-gray-100"
+                  >
+                    Reffer & Earn
+                  </Link>
+                  <Link
+                    to="/AddCash"
+                    className="block px-4 py-2 hover:bg-gray-100"
+                  >
+                    Add Cash
+                  </Link>
+                  <Link
+                    to="/History"
+                    className="block px-4 py-2 hover:bg-gray-100"
+                  >
+                    History
+                  </Link>
+                  <Link
+                    to="/Support"
+                    className="block px-4 py-2 hover:bg-gray-100"
+                  >
+                    Support
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                  >
+                    Logout
+                  </button>
                 </div>
               )}
             </div>
@@ -138,23 +206,91 @@ export default function Navbar() {
       {/* Mobile Menu */}
       {mobileMenuOpen && (
         <div className="absolute top-full left-0 w-full bg-[#042346] md:hidden flex flex-col items-center gap-4 py-4 z-50">
-          <Link to="/" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>Home</Link>
-          <Link to="/" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>Games</Link>
-          <Link to="/" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>Results</Link>
-          <Link to="/" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>How to Play</Link>
-  <Link to="/Privacy" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>Terms & Conditions</Link>
+          <Link
+            to="/"
+            className="hover:text-yellow-500"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            Home
+          </Link>
+          <Link
+            to="/"
+            className="hover:text-yellow-500"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            Games
+          </Link>
+          <Link
+            to="/"
+            className="hover:text-yellow-500"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            Results
+          </Link>
+          <Link
+            to="/"
+            className="hover:text-yellow-500"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            How to Play
+          </Link>
+          <Link
+            to="/Privacy"
+            className="hover:text-yellow-500"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            Terms & Conditions
+          </Link>
           <div className="w-3/4 border-t border-gray-700 my-1"></div>
 
           {user ? (
             <>
-              <Link to="/Profile" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>Profile</Link>
-              <Link to="/Wallet" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>Wallet</Link>
-              <Link to="/History" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>History</Link>
-              <Link to="/Withdraw" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>Withdraw</Link>
-              <Link to="/AddCash" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>Add Cash</Link>
-            
-              <Link to="/Support" className="hover:text-yellow-500" onClick={() => setMobileMenuOpen(false)}>Support</Link>
-              <button onClick={handleLogout} className="hover:text-yellow-500">Logout</button>
+              <Link
+                to="/Profile"
+                className="hover:text-yellow-500"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Profile
+              </Link>
+              <Link
+                to="/Wallet"
+                className="hover:text-yellow-500"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Wallet
+              </Link>
+              <Link
+                to="/History"
+                className="hover:text-yellow-500"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                History
+              </Link>
+              <Link
+                to="/Withdraw"
+                className="hover:text-yellow-500"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Withdraw
+              </Link>
+              <Link
+                to="/AddCash"
+                className="hover:text-yellow-500"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Add Cash
+              </Link>
+
+              <Link
+                to="/Support"
+                className="hover:text-yellow-500"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Support
+              </Link>
+              <button onClick={handleLogout} className="hover:text-yellow-500">
+                Logout
+              </button>
             </>
           ) : (
             <div className="flex items-center gap-4">

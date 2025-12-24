@@ -48,7 +48,6 @@ const BetBox = ({ num, value, onChange }) => {
 const HarufGrid = ({ marketName }) => {
   const [bets, setBets] = useState({});
   const [bettingLoading, setBettingLoading] = useState(false);
-  const [balance, setBalance] = useState(0);
   const { user } = useAuthStore();
   const [marketTimings, setMarketTimings] = useState({ openTime: null, closeTime: null });
   const [marketStatus, setMarketStatus] = useState({ isOpen: true, message: "Loading..." });
@@ -90,24 +89,6 @@ const HarufGrid = ({ marketName }) => {
     checkMarketStatus();
     return () => clearInterval(intervalId);
   }, [marketTimings]);
-
-
-  useEffect(() => {
-    if (user) {
-      const userDocRef = doc(db, "users", user.uid);
-
-      const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
-        if (docSnap.exists()) {
-          const userData = docSnap.data();
-          setBalance(Number(userData.balance || 0));
-        } else {
-          setBalance(0);
-        }
-      });
-
-      return () => unsubscribe();
-    }
-  }, [user]);
 
   const handleInputChange = (num, value) => {
     const sanitizedValue = value.replace(/[^0-9]/g, "");
@@ -170,7 +151,8 @@ const HarufGrid = ({ marketName }) => {
       0
     );
 
-    if (totalBetAmount > balance) return toast.error("Insufficient balance.");
+    const totalAvailable = (user?.balance || 0) + (user?.winningMoney || 0);
+    if (totalBetAmount > totalAvailable) return toast.error("Insufficient balance.");
 
     setBettingLoading(true);
 
