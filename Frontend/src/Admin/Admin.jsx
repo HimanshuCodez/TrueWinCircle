@@ -244,6 +244,11 @@ const AdminDashboard = () => {
         <div>
           <h1 className="text-2xl font-bold text-center">True Win Circle</h1>
           <p className="text-gray-400 text-center text-sm">Admin Dashboard</p>
+          {isAdmin && user?.uid && (
+            <p className="text-gray-400 text-center text-xs mt-1">
+              {user.name ? `Name: ${user.name} | ` : ''}ID: {user.uid}
+            </p>
+          )}
         </div>
       </div>
       <nav className="space-y-2 overflow-y-auto">
