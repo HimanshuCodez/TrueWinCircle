@@ -110,12 +110,12 @@ const WinGame = () => {
     // This effect syncs game state from Firestore and calculates remaining time
     useEffect(() => {
         const unsubscribe = onSnapshot(gameStateRef(), (docSnap) => {
-            if (docSnap.exists()) {
+            // If doc exists and has the required fields, process it
+            if (docSnap.exists() && docSnap.data().phase && docSnap.data().phaseEndTime) {
                 const data = docSnap.data();
                 const now = Timestamp.now();
                 
                 let phaseEndTime = data.phaseEndTime;
-                if (!phaseEndTime) return;
                 if (!(phaseEndTime instanceof Timestamp)) {
                     phaseEndTime = new Timestamp(phaseEndTime.seconds, phaseEndTime.nanoseconds);
                 }
@@ -133,7 +133,13 @@ const WinGame = () => {
                     setIsBettingOverModalVisible(true);
                 }
             } else {
-                console.log("Game state not found, initializing...");
+                // Otherwise, the doc is missing or corrupt, so we initialize/reset it.
+                if (docSnap.exists()) {
+                    console.log("Game state document is corrupt (missing phase or phaseEndTime), re-initializing...");
+                } else {
+                    console.log("Game state not found, initializing...");
+                }
+
                 const newRoundId = Date.now();
                 const initialEndTime = new Date(Date.now() + BETTING_DURATION_SECONDS * 1000);
                 
@@ -142,7 +148,10 @@ const WinGame = () => {
                     phase: 'betting',
                     phaseEndTime: initialEndTime,
                     lastWinningNumber: null,
-                }).catch(err => console.error("Failed to initialize game state:", err));
+                }).catch(err => {
+                    console.error("Failed to initialize game state:", err);
+                    setPhase('error');
+                });
             }
         }, (error) => {
             console.error("Error listening to game state:", error);
