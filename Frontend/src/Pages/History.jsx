@@ -82,23 +82,33 @@ const History = () => {
           const data = doc.data();
           if (!data.createdAt || typeof data.createdAt.toDate !== 'function') return null;
           const date = data.createdAt.toDate();
+          const status = data.status;
 
-          // Bet is still pending (no win/loss status)
-          if (!data.status) {
+          if (status === 'win') {
             return {
               id: doc.id,
-              type: 'bet_placed',
+              type: 'win',
+              amount: data.winnings || (data.amount * 10),
+              status: `Bet on ${data.number}`,
+              date: date,
+            };
+          }
+      
+          if (status === 'loss') {
+            return {
+              id: doc.id,
+              type: 'loss',
               amount: data.amount,
               status: `Bet on ${data.number}`,
               date: date,
             };
           }
           
-          const isWin = data.status === 'win';
+          // Default to 'bet_placed' for 'open' or undefined statuses
           return {
             id: doc.id,
-            type: isWin ? 'win' : 'loss',
-            amount: isWin ? data.winnings || (data.amount * 10) : data.amount,
+            type: 'bet_placed',
+            amount: data.amount,
             status: `Bet on ${data.number}`,
             date: date,
           };
