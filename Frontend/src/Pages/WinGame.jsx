@@ -31,51 +31,28 @@ const WinGame = () => {
 
     const gameStateRef = useCallback(() => doc(db, 'game_state', 'win_game_1_to_12'), []);
 
-    // --- Client-side Result Calculation (INSECURE) ---
-    // This function should be moved to a secure backend (e.g., Cloud Function) for a production environment.
-    const calculateAndDistributeWinnings = useCallback(async (roundIdToProcess) => {
-        toast.info("Calculating round results...");
+    const processWinnings = useCallback(async (winningNumber, roundIdToProcess) => {
+        if (!winningNumber || !roundIdToProcess) return;
+    
+        toast.info(`Calculating results for winner: ${winningNumber}`);
         try {
-            // 1. Get all bets for the completed round
             const betsQuery = query(collection(db, 'wingame_bets'), where('roundId', '==', roundIdToProcess));
             const betsSnapshot = await getDocs(betsQuery);
-
+    
             if (betsSnapshot.empty) {
                 console.log(`No bets in round ${roundIdToProcess}.`);
-                await updateDoc(gameStateRef(), { lastWinningNumber: "N/A" });
                 toast.success("Round finished. No bets were placed.");
                 return;
             }
-
-            // 2. Aggregate bets by number
-            const betAggregation = {};
-            betsSnapshot.forEach(doc => {
-                const bet = doc.data();
-                betAggregation[bet.number] = (betAggregation[bet.number] || 0) + bet.amount;
-            });
-
-            // 3. Find the number with the lowest total bet amount
-            let winningNumber = -1;
-            let lowestBet = Infinity;
-            for (let i = 1; i <= 12; i++) {
-                const betSum = betAggregation[i] || 0;
-                if (betSum < lowestBet) {
-                    lowestBet = betSum;
-                    winningNumber = i;
-                }
-            }
-
-            // 4. Update game state with the winning number
-            await updateDoc(gameStateRef(), { lastWinningNumber: winningNumber });
-            console.log(`Round ${roundIdToProcess} winning number: ${winningNumber}`);
-
-            // 5. Use a batch write to process all wins and losses atomically
+    
             const batch = writeBatch(db);
+            let hasWinners = false;
             betsSnapshot.forEach(doc => {
                 const bet = doc.data();
                 const betRef = doc.ref;
-
+    
                 if (bet.number === winningNumber) {
+                    hasWinners = true;
                     const winnings = bet.amount * 10;
                     batch.update(betRef, { status: 'win', winnings: winnings });
                     
@@ -88,13 +65,50 @@ const WinGame = () => {
             
             await batch.commit();
             console.log("Winnings distributed and bets updated.");
-            toast.success(`Round over! The winning number was ${winningNumber}.`);
-
+            if (hasWinners) {
+                toast.success(`Round over! The winning number was ${winningNumber}. Payouts sent!`);
+            } else {
+                toast.success(`Round over! The winning number was ${winningNumber}. No one won.`);
+            }
+    
         } catch (error) {
             console.error("Error calculating winnings:", error);
             toast.error("An error occurred while calculating results.");
         }
-    }, [gameStateRef]);
+    }, []);
+
+    const processRefunds = useCallback(async (roundIdToProcess) => {
+        if (!roundIdToProcess) return;
+        toast.info(`No winner was chosen for round ${roundIdToProcess}. Refunding all bets.`);
+        try {
+            const betsQuery = query(collection(db, 'wingame_bets'), where('roundId', '==', roundIdToProcess), where('status', '==', 'open'));
+            const betsSnapshot = await getDocs(betsQuery);
+    
+            if (betsSnapshot.empty) {
+                console.log(`No open bets to refund in round ${roundIdToProcess}.`);
+                return;
+            }
+    
+            const batch = writeBatch(db);
+            betsSnapshot.forEach(doc => {
+                const bet = doc.data();
+                const betRef = doc.ref;
+                
+                const userRef = doc(db, 'users', bet.userId);
+                batch.update(userRef, { balance: increment(bet.amount) });
+    
+                batch.update(betRef, { status: 'refunded' });
+            });
+            
+            await batch.commit();
+            console.log(`Refunds for round ${roundIdToProcess} processed.`);
+            toast.success("Winners not announced, money refunded.");
+    
+        } catch (error) {
+            console.error("Error processing refunds:", error);
+            toast.error("An error occurred while refunding bets.");
+        }
+    }, []);
 
 
     // Effect to get user's wallet balance
@@ -107,10 +121,9 @@ const WinGame = () => {
         return unsubscribe;
     }, [user]);
 
-    // This effect syncs game state from Firestore and calculates remaining time
+    // This effect syncs game state from Firestore and handles forced winner logic
     useEffect(() => {
         const unsubscribe = onSnapshot(gameStateRef(), (docSnap) => {
-            // If doc exists and has the required fields, process it
             if (docSnap.exists() && docSnap.data().phase && docSnap.data().phaseEndTime) {
                 const data = docSnap.data();
                 const now = Timestamp.now();
@@ -121,25 +134,46 @@ const WinGame = () => {
                 }
 
                 const remainingSeconds = Math.max(0, phaseEndTime.seconds - now.seconds);
-                const currentPhase = data.phase;
                 
-                if (phase !== currentPhase) setPhase(currentPhase);
+                if (phase !== data.phase) setPhase(data.phase);
                 if (roundId !== data.roundId) setRoundId(data.roundId);
 
                 setLastWinningNumber(data.lastWinningNumber || null);
                 setTimer(remainingSeconds);
 
-                if (currentPhase === 'results' && phase === 'betting') {
+                // A winner has been manually selected by admin
+                if (data.phase === 'results' && data.forcedWinner && !data.winnerProcessed) {
+                    runTransaction(db, async (transaction) => {
+                        const freshDoc = await transaction.get(gameStateRef());
+                        if (freshDoc.exists() && freshDoc.data().winnerProcessed) {
+                            return; // Another client already processing
+                        }
+                        transaction.update(gameStateRef(), { winnerProcessed: true });
+                    }).then(async () => {
+                        console.log(`Processing admin-forced winner: ${data.forcedWinner}`);
+                        await processWinnings(data.forcedWinner, data.roundId);
+
+                        // Transition to next betting round
+                        const newEndTime = new Date(Date.now() + BETTING_DURATION_SECONDS * 1000);
+                        await setDoc(gameStateRef(), {
+                            roundId: Date.now(),
+                            phase: 'betting',
+                            phaseEndTime: newEndTime,
+                            lastWinningNumber: data.forcedWinner,
+                        }); // This resets forcedWinner and winnerProcessed implicitly
+                        setIsBettingOverModalVisible(false);
+                    }).catch(error => {
+                        if (error.code !== 'aborted') {
+                            console.error("Failed to claim winner processing task:", error);
+                        }
+                    });
+                }
+
+                if (data.phase === 'results' && phase === 'betting') {
                     setIsBettingOverModalVisible(true);
                 }
             } else {
-                // Otherwise, the doc is missing or corrupt, so we initialize/reset it.
-                if (docSnap.exists()) {
-                    console.log("Game state document is corrupt (missing phase or phaseEndTime), re-initializing...");
-                } else {
-                    console.log("Game state not found, initializing...");
-                }
-
+                // Initialize game state if it's missing or corrupt
                 const newRoundId = Date.now();
                 const initialEndTime = new Date(Date.now() + BETTING_DURATION_SECONDS * 1000);
                 
@@ -155,11 +189,10 @@ const WinGame = () => {
             }
         }, (error) => {
             console.error("Error listening to game state:", error);
-           
             setPhase('error');
         });
         return () => unsubscribe();
-    }, [gameStateRef, phase, roundId]);
+    }, [gameStateRef, phase, roundId, processWinnings]);
 
     // Effect for the visual timer countdown
     useEffect(() => {
@@ -172,13 +205,13 @@ const WinGame = () => {
         return () => clearInterval(interval);
     }, [timer]);
 
-    // Effect to handle automatic phase transitions
+    // Effect to handle automatic, time-based phase transitions
     useEffect(() => {
         if (timer > 0 || phase === 'loading' || !user) return;
 
         const roundIdToEnd = roundId;
 
-        // --- End of Betting Phase ---
+        // --- End of Betting Phase -> Start Results ---
         if (phase === 'betting') {
             runTransaction(db, async (transaction) => {
                 const gameStateDoc = await transaction.get(gameStateRef());
@@ -187,36 +220,45 @@ const WinGame = () => {
                 }
                 const newEndTime = new Date(Date.now() + RESULTS_DURATION_SECONDS * 1000);
                 transaction.update(gameStateRef(), { phase: 'results', phaseEndTime: newEndTime });
-            }).then(() => {
-                console.log("Won race to end betting round. Calculating results for round:", roundIdToEnd);
-                calculateAndDistributeWinnings(roundIdToEnd);
             }).catch(error => {
                 if (error.code !== 'aborted' && !error.message.includes("Phase already changed")) {
-                    console.error("Failed to start result calculation:", error);
+                    console.error("Failed to start result phase:", error);
                 }
             });
         }
-        // --- End of Results Phase ---
+        // --- End of Results Phase (Timeout) -> Refund and Start Betting ---
         else if (phase === 'results') {
              runTransaction(db, async (transaction) => {
                 const gameStateDoc = await transaction.get(gameStateRef());
-                if (!gameStateDoc.exists() || gameStateDoc.data().phase !== 'results') {
-                    throw new Error("Phase already changed.");
+                if (!gameStateDoc.exists() || gameStateDoc.data().phase !== 'results' || gameStateDoc.data().roundId !== roundIdToEnd) {
+                    throw new Error("State mismatch, aborting refund.");
                 }
+                // If a winner was forced, another process is handling it. Abort.
+                if (gameStateDoc.data().forcedWinner) {
+                    console.log("Result timeout, but winner was forced. Aborting refund.");
+                    return; // Let the other effect handle the transition
+                }
+                
+                // Transition to the next round with a REFUND status
                 const newEndTime = new Date(Date.now() + BETTING_DURATION_SECONDS * 1000);
                 transaction.update(gameStateRef(), {
                     phase: 'betting',
                     roundId: Date.now(),
                     phaseEndTime: newEndTime,
+                    lastWinningNumber: 'REFUNDED',
                 });
+            }).then(() => {
+                // After successfully starting the next round, process refunds for the old one.
+                console.log(`Refunding bets for round ${roundIdToEnd}`);
+                processRefunds(roundIdToEnd);
                 setIsBettingOverModalVisible(false);
             }).catch(error => {
-                if (error.code !== 'aborted') {
-                    console.error("Failed to start new betting round:", error);
+                if (error.code !== 'aborted' && !error.message.includes("State mismatch")) {
+                    console.error("Failed to start new round after timeout:", error);
                 }
             });
         }
-    }, [timer, phase, user, roundId, calculateAndDistributeWinnings, gameStateRef]);
+    }, [timer, phase, user, roundId, processRefunds, gameStateRef]);
 
 
     const handleBetSubmit = async () => {
@@ -292,7 +334,7 @@ const WinGame = () => {
                     <div className="text-center">
                         <p className="text-sm text-gray-400">Status</p>
                         {phase === 'betting' && <p className="text-lg font-bold text-green-400 animate-pulse">Betting Open</p>}
-                        {phase === 'results' && <p className="text-lg font-bold text-red-400">Calculating Results...</p>}
+                        {phase === 'results' && <p className="text-lg font-bold text-blue-400">Waiting for Result...</p>}
                         {phase === 'loading' && <p className="text-lg font-bold text-gray-400">Loading...</p>}
                         {phase === 'error' && <p className="text-lg font-bold text-red-600">Connection Error</p>}
                     </div>
@@ -352,11 +394,10 @@ const WinGame = () => {
                         </button>
                     </div>
                 </div>
-
+                
                 <div className="text-center mt-8 text-xs text-gray-500">
-                    <p className='font-bold text-yellow-500'>Disclaimer: The result calculation logic is currently running on the client-side for demonstration purposes and is not secure.</p>
                     <p className='mt-2'>
-                        Winning numbers are calculated automatically after each round. The number with the lowest total bet amount wins. 
+                    
                         Winnings are 10x the bet amount and are credited to your wallet automatically.
                     </p>
                 </div>

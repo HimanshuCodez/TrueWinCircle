@@ -41,8 +41,9 @@
         match /wingame_bets/{betId} {
           // Allow users to create their own bets.
           allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-          // Allow users to read their own bet history.
-      allow read: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
+          // Allow any logged-in user to read all bets for result calculation.
+          // WARNING: This exposes bet data of all users to any logged-in user.
+          allow read: if request.auth != null;
           // Allow the client-side leader to update the status of all bets to 'win' or 'loss'.
           // WARNING: In a production app, this update logic should be on a trusted backend server.
           allow update: if request.auth != null;
