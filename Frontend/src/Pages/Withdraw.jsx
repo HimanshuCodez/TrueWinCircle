@@ -80,14 +80,16 @@ const Withdraw = () => {
 
     const q = query(
         collection(db, "withdrawals"),
-        where("userId", "==", user.uid),
-        orderBy("createdAt", "desc"),
-        limit(1)
+        where("userId", "==", user.uid)
     );
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
         if (!querySnapshot.empty) {
-            const lastDoc = querySnapshot.docs[0];
+            // Sort client-side to find the most recent withdrawal without needing an index
+            const sortedDocs = querySnapshot.docs.sort((a, b) => 
+                (b.data().createdAt?.toMillis() || 0) - (a.data().createdAt?.toMillis() || 0)
+            );
+            const lastDoc = sortedDocs[0];
             const lastWithdrawalData = { ...lastDoc.data(), id: lastDoc.id };
             setLastWithdrawal(lastWithdrawalData);
 
