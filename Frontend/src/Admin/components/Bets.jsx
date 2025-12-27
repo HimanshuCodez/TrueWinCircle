@@ -71,9 +71,55 @@ const Bets = () => {
 
   // Effect to fetch bets for the current round
   useEffect(() => {
-// ... (this effect is unchanged)
-// ...
-    return () => unsubscribe();
+    if (!currentRoundId || !selectedGame) {
+      setBetsSummary([]);
+      setTotalBets(0);
+      setLoading(false);
+      return;
+    }
+
+    const config = GAME_CONFIG[selectedGame];
+    if (!config) return;
+
+    setLoading(true);
+    const betsQuery = query(
+      collection(db, config.betsCollection),
+      where('roundId', '==', currentRoundId)
+    );
+
+    const unsubscribeBets = onSnapshot(betsQuery, (snapshot) => {
+      const bets = {};
+      let total = 0;
+      snapshot.docs.forEach(doc => {
+        const betData = doc.data();
+        const number = betData[config.numberField];
+        const amount = betData[config.amountField];
+        
+        if (number === undefined || amount === undefined) return;
+
+        total += amount;
+
+        if (!bets[number]) {
+          bets[number] = { number: number, amount: 0, count: 0, users: new Set() };
+        }
+        bets[number].amount += amount;
+        bets[number].count += 1;
+        bets[number].users.add(betData.userId);
+      });
+
+      const summary = Object.values(bets)
+        .map(b => ({ ...b, userCount: b.users.size }))
+        .sort((a, b) => b.amount - a.amount);
+      
+      setBetsSummary(summary);
+      setTotalBets(total);
+      setLoading(false);
+    }, (error) => {
+      console.error(`Error fetching bets for ${config.name}:`, error);
+      setLoading(false);
+    });
+
+    return () => unsubscribeBets();
   }, [currentRoundId, selectedGame]);
 
   const handleSelectWinner = async (number) => {
