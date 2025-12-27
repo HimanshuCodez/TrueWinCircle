@@ -46,6 +46,7 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   
+  const [truewinUserMap, setTruewinUserMap] = useState({});
   const [payments, setPayments] = useState([]);
   const [withdrawals, setWithdrawals] = useState([]);
   const [winners, setWinners] = useState([ // Sample data
@@ -63,38 +64,49 @@ const AdminDashboard = () => {
   useEffect(() => {
     if (!isAdmin) return;
 
+    // Fetch all truewin users and build a map for quick lookup
+    const truewinUsersQuery = query(collection(db, 'users'), where('appName', '==', 'truewin'));
+    const unsubscribeTruewinUsers = onSnapshot(truewinUsersQuery, (snapshot) => {
+      const newTruewinUserMap = {};
+      snapshot.docs.forEach(d => {
+        newTruewinUserMap[d.id] = true; // Use a boolean for existence check
+      });
+      setTruewinUserMap(newTruewinUserMap);
+      setTotalUsers(snapshot.size); // This is now directly the count of truewin users
+    });
+
     const paymentsQuery = query(collection(db, 'top-ups'));
     const unsubscribePayments = onSnapshot(paymentsQuery, (snapshot) => {
-      const fetchedPayments = snapshot.docs.map(d => ({ id: d.id, ...d.data(), date: d.data().createdAt ? new Date(d.data().createdAt).toLocaleDateString() : 'N/A', user: d.data().userId }));
-      setPayments(fetchedPayments);
-      const userIds = [...new Set(fetchedPayments.map(p => p.userId))];
-      fetchMissingUserDetails(userIds);
+      const allFetchedPayments = snapshot.docs.map(d => ({ id: d.id, ...d.data(), date: d.data().createdAt ? new Date(d.data().createdAt).toLocaleDateString() : 'N/A', userId: d.data().userId }));
+      // Filter payments here based on truewinUserMap
+      const truewinPayments = allFetchedPayments.filter(p => truewinUserMap[p.userId]);
+      setPayments(truewinPayments);
+      const userIds = [...new Set(truewinPayments.map(p => p.userId))];
+      fetchMissingUserDetails(userIds); // Fetch user details for filtered payments
     });
 
     const withdrawalsQuery = query(collection(db, 'withdrawals'));
     const unsubscribeWithdrawals = onSnapshot(withdrawalsQuery, (snapshot) => {
-      const fetchedWithdrawals = snapshot.docs.map(d => ({ id: d.id, ...d.data(), date: d.data().createdAt ? new Date(d.data().createdAt).toLocaleDateString() : 'N/A', user: d.data().userId }));
-      setWithdrawals(fetchedWithdrawals);
-      const userIds = [...new Set(fetchedWithdrawals.map(w => w.userId))];
-      fetchMissingUserDetails(userIds);
-    });
-
-    const usersQuery = query(collection(db, 'users'));
-    const unsubscribeUsers = onSnapshot(usersQuery, (snapshot) => {
-      setTotalUsers(snapshot.size);
+      const allFetchedWithdrawals = snapshot.docs.map(d => ({ id: d.id, ...d.data(), date: d.data().createdAt ? new Date(d.data().createdAt).toLocaleDateString() : 'N/A', userId: d.data().userId }));
+      // Filter withdrawals here based on truewinUserMap
+      const truewinWithdrawals = allFetchedWithdrawals.filter(w => truewinUserMap[w.userId]);
+      setWithdrawals(truewinWithdrawals);
+      const userIds = [...new Set(truewinWithdrawals.map(w => w.userId))];
+      fetchMissingUserDetails(userIds); // Fetch user details for filtered withdrawals
     });
 
     return () => {
+      unsubscribeTruewinUsers();
       unsubscribePayments();
       unsubscribeWithdrawals();
-      unsubscribeUsers();
     };
-  }, [isAdmin]);
+  }, [isAdmin, truewinUserMap]);
 
   const fetchMissingUserDetails = (userIds) => {
     userIds.forEach(async (userId) => {
-      if (!userDetails[userId]) {
-        const userQuery = query(collection(db, 'users'), where('uid', '==', userId));
+      // Only fetch user details if not already fetched AND if they are a truewin user
+      if (!userDetails[userId] && truewinUserMap[userId]) {
+        const userQuery = query(collection(db, 'users'), where('uid', '==', userId), where('appName', '==', 'truewin'));
         const userSnap = await getDocs(userQuery);
         if (!userSnap.empty) {
           setUserDetails(prev => ({ ...prev, [userId]: userSnap.docs[0].data() }));

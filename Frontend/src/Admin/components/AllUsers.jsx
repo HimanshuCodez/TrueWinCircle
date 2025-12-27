@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { collection, getDocs, query, orderBy, doc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, doc, updateDoc, where } from 'firebase/firestore';
 import { db } from '../../firebase';
 import Loader from '../../components/Loader';
 import UserBettingHistory from './UserBettingHistory';
