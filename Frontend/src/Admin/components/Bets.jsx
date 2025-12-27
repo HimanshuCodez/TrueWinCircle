@@ -11,8 +11,21 @@ const GAME_CONFIG = {
     numberField: 'number',
     amountField: 'amount',
   },
-// ... (rest of the config is unchanged)
-// ...
+  haruf: {
+    name: 'Haruf Game',
+    gameStateDoc: 'haruf_game_state',
+    betsCollection: 'haruf_bets',
+    numberField: 'position',
+    amountField: 'amount',
+  },
+  roulette: {
+    name: 'Roulette',
+    gameStateDoc: 'roulette_game_state',
+    betsCollection: 'roulette_bets',
+    numberField: 'number',
+    amountField: 'amount',
+  },
+};
 
 const Bets = () => {
   const [selectedGame, setSelectedGame] = useState('winGame');
