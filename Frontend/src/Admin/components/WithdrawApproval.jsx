@@ -23,7 +23,7 @@ const WithdrawApproval = ({ withdrawals, userDetails, handleWithdrawalApproval }
             <tbody>
               {withdrawals.map(withdrawal => (
                 <tr key={withdrawal.id} className="border-b hover:bg-gray-50">
-                  <td className="p-4">{userDetails[withdrawal.userId]?.name || 'Unknown User'}</td>
+                  <td className="p-4">{withdrawal.name || userDetails[withdrawal.userId]?.name || 'Unknown User'}</td>
                   <td className="p-4 font-medium">₹{withdrawal.amount}</td>
                   <td className="p-4">{withdrawal.method}</td>
                   <td className="p-4">

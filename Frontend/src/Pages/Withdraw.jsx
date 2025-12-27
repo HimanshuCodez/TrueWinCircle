@@ -145,6 +145,7 @@ const Withdraw = () => {
         }
 
         const currentWinningMoney = userSnap.data().winningMoney || 0;
+        const userName = userSnap.data().name || 'Anonymous'; // Get user's name, default to 'Anonymous'
 
         if (currentWinningMoney < withdrawalAmount) {
           throw new Error("Insufficient winning money for withdrawal.");
@@ -157,6 +158,7 @@ const Withdraw = () => {
         const withdrawalsCollectionRef = collection(db, 'withdrawals');
         transaction.set(doc(withdrawalsCollectionRef), {
           userId: user.uid,
+          name: userName, // Corrected: Add name to the withdrawal request
           amount: withdrawalAmount,
           method,
           upiId: method === 'upi' ? upiId : '',

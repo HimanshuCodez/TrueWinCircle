@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import Loader from '../../components/Loader';
 import UserBettingHistory from './UserBettingHistory';
@@ -32,6 +32,19 @@ const AllUsers = () => {
 
     fetchUsers();
   }, []);
+
+  const makeAdmin = async (userId) => {
+    try {
+      const userDoc = doc(db, 'users', userId);
+      await updateDoc(userDoc, {
+        role: 'admin'
+      });
+      setUsers(users.map(user => user.id === userId ? { ...user, role: 'admin' } : user));
+    } catch (error) {
+      console.error("Error updating user role: ", error);
+      setError("Failed to update user role.");
+    }
+  };
 
   const filteredUsers = useMemo(() => {
     if (!searchTerm.trim()) {
@@ -102,8 +115,10 @@ const AllUsers = () => {
               <th className="p-4 text-left text-sm font-semibold text-gray-600">Name</th>
               <th className="p-4 text-left text-sm font-semibold text-gray-600">Phone Number</th>
               <th className="p-4 text-left text-sm font-semibold text-gray-600">Email</th>
+              <th className="p-4 text-left text-sm font-semibold text-gray-600">Role</th>
               <th className="p-4 text-left text-sm font-semibold text-gray-600">Joined Date</th>
               <th className="p-4 text-right text-sm font-semibold text-gray-600">Total Balance</th>
+              <th className="p-4 text-center text-sm font-semibold text-gray-600">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -121,8 +136,19 @@ const AllUsers = () => {
                       <UserWinLoss userId={user.id} />
                     </div>
                   </td>
+                  <td className="p-4 text-gray-600">{user.role || 'user'}</td>
                   <td className="p-4 text-left text-gray-600">{formatJoinDate(user.createdAt)}</td>
                   <td className="p-4 text-right font-semibold text-gray-800">₹{totalBalance.toFixed(2)}</td>
+                  <td className="p-4 text-center">
+                    {user.role !== 'admin' && (
+                      <button
+                        onClick={() => makeAdmin(user.id)}
+                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm"
+                      >
+                        Make Admin
+                      </button>
+                    )}
+                  </td>
                 </tr>
               );
             })}
