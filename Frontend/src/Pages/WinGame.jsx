@@ -57,7 +57,7 @@ const WinGame = () => {
                     batch.update(betRef, { status: 'win', winnings: winnings });
                     
                     const userRef = doc(db, 'users', bet.userId);
-                    batch.update(userRef, { balance: increment(winnings) });
+                    batch.update(userRef, { winningMoney: increment(winnings) });
                 } else {
                     batch.update(betRef, { status: 'loss' });
                 }

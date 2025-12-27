@@ -135,7 +135,7 @@ const History = () => {
 
           if (data.status === 'win') {
             type = 'win';
-            displayAmount = data.winnings || data.betAmount; // Use winnings if available
+            displayAmount = data.winnings || (data.betAmount * 90); // Use winnings if available
           } else if (data.status === 'loss') {
             type = 'loss';
           }
