@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
-import { getAuth } from "firebase/auth";
-import { doc, getDoc, runTransaction, collection, query, orderBy, limit } from "firebase/firestore";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc, runTransaction, collection } from "firebase/firestore";
 import { db } from "../firebase";
 import { toast } from "react-toastify";
 import { ArrowLeft, IndianRupee } from "lucide-react";
@@ -11,7 +11,9 @@ import { ArrowLeft, IndianRupee } from "lucide-react";
 const Withdraw = () => {
   const navigate = useNavigate();
   const auth = getAuth();
-  const user = auth.currentUser;
+  
+  const [user, setUser] = useState(null);
+  const [authStatusLoaded, setAuthStatusLoaded] = useState(false);
 
   const [amount, setAmount] = useState('');
   const [upiId, setUpiId] = useState('');
@@ -20,16 +22,24 @@ const Withdraw = () => {
   const [bankName, setBankName] = useState('');
   const [method, setMethod] = useState('upi'); // 'upi' or 'bank'
 
-  const [loading, setLoading] = useState(true); // Initial loading for fetching balance
+  const [loading, setLoading] = useState(true); // Combined loading state
   const [submitLoading, setSubmitLoading] = useState(false); // For withdrawal submission
   const [error, setError] = useState('');
-  const [winningMoney, setWinningMoney] = useState(0); // Renamed from userBalance
+  const [winningMoney, setWinningMoney] = useState(0);
   const [onCooldown, setOnCooldown] = useState(false);
   const [cooldownRemaining, setCooldownRemaining] = useState(0);
-  const [withdrawalSubmitted, setWithdrawalSubmitted] = useState(false); // New state
-  const [lastWithdrawal, setLastWithdrawal] = useState(null); // New state for last withdrawal details
+  const [withdrawalSubmitted, setWithdrawalSubmitted] = useState(false);
+  const [lastWithdrawal, setLastWithdrawal] = useState(null);
 
   const COOLDOWN_DURATION = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setAuthStatusLoaded(true);
+    });
+    return () => unsubscribe();
+  }, [auth]);
 
   useEffect(() => {
     const fetchWinningMoney = async () => {
@@ -50,14 +60,19 @@ const Withdraw = () => {
         } finally {
           setLoading(false);
         }
+      }
+    };
+
+    if (authStatusLoaded) {
+      if (user) {
+        fetchWinningMoney();
       } else {
         setLoading(false);
         toast.error("Please log in to withdraw.");
         setError("Please log in to withdraw.");
       }
-    };
-    fetchWinningMoney();
-  }, [user]);
+    }
+  }, [user, authStatusLoaded]);
 
   useEffect(() => {
     const lastWithdrawalTimestamp = localStorage.getItem('withdrawalTimestamp');
