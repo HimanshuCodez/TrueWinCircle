@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { collection, getDocs, query, orderBy, doc, updateDoc, where } from 'firebase/firestore';
+import { collection, getDocs, query, doc, updateDoc, where } from 'firebase/firestore'; // Removed orderBy as it's done on client
 import { db } from '../../firebase';
 import Loader from '../../components/Loader';
 import UserBettingHistory from './UserBettingHistory';
@@ -15,16 +15,20 @@ const AllUsers = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
+        // Query without orderBy to avoid needing a composite index. Sorting is done client-side.
         const usersQuery = query(
           collection(db, 'users'),
-          where('appName', '==', 'truewin'),
-          orderBy('name')
+          where('appName', '==', 'truewin')
         );
         const querySnapshot = await getDocs(usersQuery);
-        const usersList = querySnapshot.docs.map(doc => ({
+        let usersList = querySnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
+
+        // Sort users by name on the client-side
+        usersList.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        
         setUsers(usersList);
       } catch (err) {
         setError('Failed to fetch users. Please check console for details.');
@@ -40,10 +44,19 @@ const AllUsers = () => {
   const makeAdmin = async (userId) => {
     try {
       const userDoc = doc(db, 'users', userId);
-      await updateDoc(userDoc, {
-        role: 'admin'
-      });
+      await updateDoc(userDoc, { role: 'admin' });
       setUsers(users.map(user => user.id === userId ? { ...user, role: 'admin' } : user));
+    } catch (error) {
+      console.error("Error updating user role: ", error);
+      setError("Failed to update user role.");
+    }
+  };
+
+  const removeAdmin = async (userId) => {
+    try {
+      const userDoc = doc(db, 'users', userId);
+      await updateDoc(userDoc, { role: 'user' });
+      setUsers(users.map(user => user.id === userId ? { ...user, role: 'user' } : user));
     } catch (error) {
       console.error("Error updating user role: ", error);
       setError("Failed to update user role.");
@@ -144,7 +157,14 @@ const AllUsers = () => {
                   <td className="p-4 text-left text-gray-600">{formatJoinDate(user.createdAt)}</td>
                   <td className="p-4 text-right font-semibold text-gray-800">₹{totalBalance.toFixed(2)}</td>
                   <td className="p-4 text-center">
-                    {user.role !== 'admin' && (
+                    {user.role === 'admin' ? (
+                      <button
+                        onClick={() => removeAdmin(user.id)}
+                        className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded text-sm"
+                      >
+                        Remove Admin
+                      </button>
+                    ) : (
                       <button
                         onClick={() => makeAdmin(user.id)}
                         className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm"
