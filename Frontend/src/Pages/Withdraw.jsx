@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc, runTransaction, collection } from "firebase/firestore";
+import { doc, getDoc, runTransaction, collection, query, where, orderBy, limit, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase";
 import { toast } from "react-toastify";
 import { ArrowLeft, IndianRupee } from "lucide-react";
@@ -28,7 +28,6 @@ const Withdraw = () => {
   const [winningMoney, setWinningMoney] = useState(0);
   const [onCooldown, setOnCooldown] = useState(false);
   const [cooldownRemaining, setCooldownRemaining] = useState(0);
-  const [withdrawalSubmitted, setWithdrawalSubmitted] = useState(false);
   const [lastWithdrawal, setLastWithdrawal] = useState(null);
 
   const COOLDOWN_DURATION = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
@@ -68,36 +67,61 @@ const Withdraw = () => {
         fetchWinningMoney();
       } else {
         setLoading(false);
-        toast.error("Please log in to withdraw.");
         setError("Please log in to withdraw.");
       }
     }
   }, [user, authStatusLoaded]);
 
   useEffect(() => {
-    const lastWithdrawalTimestamp = localStorage.getItem('withdrawalTimestamp');
-    if (lastWithdrawalTimestamp) {
-      const timeElapsed = new Date().getTime() - parseInt(lastWithdrawalTimestamp);
-      if (timeElapsed < COOLDOWN_DURATION) {
-        setOnCooldown(true);
-        setCooldownRemaining(COOLDOWN_DURATION - timeElapsed);
-      } else {
-        localStorage.removeItem('withdrawalTimestamp');
+    if (!user) {
         setOnCooldown(false);
-      }
+        return;
     }
 
-    const timer = setInterval(() => {
-      if (onCooldown && cooldownRemaining > 0) {
-        setCooldownRemaining(prev => prev - 1000);
-      } else if (onCooldown && cooldownRemaining <= 0) {
-        setOnCooldown(false);
-        localStorage.removeItem('withdrawalTimestamp');
-        clearInterval(timer);
-      }
-    }, 1000);
+    const q = query(
+        collection(db, "withdrawals"),
+        where("userId", "==", user.uid),
+        orderBy("createdAt", "desc"),
+        limit(1)
+    );
 
-    return () => clearInterval(timer);
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        if (!querySnapshot.empty) {
+            const lastDoc = querySnapshot.docs[0];
+            const lastWithdrawalData = { ...lastDoc.data(), id: lastDoc.id };
+            setLastWithdrawal(lastWithdrawalData);
+
+            const lastWithdrawalTimestamp = lastWithdrawalData.createdAt.toMillis();
+            const timeElapsed = Date.now() - lastWithdrawalTimestamp;
+
+            if (timeElapsed < COOLDOWN_DURATION) {
+                setOnCooldown(true);
+                setCooldownRemaining(COOLDOWN_DURATION - timeElapsed);
+            } else {
+                setOnCooldown(false);
+            }
+        } else {
+            setLastWithdrawal(null);
+            setOnCooldown(false);
+        }
+    }, (err) => {
+        console.error("Error fetching last withdrawal:", err);
+        toast.error("Could not fetch withdrawal status.");
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  useEffect(() => {
+      let timerId;
+      if (onCooldown && cooldownRemaining > 0) {
+          timerId = setTimeout(() => {
+              setCooldownRemaining(prev => Math.max(0, prev - 1000));
+          }, 1000);
+      } else if (onCooldown && cooldownRemaining <= 0) {
+          setOnCooldown(false);
+      }
+      return () => clearTimeout(timerId);
   }, [onCooldown, cooldownRemaining]);
 
   const formatTime = (ms) => {
@@ -185,11 +209,7 @@ const Withdraw = () => {
         });
       });
       
-      localStorage.setItem('withdrawalTimestamp', new Date().getTime().toString());
-      setOnCooldown(true);
-      setCooldownRemaining(COOLDOWN_DURATION);
       toast.success('Withdrawal request submitted successfully!');
-      setWithdrawalSubmitted(true); // Set submitted state
       setAmount('');
       setUpiId('');
       setAccountNumber('');
@@ -226,7 +246,13 @@ const Withdraw = () => {
       ) : onCooldown ? (
         <div className="bg-[#0a2d55] rounded-xl p-6 shadow-lg text-center space-y-4">
           <h2 className="text-xl font-semibold text-yellow-500">Withdrawal Request Submitted!</h2>
-          <p className="text-lg">Status: <span className="font-semibold text-yellow-400">Pending</span></p>
+          <p className="text-lg">Status: <span className={`font-semibold capitalize ${
+            lastWithdrawal?.status === 'approved' ? 'text-green-400' :
+            lastWithdrawal?.status === 'rejected' ? 'text-red-400' :
+            'text-yellow-400'
+        }`}>
+            {lastWithdrawal?.status || 'pending'}
+        </span></p>
           
           <div className="text-sm text-gray-200 space-y-2 my-4 p-4 bg-[#042346] rounded-lg border border-gray-700">
             <p>Your payment will be credited to your account within 10 to 24 hours.</p>
