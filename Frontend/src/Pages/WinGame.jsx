@@ -46,7 +46,9 @@ const WinGame = () => {
             }
     
             const batch = writeBatch(db);
-            let hasWinners = false;
+            const winners = {}; // { userId: totalWinnings, ... }
+
+            // First pass: find winners and update bet statuses
             betsSnapshot.forEach(doc => {
                 const bet = doc.data();
                 const betRef = doc.ref;
@@ -58,20 +60,40 @@ const WinGame = () => {
                 }
     
                 if (bet.number === winningNumber) {
-                    hasWinners = true;
                     const winnings = bet.amount * 10;
                     batch.update(betRef, { status: 'win', winnings: winnings });
                     
-                    const userRef = doc(db, 'users', bet.userId);
-                    batch.update(userRef, { winningMoney: increment(winnings) });
+                    // Aggregate winnings per user
+                    if (!winners[bet.userId]) {
+                        winners[bet.userId] = 0;
+                    }
+                    winners[bet.userId] += winnings;
                 } else {
                     batch.update(betRef, { status: 'loss' });
                 }
             });
+
+            // If there are winners, fetch their documents and update their winningMoney
+            const userIds = Object.keys(winners);
+            if (userIds.length > 0) {
+                const userRefs = userIds.map(id => doc(db, 'users', id));
+                const userDocs = await Promise.all(userRefs.map(ref => getDoc(ref)));
+
+                userDocs.forEach(userDoc => {
+                    if (userDoc.exists()) {
+                        const userId = userDoc.id;
+                        const userRef = userDoc.ref;
+                        const currentWinningMoney = userDoc.data().winningMoney || 0;
+                        const totalWinnings = winners[userId];
+                        const newWinningMoney = currentWinningMoney + totalWinnings;
+                        batch.update(userRef, { winningMoney: newWinningMoney });
+                    }
+                });
+            }
             
             await batch.commit();
             console.log("Winnings distributed and bets updated.");
-            if (hasWinners) {
+            if (userIds.length > 0) {
                 toast.success(`Round over! The winning number was ${winningNumber}. Payouts sent!`);
             } else {
                 toast.success(`Round over! The winning number was ${winningNumber}. No one won.`);
