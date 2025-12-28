@@ -24,7 +24,7 @@ const WinGame = () => {
     
     // Bet state
     const [selectedNumber, setSelectedNumber] = useState(null);
-    const [betAmount, setBetAmount] = useState(10);
+    const [betAmount, setBetAmount] = useState();
     const [isSubmitting, setIsSubmitting] = useState(false);
     
     // UI state
