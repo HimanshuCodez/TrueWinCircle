@@ -272,7 +272,7 @@ const AdminDashboard = () => {
 
           { id: 'barcodes', label: 'Barcode Management', icon: QrCode },
           { id: 'payments', label: 'Payment Approvals', icon: CreditCard },
-          { id: 'winners', label: 'Winner Announcement', icon: Trophy },
+        
           { id: 'withdrawals', label: 'Withdrawal Approval', icon: DollarSign },
           { id: 'marquee', label: 'Screen Text', icon: Edit },
           { id: 'harufUpdate', label: 'Market Results', icon: Edit },

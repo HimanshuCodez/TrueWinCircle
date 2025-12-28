@@ -32,7 +32,7 @@ const WinGame = () => {
     const gameStateRef = useCallback(() => doc(db, 'game_state', 'win_game_1_to_12'), []);
 
     const processWinnings = useCallback(async (winningNumber, roundIdToProcess) => {
-        if (!winningNumber || !roundIdToProcess) return;
+        if (winningNumber === undefined || winningNumber === null || !roundIdToProcess) return;
     
         toast.info(`Calculating results for winner: ${winningNumber}`);
         try {
@@ -50,6 +50,12 @@ const WinGame = () => {
             betsSnapshot.forEach(doc => {
                 const bet = doc.data();
                 const betRef = doc.ref;
+
+                // Defensive check for malformed bet data
+                if (typeof bet.number !== 'number' || typeof bet.amount !== 'number' || !bet.userId) {
+                    console.warn('Skipping malformed bet object:', doc.id, bet);
+                    return;
+                }
     
                 if (bet.number === winningNumber) {
                     hasWinners = true;
