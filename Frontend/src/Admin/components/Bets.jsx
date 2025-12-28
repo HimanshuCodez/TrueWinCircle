@@ -157,6 +157,7 @@ const Bets = () => {
     }
 
     const mostBetted = betsSummary[0];
+    const leastBetted = betsSummary[betsSummary.length - 1]; // Get the lowest bet
 
     return (
       <>
@@ -168,24 +169,36 @@ const Bets = () => {
           All Bets in this Round {selectedGame === 'winGame' && phase === 'results' && <span className="text-sm font-normal text-yellow-600">(Select a winner)</span>}
         </h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {betsSummary.map((bet, index) => (
-            <div key={bet.number} className={`p-3 rounded-md text-center transition-all ${index === 0 ? 'bg-green-100 ring-2 ring-green-400' : 'bg-gray-100'}`}>
-              <div className="flex items-center justify-center gap-2">
-                <p className="text-xl font-bold text-gray-800">{bet.number}</p>
-                {selectedGame === 'winGame' && phase === 'results' && (
-                  <Trophy
-                    className="cursor-pointer text-yellow-500 hover:text-yellow-700 transition-transform hover:scale-125"
-                    size={20}
-                    onClick={() => handleSelectWinner(bet.number)}
-                    title={`Declare ${bet.number} as winner`}
-                  />
-                )}
+          {betsSummary.map((bet) => {
+            const isMostBetted = bet.number === mostBetted.number;
+            const isLeastBetted = bet.number === leastBetted.number;
+
+            let cardClasses = 'bg-gray-100'; // Default class
+            if (isMostBetted) {
+              cardClasses = 'bg-green-100 ring-2 ring-green-400';
+            } else if (isLeastBetted) {
+              cardClasses = 'bg-red-100 ring-2 ring-red-400'; // Highlight in red
+            }
+
+            return (
+              <div key={bet.number} className={`p-3 rounded-md text-center transition-all ${cardClasses}`}>
+                <div className="flex items-center justify-center gap-2">
+                  <p className="text-xl font-bold text-gray-800">{bet.number}</p>
+                  {selectedGame === 'winGame' && phase === 'results' && (
+                    <Trophy
+                      className="cursor-pointer text-yellow-500 hover:text-yellow-700 transition-transform hover:scale-125"
+                      size={20}
+                      onClick={() => handleSelectWinner(bet.number)}
+                      title={`Declare ${bet.number} as winner`}
+                    />
+                  )}
+                </div>
+                <p className="text-sm text-gray-600">Users: {bet.userCount}</p>
+                <p className="text-sm text-gray-600">Bets: {bet.count}</p>
+                <p className="text-sm font-semibold text-gray-800">₹{bet.amount.toFixed(2)}</p>
               </div>
-              <p className="text-sm text-gray-600">Users: {bet.userCount}</p>
-              <p className="text-sm text-gray-600">Bets: {bet.count}</p>
-              <p className="text-sm font-semibold text-gray-800">₹{bet.amount.toFixed(2)}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </>
     );
