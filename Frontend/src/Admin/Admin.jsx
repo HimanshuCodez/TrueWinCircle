@@ -372,7 +372,6 @@ const AdminDashboard = () => {
 
   return (
     <div className="flex h-screen bg-gray-100">
-      <ToastContainer />
       <Sidebar />
       {/* Overlay for mobile */}
       {isSidebarOpen && (
