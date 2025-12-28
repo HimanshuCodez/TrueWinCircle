@@ -52,7 +52,7 @@ const WinGame = () => {
                 const betRef = doc.ref;
 
                 // Defensive check for malformed bet data
-                if (typeof bet.number !== 'number' || typeof bet.amount !== 'number' || !bet.userId) {
+                if (typeof bet.number !== 'number' || typeof bet.amount !== 'number' || isNaN(bet.amount) || !bet.userId) {
                     console.warn('Skipping malformed bet object:', doc.id, bet);
                     return;
                 }
