@@ -251,7 +251,7 @@ const AdminDashboard = () => {
 
   // --- CHILD COMPONENTS ---
   const Sidebar = () => (
-    <div className={`fixed inset-y-0 left-0 z-30 md:z-auto w-72 bg-gray-900 text-white p-4 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out md:relative md:translate-x-0 md:w-72 flex flex-col`}>
+    <div className={`fixed inset-y-0 left-0 z-30 w-72 bg-gray-900 text-white p-4 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out md:relative md:translate-x-0 md:w-72 flex flex-col`}>
       <div className="mb-8 flex justify-center items-center flex-shrink-0">
         <div>
           <h1 className="text-2xl font-bold text-center">True Win Circle</h1>
