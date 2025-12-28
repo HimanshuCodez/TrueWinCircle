@@ -15,6 +15,7 @@ const WithdrawApproval = ({ withdrawals, userDetails, handleWithdrawalApproval }
                 <th className="text-left p-4 font-medium">User</th>
                 <th className="text-left p-4 font-medium">Amount</th>
                 <th className="text-left p-4 font-medium">Method</th>
+                <th className="text-left p-4 font-medium">Details</th> 
                 <th className="text-left p-4 font-medium">Status</th>
                
                 <th className="text-left p-4 font-medium">Actions</th>
@@ -25,7 +26,18 @@ const WithdrawApproval = ({ withdrawals, userDetails, handleWithdrawalApproval }
                 <tr key={withdrawal.id} className="border-b hover:bg-gray-50">
                   <td className="p-4">{withdrawal.name || userDetails[withdrawal.userId]?.name || 'Unknown User'}</td>
                   <td className="p-4 font-medium">₹{withdrawal.amount}</td>
-                  <td className="p-4">{withdrawal.method}</td>
+                  <td className="p-4">{withdrawal.method === 'upi' ? 'UPI' : 'Bank Transfer'}</td> 
+                  <td className="p-4"> 
+                    {withdrawal.method === 'upi' ? (
+                      withdrawal.upiId
+                    ) : (
+                      <div className="flex flex-col text-sm">
+                        <span>Acc: {withdrawal.accountNumber}</span>
+                        <span>IFSC: {withdrawal.ifscCode}</span>
+                        <span>Bank: {withdrawal.bankName}</span>
+                      </div>
+                    )}
+                  </td>
                   <td className="p-4">
                     <span className={`px-2 py-1 rounded-full text-xs ${
                       withdrawal.status === 'pending' 

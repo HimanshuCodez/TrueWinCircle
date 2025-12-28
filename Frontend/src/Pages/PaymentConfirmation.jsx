@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import { CheckCircle, Clock, UploadCloud, IndianRupee, ShieldCheck, Wallet as WalletIcon, XCircle, Loader2, AlertCircle } from 'lucide-react';
 import { getAuth } from "firebase/auth";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { doc, addDoc, collection, onSnapshot, runTransaction } from "firebase/firestore";
+import { doc, getDoc, addDoc, collection, onSnapshot, runTransaction } from "firebase/firestore";
 import { db } from "../firebase";
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -72,8 +72,14 @@ export default function PaymentConfirmation() {
       await uploadBytes(storageRef, paymentProof);
       const proofUrl = await getDownloadURL(storageRef);
 
+      // Fetch user's name from their user document
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+      const name = userDocSnap.exists() ? userDocSnap.data().name : 'Unknown User';
+
       const topUpRef = await addDoc(collection(db, 'top-ups'), {
         userId: user.uid,
+        name: name,
         amount,
         status: 'pending',
         paymentProof: proofUrl,

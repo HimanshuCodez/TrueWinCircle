@@ -113,7 +113,7 @@ const PaymentApproval = ({ payments, userDetails, handlePaymentApproval, handleD
                 <tr key={payment.id} className="border-b hover:bg-gray-50">
                   <td className="p-4">
                     <button onClick={() => setUserInfoModal({ isOpen: true, user: userDetails[payment.userId] })} className="font-medium text-blue-600 hover:underline">
-                      {userDetails[payment.userId]?.name || 'Unknown User'}
+                      {payment.name || userDetails[payment.userId]?.name || 'Unknown User'}
                     </button>
                   </td>
                   <td className="p-4 font-medium">₹{payment.amount}</td>
