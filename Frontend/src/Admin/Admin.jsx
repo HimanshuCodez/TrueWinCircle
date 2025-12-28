@@ -372,6 +372,15 @@ const AdminDashboard = () => {
 
   return (
     <div className="flex h-screen bg-gray-100">
+      <ToastContainer />
+      <Sidebar />
+      {/* Overlay for mobile */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 z-20 bg-black bg-opacity-50 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        ></div>
+      )}
       <div className="flex-1 flex flex-col overflow-hidden">
         <ToastContainer />
         <Header />
