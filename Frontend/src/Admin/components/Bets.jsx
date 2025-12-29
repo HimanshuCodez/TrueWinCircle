@@ -14,16 +14,16 @@ const GAME_CONFIG = {
   haruf: {
     name: 'Haruf Game',
     gameStateDoc: 'haruf_game_state',
-    betsCollection: 'haruf_bets',
-    numberField: 'position',
-    amountField: 'amount',
+    betsCollection: 'harufBets', // Corrected
+    numberField: 'selectedNumber', // Corrected
+    amountField: 'betAmount', // Corrected
   },
   roulette: {
     name: 'Roulette',
     gameStateDoc: 'roulette_game_state',
-    betsCollection: 'roulette_bets',
-    numberField: 'number',
-    amountField: 'amount',
+    betsCollection: 'rouletteBets', // Corrected
+    numberField: 'betType', // Corrected
+    amountField: 'betAmount', // Corrected
   },
 };
 
@@ -228,8 +228,7 @@ const Bets = () => {
                 className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
             >
                 <option value="winGame">1 to 12 Win</option>
-                <option value="haruf">Haruf Game</option>
-                <option value="roulette">Roulette</option>
+             
             </select>
         </div>
       </div>

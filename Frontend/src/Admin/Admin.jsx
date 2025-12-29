@@ -75,6 +75,7 @@ const AdminDashboard = () => {
       });
       setTruewinUserMap(newTruewinUserMap);
       setTotalUsers(snapshot.size); // This is now directly the count of truewin users
+      console.log("Truewin User Map:", newTruewinUserMap); // Debug log
     });
 
     const paymentsQuery = query(collection(db, 'top-ups'));
@@ -94,7 +95,7 @@ const AdminDashboard = () => {
       unsubscribePayments();
       unsubscribeWithdrawals();
     };
-  }, [isAdmin]); // Depend only on isAdmin
+  }, [isAdmin]);
 
   // --- Filtering and User Details Fetching ---
   useEffect(() => {
@@ -106,27 +107,40 @@ const AdminDashboard = () => {
 
     const truewinPayments = allPayments.filter(p => truewinUserMap[p.userId]);
     setPayments(truewinPayments);
+    console.log("Truewin Payments:", truewinPayments); // Debug log
 
     const truewinWithdrawals = allWithdrawals.filter(w => truewinUserMap[w.userId]);
     setWithdrawals(truewinWithdrawals);
+    console.log("Truewin Withdrawals:", truewinWithdrawals); // Debug log
 
     // Collect all unique user IDs from filtered payments and withdrawals to fetch their details
     const paymentUserIds = [...new Set(truewinPayments.map(p => p.userId))];
     const withdrawalUserIds = [...new Set(truewinWithdrawals.map(w => w.userId))];
     const userIdsToFetch = [...new Set([...paymentUserIds, ...withdrawalUserIds])];
+    console.log("User IDs to Fetch:", userIdsToFetch); // Debug log
+
     fetchMissingUserDetails(userIdsToFetch);
 
   }, [isAdmin, allPayments, allWithdrawals, truewinUserMap]);
 
   const fetchMissingUserDetails = (userIds) => {
+    console.log("Entering fetchMissingUserDetails. userIds:", userIds); // Added debug log
     userIds.forEach(async (userId) => {
+      console.log("Processing userId:", userId); // Added debug log
       // Only fetch user details if not already fetched AND if they are a truewin user
       if (!userDetails[userId] && truewinUserMap[userId]) {
+        console.log("Conditions met for fetching details for userId:", userId); // Added debug log
         const userQuery = query(collection(db, 'users'), where('uid', '==', userId), where('appName', '==', 'truewin'));
         const userSnap = await getDocs(userQuery);
+        console.log("Query result for userId:", userId, "is empty:", userSnap.empty); // Added debug log
         if (!userSnap.empty) {
+          console.log("Fetched user details for", userId, ":", userSnap.docs[0].data());
           setUserDetails(prev => ({ ...prev, [userId]: userSnap.docs[0].data() }));
+        } else {
+          console.warn("User document not found for userId:", userId, "with appName 'truewin'"); // Added warning
         }
+      } else {
+        console.log("Skipping fetch for userId:", userId, "Reason: Already in userDetails or not in truewinUserMap."); // Added debug log
       }
     });
   };
