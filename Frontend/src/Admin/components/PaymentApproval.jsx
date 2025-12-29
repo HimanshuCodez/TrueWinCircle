@@ -22,7 +22,7 @@ const UserInfoModal = ({ user, onClose }) => (
       <div className="space-y-2 text-gray-700">
         <p><strong>Name:</strong> {user?.name || 'N/A'}</p>
         <p><strong>Email:</strong> {user?.email || 'N/A'}</p>
-        <p><strong>Phone:</strong> {user?.phoneNumber || 'N/A'}</p>
+
       </div>
       <button onClick={onClose} className="mt-6 w-full bg-gray-700 text-white py-2 rounded-lg hover:bg-gray-600 transition-colors">
         Close

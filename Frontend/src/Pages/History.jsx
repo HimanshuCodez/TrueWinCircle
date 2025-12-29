@@ -56,13 +56,31 @@ const History = () => {
 
         const deposits = depositsSnapshot.docs.map(doc => {
           const data = doc.data();
-          if (!data.createdAt || typeof data.createdAt.toDate !== 'function') return null;
+          let date;
+          if (data.createdAt) {
+            if (typeof data.createdAt.toDate === 'function') {
+              date = data.createdAt.toDate(); // It's a Firestore Timestamp
+            } else if (data.createdAt instanceof Date) {
+              date = data.createdAt; // It's already a JavaScript Date object
+            } else if (typeof data.createdAt === 'string') {
+              date = new Date(data.createdAt); // Attempt to parse as string
+            } else {
+                return null; // Unknown or unsupported date format
+            }
+          } else {
+              return null; // createdAt field is missing
+          }
+
+          if (isNaN(date.getTime())) {
+              console.warn("Invalid date for deposit:", data.createdAt);
+              return null; // Date parsing failed or resulted in an invalid date
+          }
           return {
             id: doc.id,
             type: 'deposit',
             amount: data.amount,
             status: data.status,
-            date: data.createdAt.toDate(),
+            date: date,
           };
         }).filter(Boolean);
 
