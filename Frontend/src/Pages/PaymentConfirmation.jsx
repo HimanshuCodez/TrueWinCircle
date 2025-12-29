@@ -25,11 +25,29 @@ export default function PaymentConfirmation() {
   const amount = parseFloat(localStorage.getItem('Amount') || 0);
 
   useEffect(() => {
-    if (!user || !amount) {
+    const storedTopUpId = localStorage.getItem('currentPendingTopUpId');
+    const storedAmount = parseFloat(localStorage.getItem('Amount') || 0);
+
+    if (!user) {
+      // User is not logged in, redirect to home or login page
+      setError('Please log in to confirm payment.');
+      setTimeout(() => navigate('/'), 3000);
+      return;
+    }
+
+    if (storedTopUpId) {
+      // If there's a pending top-up ID, we should load it
+      setTopUpId(storedTopUpId);
+      setPaymentStatus('pending'); // Assume pending until onSnapshot updates
+      // No redirection here, as we are displaying a pending status
+    } else if (storedAmount === 0 || isNaN(storedAmount)) {
+      // No pending top-up and no valid amount, so this is an invalid entry point
       setError('Invalid payment details. Please try again.');
       setTimeout(() => navigate('/Pay'), 3000);
     }
-  }, [user, amount, navigate]);
+    // If storedAmount is valid and no storedTopUpId, then paymentStatus remains 'confirming'
+    // and the user can proceed with submitting proof for a new payment.
+  }, [user, navigate]);
 
   useEffect(() => {
     if (!topUpId) return;
@@ -41,11 +59,15 @@ export default function PaymentConfirmation() {
           case 'approved':
             setPaymentStatus('approved');
             toast.success("Payment approved! Your balance has been updated.");
+            localStorage.removeItem('currentPendingTopUpId'); // Clear on approval
+            localStorage.removeItem('Amount'); // Clear amount from local storage
             setTimeout(() => navigate('/Wallet'), 3000);
             break;
           case 'rejected':
             setPaymentStatus('rejected');
             setRejectionComment(data.adminComment || 'Your payment could not be verified.');
+            localStorage.removeItem('currentPendingTopUpId'); // Clear on rejection
+            localStorage.removeItem('Amount'); // Clear amount from local storage
             break;
           default:
             // 'pending' status, do nothing and wait
@@ -89,6 +111,7 @@ export default function PaymentConfirmation() {
       });
       
       setTopUpId(topUpRef.id);
+      localStorage.setItem('currentPendingTopUpId', topUpRef.id);
       // paymentStatus is already 'pending', no need to set again
       
     } catch (err) {
