@@ -63,7 +63,9 @@ export default function PaymentConfirmation() {
       return;
     }
 
-    setUploading(true);
+    // Set payment status to pending IMMEDIATELY when submission starts
+    setPaymentStatus('pending'); 
+    setUploading(true); // Still use uploading to show spinner on the button itself if it's visible.
     setError('');
     
     try {
@@ -87,11 +89,12 @@ export default function PaymentConfirmation() {
       });
       
       setTopUpId(topUpRef.id);
-      setPaymentStatus('pending');
+      // paymentStatus is already 'pending', no need to set again
       
     } catch (err) {
       setError('Failed to submit request. Please check your connection and try again.');
       console.error('Error submitting top-up request:', err);
+      setPaymentStatus('confirming'); // Revert status if submission fails
     } finally {
       setUploading(false);
     }
@@ -156,13 +159,10 @@ export default function PaymentConfirmation() {
       animate={{ opacity: 1, scale: 1 }}
       className="flex flex-col items-center space-y-6 text-center"
     >
-      <motion.div
-        animate={{ rotate: 360 }}
-        transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-        className="w-24 h-24 border-4 border-purple-500/30 border-t-purple-500 rounded-full"
-      />
-      <h2 className="text-3xl font-bold text-white">Payment Processing</h2>
-      <p className="text-gray-300 max-w-sm">We have received your request. Please wait while we verify your payment. This page will update automatically.</p>
+      <Clock className="w-24 h-24 text-yellow-500" /> {/* Larger clock icon */}
+      <h2 className="text-3xl font-bold text-white">Request Submitted</h2>
+      <p className="text-gray-300 max-w-sm">Status: Pending Admin Approval</p>
+      <p className="text-gray-400 text-sm">We've received your payment request and are waiting for admin verification. This page will update automatically once approved or rejected.</p>
       <div className="flex items-center space-x-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 backdrop-blur-sm">
         <Clock className="w-6 h-6 text-yellow-400 flex-shrink-0" />
         <p className="text-yellow-300 text-lg">Do not close this page</p>
@@ -210,12 +210,7 @@ export default function PaymentConfirmation() {
       <Header />
       <div className="relative z-10 p-6 text-white flex flex-col items-center min-h-[80vh] justify-center">
         <AnimatePresence mode="wait">
-          {uploading ? (
-            <motion.div key="loading" className="flex flex-col items-center space-y-4">
-              <Loader2 className="w-16 h-16 text-purple-400 animate-spin" />
-              <p className="text-xl text-gray-300">Submitting your request...</p>
-            </motion.div>
-          ) : error ? (
+          {error ? (
             <motion.div
               key="error"
               className="flex items-center space-x-3 bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-6 backdrop-blur-sm"

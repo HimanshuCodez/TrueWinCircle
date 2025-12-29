@@ -48,7 +48,9 @@ const AdminDashboard = () => {
   
   const [truewinUserMap, setTruewinUserMap] = useState({});
   const [payments, setPayments] = useState([]);
+  const [allPayments, setAllPayments] = useState([]); // New state for all payments
   const [withdrawals, setWithdrawals] = useState([]);
+  const [allWithdrawals, setAllWithdrawals] = useState([]); // New state for all withdrawals
   const [winners, setWinners] = useState([ // Sample data
     { id: 1, user: 'Alice Brown', prize: 'iPhone 15', status: 'announced', date: '2024-01-15' },
     { id: 2, user: 'Bob Wilson', prize: 'Cash Prize ₹10000', status: 'pending', date: '2024-01-16' },
@@ -77,22 +79,14 @@ const AdminDashboard = () => {
 
     const paymentsQuery = query(collection(db, 'top-ups'));
     const unsubscribePayments = onSnapshot(paymentsQuery, (snapshot) => {
-      const allFetchedPayments = snapshot.docs.map(d => ({ id: d.id, ...d.data(), date: d.data().createdAt ? new Date(d.data().createdAt).toLocaleDateString() : 'N/A', userId: d.data().userId }));
-      // Filter payments here based on truewinUserMap
-      const truewinPayments = allFetchedPayments.filter(p => truewinUserMap[p.userId]);
-      setPayments(truewinPayments);
-      const userIds = [...new Set(truewinPayments.map(p => p.userId))];
-      fetchMissingUserDetails(userIds); // Fetch user details for filtered payments
+      const fetchedPayments = snapshot.docs.map(d => ({ id: d.id, ...d.data(), date: d.data().createdAt ? new Date(d.data().createdAt).toLocaleDateString() : 'N/A', userId: d.data().userId }));
+      setAllPayments(fetchedPayments);
     });
 
     const withdrawalsQuery = query(collection(db, 'withdrawals'));
     const unsubscribeWithdrawals = onSnapshot(withdrawalsQuery, (snapshot) => {
-      const allFetchedWithdrawals = snapshot.docs.map(d => ({ id: d.id, ...d.data(), date: d.data().createdAt ? new Date(d.data().createdAt).toLocaleDateString() : 'N/A', userId: d.data().userId }));
-      // Filter withdrawals here based on truewinUserMap
-      const truewinWithdrawals = allFetchedWithdrawals.filter(w => truewinUserMap[w.userId]);
-      setWithdrawals(truewinWithdrawals);
-      const userIds = [...new Set(truewinWithdrawals.map(w => w.userId))];
-      fetchMissingUserDetails(userIds); // Fetch user details for filtered withdrawals
+      const fetchedWithdrawals = snapshot.docs.map(d => ({ id: d.id, ...d.data(), date: d.data().createdAt ? new Date(d.data().createdAt).toLocaleDateString() : 'N/A', userId: d.data().userId }));
+      setAllWithdrawals(fetchedWithdrawals);
     });
 
     return () => {
@@ -100,7 +94,29 @@ const AdminDashboard = () => {
       unsubscribePayments();
       unsubscribeWithdrawals();
     };
-  }, [isAdmin, truewinUserMap]);
+  }, [isAdmin]); // Depend only on isAdmin
+
+  // --- Filtering and User Details Fetching ---
+  useEffect(() => {
+    if (!isAdmin || !Object.keys(truewinUserMap).length) {
+      setPayments([]);
+      setWithdrawals([]);
+      return;
+    }
+
+    const truewinPayments = allPayments.filter(p => truewinUserMap[p.userId]);
+    setPayments(truewinPayments);
+
+    const truewinWithdrawals = allWithdrawals.filter(w => truewinUserMap[w.userId]);
+    setWithdrawals(truewinWithdrawals);
+
+    // Collect all unique user IDs from filtered payments and withdrawals to fetch their details
+    const paymentUserIds = [...new Set(truewinPayments.map(p => p.userId))];
+    const withdrawalUserIds = [...new Set(truewinWithdrawals.map(w => w.userId))];
+    const userIdsToFetch = [...new Set([...paymentUserIds, ...withdrawalUserIds])];
+    fetchMissingUserDetails(userIdsToFetch);
+
+  }, [isAdmin, allPayments, allWithdrawals, truewinUserMap]);
 
   const fetchMissingUserDetails = (userIds) => {
     userIds.forEach(async (userId) => {
@@ -376,11 +392,11 @@ const AdminDashboard = () => {
       {/* Overlay for mobile */}
       {isSidebarOpen && (
         <div 
-          className="fixed inset-0 z-20 bg-black bg-opacity-50 md:hidden"
+          className="fixed inset-0 z-10 bg-black bg-opacity-50 md:hidden"
           onClick={() => setSidebarOpen(false)}
         ></div>
       )}
-      <div className="flex-1 flex flex-col overflow-hidden md:ml-72">
+      <div className="flex-1 flex flex-col overflow-hidden md:ml-72" >
         <ToastContainer />
         <Header />
         <main className="flex-1 overflow-y-auto">
