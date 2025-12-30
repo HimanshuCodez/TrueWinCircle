@@ -98,7 +98,7 @@ const PhoneSignUp = () => {
         referredBy: referrerId,
         balance: 0, // Changed to 0, bonus is now for referrer on top-up
         winningMoney: 0,
-        appname:truewin,
+        appname:"truewin",
         createdAt: new Date(),
         referralBonusAwarded: false, // Added flag
       }, { merge: true });
