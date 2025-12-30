@@ -149,7 +149,7 @@ const AllUsers = () => {
                   <td className="p-4 text-gray-600">{user.phoneNumber || 'N/A'}</td>
                   <td className="p-4 text-gray-600">
                     <div className="flex items-center justify-between">
-                      {user.email || 'N/A'}
+                   
                       <UserWinLoss userId={user.id} />
                     </div>
                   </td>
