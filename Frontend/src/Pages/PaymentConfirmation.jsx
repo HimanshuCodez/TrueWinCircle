@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import { CheckCircle, Clock, UploadCloud, IndianRupee, ShieldCheck, Wallet as WalletIcon, XCircle, Loader2, AlertCircle } from 'lucide-react';
 import { getAuth } from "firebase/auth";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { doc, getDoc, addDoc, collection, onSnapshot, runTransaction } from "firebase/firestore";
+import { doc, getDoc, addDoc, collection, onSnapshot, query, where, orderBy, limit, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -18,35 +18,62 @@ export default function PaymentConfirmation() {
   const [paymentStatus, setPaymentStatus] = useState('confirming'); // confirming, pending, approved, rejected
   const [topUpId, setTopUpId] = useState(null);
   const [rejectionComment, setRejectionComment] = useState('');
+  const [amount, setAmount] = useState(0); // Using state for amount
 
   const navigate = useNavigate();
   const auth = getAuth();
   const user = auth.currentUser;
-  const amount = parseFloat(localStorage.getItem('Amount') || 0);
-
+  
   useEffect(() => {
-    const storedTopUpId = localStorage.getItem('currentPendingTopUpId');
-    const storedAmount = parseFloat(localStorage.getItem('Amount') || 0);
-
     if (!user) {
-      // User is not logged in, redirect to home or login page
       setError('Please log in to confirm payment.');
       setTimeout(() => navigate('/'), 3000);
       return;
     }
 
-    if (storedTopUpId) {
-      // If there's a pending top-up ID, we should load it
-      setTopUpId(storedTopUpId);
-      setPaymentStatus('pending'); // Assume pending until onSnapshot updates
-      // No redirection here, as we are displaying a pending status
-    } else if (storedAmount === 0 || isNaN(storedAmount)) {
-      // No pending top-up and no valid amount, so this is an invalid entry point
-      setError('Invalid payment details. Please try again.');
-      setTimeout(() => navigate('/Pay'), 3000);
-    }
-    // If storedAmount is valid and no storedTopUpId, then paymentStatus remains 'confirming'
-    // and the user can proceed with submitting proof for a new payment.
+    const findExistingRequest = async () => {
+      // Query for any pending top-up for this user
+      const q = query(
+        collection(db, 'top-ups'),
+        where('userId', '==', user.uid),
+        where('status', '==', 'pending'),
+        orderBy('createdAt', 'desc'),
+        limit(1)
+      );
+      
+      try {
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+          // A pending request was found
+          const pendingDoc = querySnapshot.docs[0];
+          setTopUpId(pendingDoc.id);
+          setAmount(pendingDoc.data().amount);
+          setPaymentStatus('pending');
+          localStorage.setItem('currentPendingTopUpId', pendingDoc.id); // Sync local storage
+        } else {
+          // No pending request found, so check if we are starting a new payment flow
+          const storedAmount = parseFloat(localStorage.getItem('Amount') || 0);
+          if (storedAmount > 0) {
+            setAmount(storedAmount);
+            setPaymentStatus('confirming');
+            // Ensure any stale pending ID is cleared
+            localStorage.removeItem('currentPendingTopUpId');
+          } else {
+            // If there's no pending request and no new amount, redirect away.
+            navigate('/Wallet');
+          }
+        }
+      } catch (err) {
+        console.error("Error finding pending top-up:", err);
+        setError("Could not check payment status. Please try again later.");
+        // Redirect on error to avoid being stuck on a broken page
+        setTimeout(() => navigate('/Wallet'), 3000);
+      }
+    };
+
+    findExistingRequest();
+
   }, [user, navigate]);
 
   useEffect(() => {

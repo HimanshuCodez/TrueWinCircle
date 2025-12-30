@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
@@ -22,7 +22,6 @@ import AdminDashboard from './Admin/Admin';
 
 import AdminRoute from './Admin/AdminRoute';
 import Spinner from './components/Loader';
-import ReferralScreen from './components/Refer';
 import Profile from './Pages/Profile';
 import Support from './Pages/Support';
 import ProfileCard from './Pages/Profile';

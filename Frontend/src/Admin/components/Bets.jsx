@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, query, onSnapshot, where, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { Loader2, Trophy } from 'lucide-react';
+import { markets as allMarkets } from '../../marketData';
 
 const GAME_CONFIG = {
   winGame: {
@@ -10,20 +11,22 @@ const GAME_CONFIG = {
     betsCollection: 'wingame_bets',
     numberField: 'number',
     amountField: 'amount',
+    type: 'round-based',
   },
   haruf: {
     name: 'Haruf Game',
-    gameStateDoc: 'haruf_game_state',
-    betsCollection: 'harufBets', // Corrected
-    numberField: 'selectedNumber', // Corrected
-    amountField: 'betAmount', // Corrected
+    betsCollection: 'harufBets',
+    numberField: 'selectedNumber',
+    amountField: 'betAmount',
+    type: 'market-based',
   },
   roulette: {
     name: 'Roulette',
     gameStateDoc: 'roulette_game_state',
-    betsCollection: 'rouletteBets', // Corrected
-    numberField: 'betType', // Corrected
-    amountField: 'betAmount', // Corrected
+    betsCollection: 'rouletteBets',
+    numberField: 'betType',
+    amountField: 'betAmount',
+    type: 'round-based',
   },
 };
 
@@ -32,18 +35,29 @@ const Bets = () => {
   const [betsSummary, setBetsSummary] = useState([]);
   const [totalBets, setTotalBets] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [currentRoundId, setCurrentRoundId] = useState(null);
-  const [phase, setPhase] = useState(null); // To track game phase (betting, results)
 
-  // Effect to get the current round ID and phase for the selected game
+  // State for round-based games
+  const [currentRoundId, setCurrentRoundId] = useState(null);
+  const [phase, setPhase] = useState(null);
+
+  // State for market-based games
+  const [markets, setMarkets] = useState([]);
+  const [selectedMarket, setSelectedMarket] = useState('');
+
+  useEffect(() => {
+    const marketNames = allMarkets.map(m => m.name);
+    setMarkets(marketNames);
+    if (marketNames.length > 0) {
+      setSelectedMarket(marketNames[0]);
+    }
+  }, []);
+
+  // Effect to get game state for round-based games
   useEffect(() => {
     const config = GAME_CONFIG[selectedGame];
-    if (!config || !config.gameStateDoc) {
+    if (config?.type !== 'round-based') {
       setCurrentRoundId(null);
       setPhase(null);
-      setBetsSummary([]);
-      setTotalBets(0);
-      setLoading(false);
       return;
     }
 
@@ -59,6 +73,7 @@ const Bets = () => {
         setCurrentRoundId(null);
         setPhase(null);
       }
+      setLoading(false);
     }, (error) => {
       console.error(`Error fetching game state for ${config.name}:`, error);
       setLoading(false);
@@ -69,24 +84,40 @@ const Bets = () => {
     return () => unsubscribeGameState();
   }, [selectedGame]);
 
-  // Effect to fetch bets for the current round
+  // Effect to fetch bets
   useEffect(() => {
-    if (!currentRoundId || !selectedGame) {
-      setBetsSummary([]);
-      setTotalBets(0);
-      setLoading(false);
-      return;
-    }
-
     const config = GAME_CONFIG[selectedGame];
     if (!config) return;
 
-    setLoading(true);
-    const betsQuery = query(
-      collection(db, config.betsCollection),
-      where('roundId', '==', currentRoundId)
-    );
+    let betsQuery;
 
+    if (config.type === 'round-based') {
+      if (!currentRoundId) {
+        setBetsSummary([]);
+        setTotalBets(0);
+        setLoading(false);
+        return;
+      }
+      betsQuery = query(
+        collection(db, config.betsCollection),
+        where('roundId', '==', currentRoundId)
+      );
+    } else if (config.type === 'market-based') {
+      if (!selectedMarket) {
+        setBetsSummary([]);
+        setTotalBets(0);
+        return;
+      }
+      betsQuery = query(
+        collection(db, config.betsCollection),
+        where('marketName', '==', selectedMarket),
+        where('status', '==', 'pending')
+      );
+    } else {
+      return;
+    }
+
+    setLoading(true);
     const unsubscribeBets = onSnapshot(betsQuery, (snapshot) => {
       const bets = {};
       let total = 0;
@@ -120,12 +151,12 @@ const Bets = () => {
     });
 
     return () => unsubscribeBets();
-  }, [currentRoundId, selectedGame]);
+  }, [selectedGame, currentRoundId, selectedMarket]);
 
   const handleSelectWinner = async (number) => {
     const config = GAME_CONFIG[selectedGame];
-    if (phase !== 'results') {
-      alert('You can only select a winner during the "Results" phase.');
+    if (config.type !== 'round-based' || phase !== 'results') {
+      alert('You can only select a winner during the "Results" phase for this game type.');
       return;
     }
     if (!currentRoundId) {
@@ -140,7 +171,7 @@ const Bets = () => {
     try {
       await updateDoc(gameStateRef, {
         forcedWinner: number,
-        winnerProcessed: false, // Flag to indicate processing should start
+        winnerProcessed: false,
       });
       alert(`Successfully declared ${number} as the winner! The results will be processed shortly.`);
     } catch (error) {
@@ -150,35 +181,55 @@ const Bets = () => {
   };
   
   const renderContent = () => {
-// ... (loading, no summary, etc. is unchanged)
-// ...
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center mt-8">
+                <Loader2 className="animate-spin text-blue-500" size={40} />
+            </div>
+        );
+    }
     if (betsSummary.length === 0) {
-        return <p className="text-gray-600 mt-4 text-center">No bets have been placed in this round yet.</p>;
+        return <p className="text-gray-600 mt-4 text-center">No bets have been placed for this selection yet.</p>;
     }
 
     const mostBetted = betsSummary[0];
-    const leastBetted = betsSummary[betsSummary.length - 1]; // Get the lowest bet
+    const leastBetted = betsSummary[betsSummary.length - 1];
 
     return (
       <>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-{/* ... (summary cards are unchanged) ... */}
+          <div className="bg-gray-50 p-4 rounded-lg text-center">
+            <h4 className="text-sm font-semibold text-gray-500">Total Bet Amount</h4>
+            <p className="text-2xl font-bold text-gray-800">₹{totalBets.toFixed(2)}</p>
+          </div>
+          {mostBetted && (
+            <div className="bg-green-50 p-4 rounded-lg text-center">
+                <h4 className="text-sm font-semibold text-green-700">Most Betted Number</h4>
+                <p className="text-2xl font-bold text-green-800">{mostBetted.number}</p>
+                <p className="text-sm text-green-600">₹{mostBetted.amount.toFixed(2)}</p>
+            </div>
+          )}
+          {leastBetted && (
+             <div className="bg-red-50 p-4 rounded-lg text-center">
+                <h4 className="text-sm font-semibold text-red-700">Least Betted Number</h4>
+                <p className="text-2xl font-bold text-red-800">{leastBetted.number}</p>
+                <p className="text-sm text-red-600">₹{leastBetted.amount.toFixed(2)}</p>
+            </div>
+          )}
         </div>
 
         <h3 className="text-xl font-semibold mb-3">
-          All Bets in this Round {selectedGame === 'winGame' && phase === 'results' && <span className="text-sm font-normal text-yellow-600">(Select a winner)</span>}
+          All Bets {GAME_CONFIG[selectedGame]?.type === 'round-based' ? "in this Round" : "for this Market"}
+          {selectedGame === 'winGame' && phase === 'results' && <span className="text-sm font-normal text-yellow-600">(Select a winner)</span>}
         </h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {betsSummary.map((bet) => {
             const isMostBetted = bet.number === mostBetted.number;
             const isLeastBetted = bet.number === leastBetted.number;
 
-            let cardClasses = 'bg-gray-100'; // Default class
-            if (isMostBetted) {
-              cardClasses = 'bg-green-100 ring-2 ring-green-400';
-            } else if (isLeastBetted) {
-              cardClasses = 'bg-red-100 ring-2 ring-red-400'; // Highlight in red
-            }
+            let cardClasses = 'bg-gray-100';
+            if (isMostBetted) cardClasses = 'bg-green-100 ring-2 ring-green-400';
+            else if (isLeastBetted) cardClasses = 'bg-red-100 ring-2 ring-red-400';
 
             return (
               <div key={bet.number} className={`p-3 rounded-md text-center transition-all ${cardClasses}`}>
@@ -211,25 +262,46 @@ const Bets = () => {
             <h2 className="text-2xl font-semibold">
               Live Bet Summary
             </h2>
-            <p className="text-sm text-gray-500">Round ID: {currentRoundId || 'N/A'}</p>
-            {selectedGame === 'winGame' && phase && (
-              <p className={`text-sm font-bold ${phase === 'betting' ? 'text-green-600' : 'text-blue-600'}`}>
-                Phase: {phase.charAt(0).toUpperCase() + phase.slice(1)}
-              </p>
+            {GAME_CONFIG[selectedGame]?.type === 'round-based' ? (
+                <>
+                    <p className="text-sm text-gray-500">Round ID: {currentRoundId || 'N/A'}</p>
+                    {phase && (
+                      <p className={`text-sm font-bold ${phase === 'betting' ? 'text-green-600' : 'text-blue-600'}`}>
+                        Phase: {phase.charAt(0).toUpperCase() + phase.slice(1)}
+                      </p>
+                    )}
+                </>
+            ) : (
+                 <p className="text-sm text-gray-500">Market: {selectedMarket || 'N/A'}</p>
             )}
         </div>
         
-        <div className="w-full md:w-64">
-            <label htmlFor="game-select" className="block text-sm font-medium text-gray-700 mb-1">Select Game</label>
-            <select
-                id="game-select"
-                value={selectedGame}
-                onChange={(e) => setSelectedGame(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-            >
-                <option value="winGame">1 to 12 Win</option>
-             
-            </select>
+        <div className="flex flex-col md:flex-row gap-4">
+            {selectedGame === 'haruf' && (
+                 <div className="w-full md:w-64">
+                    <label htmlFor="market-select" className="block text-sm font-medium text-gray-700 mb-1">Select Market</label>
+                    <select
+                        id="market-select"
+                        value={selectedMarket}
+                        onChange={(e) => setSelectedMarket(e.target.value)}
+                        className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    >
+                        {markets.map(market => <option key={market} value={market}>{market}</option>)}
+                    </select>
+                </div>
+            )}
+            <div className="w-full md:w-64">
+                <label htmlFor="game-select" className="block text-sm font-medium text-gray-700 mb-1">Select Game</label>
+                <select
+                    id="game-select"
+                    value={selectedGame}
+                    onChange={(e) => setSelectedGame(e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                >
+                    <option value="winGame">1 to 12 Win</option>
+                    <option value="haruf">Haruf Game</option>
+                </select>
+            </div>
         </div>
       </div>
 
