@@ -188,7 +188,7 @@ export default function PaymentConfirmation() {
       <p className="text-gray-400 text-sm">We've received your payment request and are waiting for admin verification. This page will update automatically once approved or rejected.</p>
       <div className="flex items-center space-x-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 backdrop-blur-sm">
         <Clock className="w-6 h-6 text-yellow-400 flex-shrink-0" />
-        <p className="text-yellow-300 text-lg">Do not close this page</p>
+        <p className="text-yellow-300 text-lg">Go Back Home And Play Games</p>
       </div>
     </motion.div>
   );
