@@ -16,11 +16,18 @@ const MessageModal = ({ message, onClose }) => (
 
 // Modal for showing detailed user info
 const UserInfoModal = ({ user, onClose }) => (
-  console.log(user, "user info modal"),
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
     <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
       <h4 className="font-semibold text-lg mb-4 text-gray-800">User Information</h4>
-      
+      {user ? (
+        <div className="space-y-2 text-gray-700">
+          <p><strong>Name:</strong> {user.name || 'N/A'}</p>
+          <p><strong>Phone Number:</strong> {user.phoneNumber || 'N/A'}</p>
+          {/* Add more user info fields here if needed */}
+        </div>
+      ) : (
+        <p className="text-gray-600">User information not available.</p>
+      )}
       <button onClick={onClose} className="mt-6 w-full bg-gray-700 text-white py-2 rounded-lg hover:bg-gray-600 transition-colors">
         Close
       </button>

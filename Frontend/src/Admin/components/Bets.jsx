@@ -299,7 +299,7 @@ const Bets = () => {
                     className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 >
                     <option value="winGame">1 to 12 Win</option>
-                    <option value="haruf">Haruf Game</option>
+                    <option value="haruf">Market Game</option>
                 </select>
             </div>
         </div>

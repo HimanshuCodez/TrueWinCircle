@@ -19,7 +19,7 @@ import {
   UserPlus, // Added
 } from 'lucide-react';
 import { db, auth } from '../firebase';
-import { collection, query, onSnapshot, doc, runTransaction, getDocs, where, deleteDoc, updateDoc, addDoc } from 'firebase/firestore'; // Added updateDoc and addDoc
+import { collection, query, onSnapshot, doc, runTransaction, getDocs, getDoc, where, deleteDoc, updateDoc, addDoc } from 'firebase/firestore'; // Added getDoc
 import useAuthStore from '../store/authStore';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -124,23 +124,23 @@ const AdminDashboard = () => {
   }, [isAdmin, allPayments, allWithdrawals, truewinUserMap]);
 
   const fetchMissingUserDetails = (userIds) => {
-    console.log("Entering fetchMissingUserDetails. userIds:", userIds); // Added debug log
     userIds.forEach(async (userId) => {
-      console.log("Processing userId:", userId); // Added debug log
-      // Only fetch user details if not already fetched AND if they are a truewin user
+      // The truewinUserMap check ensures we only fetch details for users where appName is 'truewin'.
       if (!userDetails[userId] && truewinUserMap[userId]) {
-        console.log("Conditions met for fetching details for userId:", userId); // Added debug log
-        const userQuery = query(collection(db, 'users'), where('uid', '==', userId), where('appName', '==', 'truewin'));
-        const userSnap = await getDocs(userQuery);
-        console.log("Query result for userId:", userId, "is empty:", userSnap.empty); // Added debug log
-        if (!userSnap.empty) {
-          console.log("Fetched user details for", userId, ":", userSnap.docs[0].data());
-          setUserDetails(prev => ({ ...prev, [userId]: userSnap.docs[0].data() }));
-        } else {
-          console.warn("User document not found for userId:", userId, "with appName 'truewin'"); // Added warning
+        try {
+          // Fetch the user document directly by its ID, which is the correct and most efficient way.
+          const userDocRef = doc(db, 'users', userId);
+          const userSnap = await getDoc(userDocRef);
+
+          if (userSnap.exists()) {
+            // The userSnap.data() contains all fields, including name and phoneNumber.
+            setUserDetails(prev => ({ ...prev, [userId]: userSnap.data() }));
+          } else {
+            console.warn("User document not found for userId:", userId);
+          }
+        } catch (error) {
+            console.error("Error fetching user details for userId:", userId, error);
         }
-      } else {
-        console.log("Skipping fetch for userId:", userId, "Reason: Already in userDetails or not in truewinUserMap."); // Added debug log
       }
     });
   };
