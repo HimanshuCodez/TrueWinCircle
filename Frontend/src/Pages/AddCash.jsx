@@ -1,11 +1,56 @@
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
+import { getAuth } from "firebase/auth";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "../firebase";
+import { Clock, Loader2 } from 'lucide-react'; // Added lucide-react icons
 
 export function AddCash() {
   const navigate = useNavigate();
   const [amount, setAmount] = useState('');
   const [message, setMessage] = useState(''); // New state for message
+  const [isPendingRequest, setIsPendingRequest] = useState(false); // New state
+  const [isLoading, setIsLoading] = useState(true); // New state for loading
+  const [pendingAmount, setPendingAmount] = useState(0); // Store pending amount
+
+  const auth = getAuth();
+  const user = auth.currentUser;
+
+  useEffect(() => {
+    if (!user) {
+      toast.error('Please log in to add cash.');
+      navigate('/');
+      return;
+    }
+
+    const checkPendingTopUps = async () => {
+      try {
+        setIsLoading(true);
+        const q = query(
+          collection(db, 'top-ups'),
+          where('userId', '==', user.uid),
+          where('status', '==', 'pending')
+        );
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+          setIsPendingRequest(true);
+          const latestPending = querySnapshot.docs[0].data();
+          setPendingAmount(latestPending.amount);
+        } else {
+          setIsPendingRequest(false);
+        }
+      } catch (error) {
+        console.error("Error checking pending top-ups:", error);
+        toast.error("Error checking pending requests. Please try again.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkPendingTopUps();
+  }, [user, navigate]); // Dependencies
 
   const handleNext = () => {
     const parsedAmount = parseInt(amount);
@@ -23,6 +68,38 @@ export function AddCash() {
   };
 
   const quickAmounts = ['50', '500', '1000', '5000', '10000', '25000'];
+
+  if (isLoading) {
+    return (
+      <div className="font-roboto bg-gray-900 text-white min-h-screen flex items-center justify-center">
+        <Loader2 className="animate-spin w-10 h-10 text-yellow-400" />
+        <p className="ml-3 text-lg">Loading status...</p>
+      </div>
+    );
+  }
+
+  if (isPendingRequest) {
+    return (
+      <div className="font-roboto bg-gray-900 text-white min-h-screen flex items-center justify-center p-4">
+        <div className="w-full max-w-md bg-gray-800 rounded-2xl shadow-lg p-6 space-y-6 text-center">
+          <Clock className="w-24 h-24 text-yellow-500 mx-auto" />
+          <h1 className="text-2xl font-bold text-yellow-400">Pending Request</h1>
+          <p className="text-gray-300 text-lg">
+            You have a pending top-up request of <span className="font-bold">₹{pendingAmount}</span> awaiting admin approval.
+          </p>
+          <p className="text-gray-400 text-sm">
+            Please wait for the admin to approve or reject your previous request before adding more cash.
+          </p>
+          <button
+            onClick={() => navigate('/Wallet')}
+            className="w-full bg-yellow-500 text-gray-900 font-bold py-3 rounded-lg hover:bg-yellow-600 transition-colors text-lg shadow-lg shadow-yellow-500/20"
+          >
+            Go to Wallet
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="font-roboto bg-gray-900 text-white min-h-screen flex flex-col">

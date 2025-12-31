@@ -19,6 +19,7 @@ export default function PaymentConfirmation() {
   const [topUpId, setTopUpId] = useState(null);
   const [rejectionComment, setRejectionComment] = useState('');
   const [amount, setAmount] = useState(0); // Using state for amount
+  const [message, setMessage] = useState(''); // Added state for message
 
   const navigate = useNavigate();
   const auth = getAuth();
@@ -32,30 +33,36 @@ export default function PaymentConfirmation() {
     }
 
     const findExistingRequest = async () => {
-      // Query for any pending top-up for this user
+      // Query for any top-ups for this user and filter client-side to avoid index
       const q = query(
         collection(db, 'top-ups'),
-        where('userId', '==', user.uid),
-        where('status', '==', 'pending'),
-        orderBy('createdAt', 'desc'),
-        limit(1)
+        where('userId', '==', user.uid)
       );
       
       try {
         const querySnapshot = await getDocs(q);
+        
+        const pendingDocs = querySnapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() }))
+          .filter(doc => doc.status === 'pending');
 
-        if (!querySnapshot.empty) {
+        if (pendingDocs.length > 0) {
+          // Sort by createdAt descending to find the latest one
+          pendingDocs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+          const latestPendingDoc = pendingDocs[0];
+          
           // A pending request was found
-          const pendingDoc = querySnapshot.docs[0];
-          setTopUpId(pendingDoc.id);
-          setAmount(pendingDoc.data().amount);
+          setTopUpId(latestPendingDoc.id);
+          setAmount(latestPendingDoc.amount);
           setPaymentStatus('pending');
-          localStorage.setItem('currentPendingTopUpId', pendingDoc.id); // Sync local storage
+          localStorage.setItem('currentPendingTopUpId', latestPendingDoc.id); // Sync local storage
         } else {
           // No pending request found, so check if we are starting a new payment flow
           const storedAmount = parseFloat(localStorage.getItem('Amount') || 0);
+          const storedMessage = localStorage.getItem('PaymentMessage') || ''; // Get message
           if (storedAmount > 0) {
             setAmount(storedAmount);
+            setMessage(storedMessage); // Set message to state
             setPaymentStatus('confirming');
             // Ensure any stale pending ID is cleared
             localStorage.removeItem('currentPendingTopUpId');
@@ -88,6 +95,7 @@ export default function PaymentConfirmation() {
             toast.success("Payment approved! Your balance has been updated.");
             localStorage.removeItem('currentPendingTopUpId'); // Clear on approval
             localStorage.removeItem('Amount'); // Clear amount from local storage
+            localStorage.removeItem('PaymentMessage'); // Clear message
             setTimeout(() => navigate('/Wallet'), 3000);
             break;
           case 'rejected':
@@ -95,6 +103,7 @@ export default function PaymentConfirmation() {
             setRejectionComment(data.adminComment || 'Your payment could not be verified.');
             localStorage.removeItem('currentPendingTopUpId'); // Clear on rejection
             localStorage.removeItem('Amount'); // Clear amount from local storage
+            localStorage.removeItem('PaymentMessage'); // Clear message
             break;
           default:
             // 'pending' status, do nothing and wait
@@ -132,6 +141,7 @@ export default function PaymentConfirmation() {
         userId: user.uid,
         name: name,
         amount,
+        message, // Add message to the document
         status: 'pending',
         paymentProof: proofUrl,
         createdAt: new Date().toISOString(),

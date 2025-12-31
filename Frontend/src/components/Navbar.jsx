@@ -10,7 +10,8 @@ export default function Navbar() {
   const [accountOpen, setAccountOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const user = useAuthStore((state) => state.user);
-  const setUser = useAuthStore((state) => state.setUser);
+  const login = useAuthStore((state) => state.login);
+  const logout = useAuthStore((state) => state.logout);
   const auth = getAuth();
   const location = useLocation();
 
@@ -20,12 +21,12 @@ export default function Navbar() {
       const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
         if (docSnap.exists()) {
           const currentUser = useAuthStore.getState().user;
-          setUser({ ...currentUser, ...docSnap.data() });
+          login({ ...currentUser, ...docSnap.data() });
         }
       });
       return () => unsubscribe();
     }
-  }, [user?.uid, setUser]);
+  }, [user?.uid, login]);
 
   // Example wallet amount (replace with API/store value)
   const walletAmount = (user?.balance || 0) + (user?.winningMoney || 0);
@@ -33,7 +34,7 @@ export default function Navbar() {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      setUser(null);
+      logout();
       setAccountOpen(false);
       setMobileMenuOpen(false);
     } catch (error) {
