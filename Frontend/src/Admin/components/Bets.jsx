@@ -119,7 +119,14 @@ const Bets = () => {
 
     setLoading(true);
     const unsubscribeBets = onSnapshot(betsQuery, (snapshot) => {
+      // Initialize bets object with all numbers from 1 to 12 for 'winGame'
       const bets = {};
+      if (selectedGame === 'winGame') {
+        for (let i = 1; i <= 12; i++) {
+          bets[i] = { number: i, amount: 0, count: 0, users: new Set() };
+        }
+      }
+
       let total = 0;
       snapshot.docs.forEach(doc => {
         const betData = doc.data();
@@ -127,10 +134,12 @@ const Bets = () => {
         const amount = betData[config.amountField];
         
         if (number === undefined || amount === undefined) return;
+        if (selectedGame === 'winGame' && (typeof number !== 'number' || number < 1 || number > 12)) return; // Validate number for winGame
 
         total += amount;
 
         if (!bets[number]) {
+          // If not initialized (e.g., for non-winGame, or an unexpected number), initialize it
           bets[number] = { number: number, amount: 0, count: 0, users: new Set() };
         }
         bets[number].amount += amount;
