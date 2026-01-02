@@ -408,7 +408,15 @@ const WinGame = () => {
                                 id="betAmount"
                                 type="number"
                                 value={betAmount}
-                                onChange={(e) => setBetAmount(parseInt(e.target.value, 10) || 10)}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (value === "") {
+                                        setBetAmount(""); // Allow empty string
+                                    } else {
+                                        const parsedValue = parseInt(value, 10);
+                                        setBetAmount(isNaN(parsedValue) ? "" : parsedValue); // Set parsed value or empty if invalid
+                                    }
+                                }}
                                 min="10"
                                 disabled={phase !== 'betting'}
                                 className="w-full bg-gray-700 rounded-lg p-3 text-center text-xl font-bold focus:ring-2 focus:ring-yellow-500 outline-none disabled:opacity-50"

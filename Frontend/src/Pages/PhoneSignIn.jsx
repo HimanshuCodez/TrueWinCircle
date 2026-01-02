@@ -3,7 +3,7 @@ import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { auth, db } from "../firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, getDocs } from "firebase/firestore";
 import useAuthStore from "../store/authStore";
 
 const PhoneSignIn = () => {
@@ -34,6 +34,21 @@ const PhoneSignIn = () => {
     setLoading(true);
     try {
       const formattedPhone = phone.startsWith("+") ? phone : `+91${phone}`;
+
+      // WARNING: This is not recommended for production apps. It fetches all
+      // user documents and can be slow and costly. An index is the better solution.
+      const usersRef = collection(db, "users");
+      const querySnapshot = await getDocs(usersRef);
+      const userExists = querySnapshot.docs.some(
+        (doc) => doc.data().phone === formattedPhone
+      );
+
+      if (!userExists) {
+        toast.error("Please sign up first.");
+        setLoading(false);
+        return;
+      }
+
       const result = await signInWithPhoneNumber(
         auth,
         formattedPhone,
@@ -64,7 +79,7 @@ const PhoneSignIn = () => {
         toast.success("Sign in successful!");
         navigate("/");
       } else {
-        toast.error("User data not found in database.");
+        toast.error("Please sign up first.");
       }
     } catch (err) {
       console.error("OTP verify error:", err);
