@@ -26,11 +26,11 @@ const Withdraw = () => {
   const [submitLoading, setSubmitLoading] = useState(false); // For withdrawal submission
   const [error, setError] = useState('');
   const [winningMoney, setWinningMoney] = useState(0);
-  const [onCooldown, setOnCooldown] = useState(false);
-  const [cooldownRemaining, setCooldownRemaining] = useState(0);
-  const [lastWithdrawal, setLastWithdrawal] = useState(null);
 
-  const COOLDOWN_DURATION = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
+  const [lastWithdrawal, setLastWithdrawal] = useState(null);
+  const [hasPendingWithdrawal, setHasPendingWithdrawal] = useState(false);
+
+
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -74,66 +74,37 @@ const Withdraw = () => {
 
   useEffect(() => {
     if (!user) {
-        setOnCooldown(false);
+        setHasPendingWithdrawal(false);
+        setLastWithdrawal(null); // Ensure lastWithdrawal is cleared if user logs out
         return;
     }
 
     const q = query(
         collection(db, "withdrawals"),
-        where("userId", "==", user.uid)
+        where("userId", "==", user.uid),
+        where("status", "==", "pending") // Filter for pending withdrawals
     );
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
         if (!querySnapshot.empty) {
-            // Sort client-side to find the most recent withdrawal without needing an index
-            const sortedDocs = querySnapshot.docs.sort((a, b) => 
-                (b.data().createdAt?.toMillis() || 0) - (a.data().createdAt?.toMillis() || 0)
-            );
-            const lastDoc = sortedDocs[0];
-            const lastWithdrawalData = { ...lastDoc.data(), id: lastDoc.id };
-            setLastWithdrawal(lastWithdrawalData);
-
-            const lastWithdrawalTimestamp = lastWithdrawalData.createdAt.toMillis();
-            const timeElapsed = Date.now() - lastWithdrawalTimestamp;
-
-            if (timeElapsed < COOLDOWN_DURATION) {
-                setOnCooldown(true);
-                setCooldownRemaining(COOLDOWN_DURATION - timeElapsed);
-            } else {
-                setOnCooldown(false);
-            }
+            setHasPendingWithdrawal(true);
+            const pendingDoc = querySnapshot.docs[0]; // Get the first pending withdrawal
+            setLastWithdrawal({ ...pendingDoc.data(), id: pendingDoc.id });
         } else {
+            setHasPendingWithdrawal(false);
             setLastWithdrawal(null);
-            setOnCooldown(false);
         }
     }, (err) => {
-        console.error("Error fetching last withdrawal:", err);
+        console.error("Error fetching pending withdrawal:", err);
         toast.error("Could not fetch withdrawal status.");
     });
 
     return () => unsubscribe();
   }, [user]);
 
-  useEffect(() => {
-      let timerId;
-      if (onCooldown && cooldownRemaining > 0) {
-          timerId = setTimeout(() => {
-              setCooldownRemaining(prev => Math.max(0, prev - 1000));
-          }, 1000);
-      } else if (onCooldown && cooldownRemaining <= 0) {
-          setOnCooldown(false);
-      }
-      return () => clearTimeout(timerId);
-  }, [onCooldown, cooldownRemaining]);
 
-  const formatTime = (ms) => {
-    const totalSeconds = Math.floor(ms / 1000);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
 
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  };
+
 
   const validateUPI = (upi) => {
     const upiRegex = /^[\w.-]+@[\w.-]+$/;
@@ -245,9 +216,9 @@ const Withdraw = () => {
         <div className="text-center text-red-500 h-64 flex items-center justify-center">
           <p>{error}</p>
         </div>
-      ) : onCooldown ? (
+      ) : hasPendingWithdrawal ? (
         <div className="bg-[#0a2d55] rounded-xl p-6 shadow-lg text-center space-y-4">
-          <h2 className="text-xl font-semibold text-yellow-500">Withdrawal Request Submitted!</h2>
+          <h2 className="text-xl font-semibold text-yellow-500">Withdrawal Request Pending!</h2>
           <p className="text-lg">Status: <span className={`font-semibold capitalize ${
             lastWithdrawal?.status === 'approved' ? 'text-green-400' :
             lastWithdrawal?.status === 'rejected' ? 'text-red-400' :
@@ -261,11 +232,7 @@ const Withdraw = () => {
             <p>आपका भुगतान 10 से 24 घंटों के अंदर आपके खाते में पहुँचा दिया जाएगा।</p>
           </div>
 
-          <p className="text-lg">Your next withdrawal will be available in:</p>
-          <div className="text-4xl font-bold text-white">
-            {formatTime(cooldownRemaining)}
-          </div>
-          <p className="text-sm text-gray-400">Please wait for the cooldown period to end.</p>
+          <p className="text-sm text-gray-400">You have a pending withdrawal request. Please wait for it to be processed.</p>
         </div>
       ) : (
         <div className="bg-[#0a2d55] rounded-xl p-6 shadow-lg space-y-6">
@@ -338,7 +305,7 @@ const Withdraw = () => {
 
             <button
               type="submit"
-              disabled={submitLoading || onCooldown}
+              disabled={submitLoading || hasPendingWithdrawal}
               className="w-full bg-yellow-500 text-black font-bold py-3 rounded-full hover:bg-yellow-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               {submitLoading ? 'Submitting...' : 'Submit Withdrawal Request'}
