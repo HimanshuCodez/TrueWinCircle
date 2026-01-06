@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, where, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, where, doc, updateDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { Loader2, Trophy } from 'lucide-react';
 import { markets as allMarkets } from '../../marketData';
@@ -41,6 +41,7 @@ const Bets = () => {
   // State for round-based games
   const [currentRoundId, setCurrentRoundId] = useState(null);
   const [phase, setPhase] = useState(null);
+  const [timer, setTimer] = useState(0);
 
   // State for market-based games
   const [markets, setMarkets] = useState([]);
@@ -60,6 +61,7 @@ const Bets = () => {
     if (config?.type !== 'round-based') {
       setCurrentRoundId(null);
       setPhase(null);
+      setTimer(0);
       return;
     }
 
@@ -71,9 +73,23 @@ const Bets = () => {
         const data = docSnap.data();
         setCurrentRoundId(data.roundId);
         setPhase(data.phase || null);
+
+        if (selectedGame === 'winGame' && data.phaseEndTime) {
+            const now = Timestamp.now();
+            let phaseEndTime = data.phaseEndTime;
+            if (!(phaseEndTime instanceof Timestamp)) {
+                phaseEndTime = new Timestamp(phaseEndTime.seconds, phaseEndTime.nanoseconds);
+            }
+            const remainingSeconds = Math.max(0, phaseEndTime.seconds - now.seconds);
+            setTimer(remainingSeconds);
+        } else {
+            setTimer(0);
+        }
+
       } else {
         setCurrentRoundId(null);
         setPhase(null);
+        setTimer(0);
       }
       setLoading(false);
     }, (error) => {
@@ -81,6 +97,7 @@ const Bets = () => {
       setLoading(false);
       setCurrentRoundId(null);
       setPhase(null);
+      setTimer(0);
     });
 
     return () => unsubscribeGameState();
@@ -188,6 +205,22 @@ const Bets = () => {
 
     return () => unsubscribeBets();
   }, [selectedGame, currentRoundId, selectedMarket]);
+
+  useEffect(() => {
+    let interval;
+    if (timer > 0) {
+        interval = setInterval(() => {
+            setTimer(prev => prev > 0 ? prev - 1 : 0);
+        }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [timer]);
+
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const handleSelectWinner = async (number) => {
     const config = GAME_CONFIG[selectedGame];
@@ -305,6 +338,11 @@ const Bets = () => {
                       <p className={`text-sm font-bold ${phase === 'betting' ? 'text-green-600' : 'text-blue-600'}`}>
                         Phase: {phase.charAt(0).toUpperCase() + phase.slice(1)}
                       </p>
+                    )}
+                    {selectedGame === 'winGame' && timer > 0 && (
+                        <p className="text-sm font-semibold text-gray-500">
+                          {phase === 'betting' ? 'Time Remaining' : 'Next Round In'}: <span className="font-bold text-yellow-600">{formatTime(timer)}</span>
+                        </p>
                     )}
                 </>
             ) : (
