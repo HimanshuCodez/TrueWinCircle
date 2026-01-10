@@ -15,6 +15,7 @@ import {
   Settings,
   LogOut,
   Menu,
+  Link as LinkIcon,
   TrendingUp,
   UserPlus, // Added
 } from 'lucide-react';
@@ -30,6 +31,7 @@ import BarCodeUpdate from './components/BarCodeUpdate';
 
 import Bets from './components/Bets';
 import DashboardView from './components/DashboardView';
+import Links from './components/Links';
 import MarqueeUpdate from './components/MarqueeUpdate';
 import PaymentApproval from './components/PaymentApproval';
 import ProfitLoss from './components/ProfitLoss';
@@ -307,6 +309,7 @@ const AdminDashboard = () => {
           { id: 'marquee', label: 'Screen Text', icon: Edit },
           { id: 'harufUpdate', label: 'Market Results', icon: Edit },
           { id: 'sliderUpdate', label: 'Carousel Slides', icon: Edit },
+          { id: 'socialLinks', label: 'Social Links', icon: LinkIcon },
           { id: 'winGameBets', label: 'Win Game Bets', icon: Trophy },
           { id: 'profitLoss', label: 'Profit & Loss', icon: TrendingUp },
         ].map(item => (
@@ -341,6 +344,7 @@ const AdminDashboard = () => {
             .replace('allUsers', 'All Users')
             .replace('harufUpdate', 'Market Results')
             .replace('sliderUpdate', 'Carousel Slides')
+            .replace('socialLinks', 'Social Links')
             .replace('winGameBets', 'Win Game Bets')
             .replace('profitLoss', 'Profit & Loss')
             .replace('referrals', 'Referrals') // Added
@@ -391,6 +395,8 @@ const AdminDashboard = () => {
         return <Table />;
       case 'sliderUpdate':
         return <SliderUpdate />;
+      case 'socialLinks':
+        return <Links />;
       case 'winGameBets':
         return <Bets />;
       case 'profitLoss':
