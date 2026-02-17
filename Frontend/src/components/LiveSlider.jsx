@@ -16,7 +16,7 @@ export default function LiveBettingHighlights() {
             </span>
             <span>Top number: <b>7</b> (₹8,200)</span>
             <span className="bg-[#0a2342] text-white px-3 py-1 rounded-full text-sm">
-              Dhan Kuber
+              MATKA MANDI
             </span>
             <span>Current lowest: <b>14</b> (₹3,100)</span>
           </div>
@@ -29,7 +29,7 @@ export default function LiveBettingHighlights() {
             </span>
             <span>Top number: <b>7</b> (₹8,200)</span>
             <span className="bg-[#0a2342] text-white px-3 py-1 rounded-full text-sm">
-              Dhan Kuber
+              MATKA MANDI
             </span>
             <span>Current lowest: <b>14</b> (₹3,100)</span>
           </div>

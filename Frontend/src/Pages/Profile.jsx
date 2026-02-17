@@ -85,6 +85,7 @@ export default function ProfilePage() {
             <div>
               <h2 className="text-xl font-semibold">{user?.name || "Username"}</h2>
               <p className="text-sm opacity-80">ID: {user?.uid ? user.uid.substring(0, 6) : "#123456"}</p>
+              <p className="text-sm opacity-80">Phone: {user?.phoneNumber || "N/A"}</p>
               {user?.referralCode && (
                 <div className="flex items-center space-x-2 mt-1">
                   <p className="text-sm opacity-80">Referral: {user.referralCode}</p>

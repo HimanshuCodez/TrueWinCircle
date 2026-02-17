@@ -4,7 +4,7 @@ import MarketCard from "./MarketCard";
 const DhanKuberCard = () => {
   return (
     <MarketCard
-      marketName="DHAN KUBER"
+      marketName="MATKA MANDI"
     />
   );
 };

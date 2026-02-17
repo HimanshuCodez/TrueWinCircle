@@ -41,7 +41,7 @@ export default function FixNumber() {
       leastBets: { number: 12, amount: "₹1,200" },
     },
     {
-      name: "Dhan Kuber",
+      name: "MATKA MANDI",
       time: "3:00 PM",
       lastResult: 14,
       currentLowest: { number: 14, amount: "₹3,100" },

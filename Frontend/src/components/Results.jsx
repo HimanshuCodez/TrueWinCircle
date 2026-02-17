@@ -7,7 +7,7 @@ const dummyResults = [
   { id: 3, gameName: 'Disawar', result: 'win', amount: 1000, date: '2025-09-18' },
   { id: 4, gameName: 'Faridabad', result: 'loss', amount: -150, date: '2025-09-18' },
   { id: 5, gameName: 'Shree Ganesh', result: 'win', amount: 300, date: '2025-09-17' },
-  { id: 6, gameName: 'Dhan Kuber', result: 'loss', amount: -50, date: '2025-09-17' },
+  { id: 6, gameName: 'MATKA MANDI', result: 'loss', amount: -50, date: '2025-09-17' },
   { id: 7, gameName: 'Market', result: 'win', amount: 750, date: '2025-09-16' },
 ];
 

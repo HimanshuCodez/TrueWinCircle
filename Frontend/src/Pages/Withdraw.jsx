@@ -125,8 +125,8 @@ const Withdraw = () => {
         toast.error('Insufficient winning money.');
         return;
     }
-    if (withdrawalAmount < 100) { // Changed from 200 to 100
-        toast.error('Minimum withdrawal amount is ₹100.');
+    if (withdrawalAmount < 200) { // Changed from 100 to 200
+        toast.error('Minimum withdrawal amount is ₹200.');
         return;
     }
 
