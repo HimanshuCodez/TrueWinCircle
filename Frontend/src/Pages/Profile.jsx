@@ -112,14 +112,7 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
-            <div className="bg-gray-800 p-3 rounded-xl text-center">
-              <p className="text-lg font-bold text-purple-400">{totalBets}</p>
-              <p className="text-xs opacity-70">Total Bets</p>
-            </div>
-         
-          </div>
+      
 
           {/* Actions */}
           <div className="mt-5 flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
