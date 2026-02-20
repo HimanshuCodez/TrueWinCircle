@@ -61,18 +61,16 @@ const fetchRouletteBets = async (userId) => {
   const snapshot = await getDocs(betsQuery);
   return snapshot.docs.map(doc => {
     const data = doc.data();
-    // Roulette bets don't have a reliable win/loss status in the DB
-    // We can't calculate payout accurately. We'll mark as 'processed'.
     const { date, time } = formatTimestamp(data.timestamp);
     return {
       id: doc.id,
       gameName: 'Roulette',
       date,
       time,
-      number: data.betType, // In Roulette, the 'betType' is what was bet on
+      number: data.betType,
       amount: data.betAmount,
-      status: 'processed', // Status is not updated in the DB for this game
-      payout: 'N/A', // Cannot determine
+      status: data.status || 'pending',
+      payout: data.status === 'win' ? data.winnings : (data.status === 'loss' ? -data.betAmount : 0),
       rawDate: data.timestamp?.toDate() || null
     };
   });

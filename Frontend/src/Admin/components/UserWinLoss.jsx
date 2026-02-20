@@ -14,20 +14,33 @@ const UserWinLoss = ({ userId }) => {
       }
       setLoading(true);
       try {
-        const betsQuery = query(collection(db, 'wingame_bets'), where('userId', '==', userId));
-        const betsSnapshot = await getDocs(betsQuery);
-        const userBets = betsSnapshot.docs.map(d => d.data());
+        const wingameQuery = query(collection(db, 'wingame_bets'), where('userId', '==', userId));
+        const harufQuery = query(collection(db, 'harufBets'), where('userId', '==', userId));
+        const rouletteQuery = query(collection(db, 'rouletteBets'), where('userId', '==', userId));
+
+        const [wingameSnap, harufSnap, rouletteSnap] = await Promise.all([
+          getDocs(wingameQuery),
+          getDocs(harufQuery),
+          getDocs(rouletteQuery)
+        ]);
 
         let totalWin = 0;
         let totalLoss = 0;
 
-        userBets.forEach(bet => {
+        const processBets = (docs, amountKey = 'amount', winningsKey = 'winnings') => {
+          docs.forEach(d => {
+            const bet = d.data();
             if (bet.status === 'win') {
-                totalWin += bet.winnings || 0;
+              totalWin += bet[winningsKey] || 0;
             } else if (bet.status === 'loss') {
-                totalLoss += bet.amount || 0;
+              totalLoss += bet[amountKey] || 0;
             }
-        });
+          });
+        };
+
+        processBets(wingameSnap.docs);
+        processBets(harufSnap.docs, 'betAmount', 'winnings');
+        processBets(rouletteSnap.docs, 'betAmount', 'winnings');
 
         setWinLoss({ win: totalWin, loss: totalLoss });
       } catch (error) {

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { doc, onSnapshot, runTransaction, collection } from 'firebase/firestore';
+import { doc, onSnapshot, runTransaction, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import useAuthStore from '../store/authStore';
 import { toast } from 'react-toastify';
@@ -78,7 +78,7 @@ export default function CasinoRoulette() {
     }
   }, [user]);
 
-  const spinWheel = () => {
+  const spinWheel = async () => {
     if (spinning) return;
 
     const parsedBetAmount = parseFloat(betAmount);
@@ -90,24 +90,28 @@ export default function CasinoRoulette() {
 
     setBettingLoading(true);
 
-    runTransaction(db, async (transaction) => {
-      const userDocRef = doc(db, 'users', user.uid);
-      const userDoc = await transaction.get(userDocRef);
-      if (!userDoc.exists()) throw "User document does not exist!";
-      
-      const currentBalance = userDoc.data().balance || 0;
-      if (currentBalance < parsedBetAmount) throw "Insufficient balance in transaction.";
+    try {
+      const id = await runTransaction(db, async (transaction) => {
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDoc = await transaction.get(userDocRef);
+        if (!userDoc.exists()) throw "User document does not exist!";
+        
+        const currentBalance = userDoc.data().balance || 0;
+        if (currentBalance < parsedBetAmount) throw "Insufficient balance in transaction.";
 
-      transaction.update(userDocRef, { balance: currentBalance - parsedBetAmount });
-      const betsCollectionRef = collection(db, 'rouletteBets');
-      transaction.set(doc(betsCollectionRef), {
-        userId: user.uid,
-        betType: selectedBetType,
-        betAmount: parsedBetAmount,
-        timestamp: new Date(),
-        status: 'pending',
+        transaction.update(userDocRef, { balance: currentBalance - parsedBetAmount });
+        const betsCollectionRef = collection(db, 'rouletteBets');
+        const newBetRef = doc(betsCollectionRef);
+        transaction.set(newBetRef, {
+          userId: user.uid,
+          betType: selectedBetType,
+          betAmount: parsedBetAmount,
+          timestamp: new Date(),
+          status: 'pending',
+        });
+        return newBetRef.id;
       });
-    }).then(() => {
+
       toast.success("Bet placed! Spinning the wheel...");
       setBettingLoading(false);
       setSpinning(true);
@@ -120,19 +124,19 @@ export default function CasinoRoulette() {
         setSpinning(false);
         setWinningNumber(newWinningNumber);
         setRecent((prev) => [newWinningNumber, ...prev].slice(0, 10));
-        handlePayout(newWinningNumber, selectedBetType, parsedBetAmount);
+        handlePayout(newWinningNumber, selectedBetType, parsedBetAmount, id);
         setBetAmount(0);
         setSelectedBetType(null);
       }, 5500); // Spin duration + 0.5s buffer
 
-    }).catch((e) => {
+    } catch (e) {
       console.error("Bet placement failed: ", e);
       toast.error(`Failed to place bet: ${e.message || e}`);
       setBettingLoading(false);
-    });
+    }
   };
 
-  const handlePayout = async (resultNumber, betType, betAmount) => {
+  const handlePayout = async (resultNumber, betType, betAmount, betId) => {
     let payoutMultiplier = 0;
     let isWinner = false;
 
@@ -168,11 +172,15 @@ export default function CasinoRoulette() {
       try {
         await runTransaction(db, async (transaction) => {
           const userDocRef = doc(db, 'users', user.uid);
+          const betDocRef = doc(db, 'rouletteBets', betId);
           const userDoc = await transaction.get(userDocRef);
           if (!userDoc.exists()) throw "User document does not exist for payout!";
           
           const currentWinningMoney = userDoc.data().winningMoney || 0;
           transaction.update(userDocRef, { winningMoney: currentWinningMoney + winnings });
+
+          // Update the bet status to win
+          transaction.update(betDocRef, { status: 'win', winnings: winnings });
 
           // Add new winner doc inside the same transaction
           const winnerDocRef = doc(collection(db, 'winners'));
@@ -190,6 +198,14 @@ export default function CasinoRoulette() {
         toast.error("Failed to credit winnings.");
       }
     } else {
+      try {
+        const betDocRef = doc(db, 'rouletteBets', betId);
+        await runTransaction(db, async (transaction) => {
+          transaction.update(betDocRef, { status: 'loss' });
+        });
+      } catch (e) {
+        console.error("Failed to update loss status:", e);
+      }
       toast.info("Better luck next time!");
     }
   };
