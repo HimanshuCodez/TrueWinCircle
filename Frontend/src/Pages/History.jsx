@@ -79,20 +79,40 @@ const History = () => {
             id: doc.id,
             type: 'deposit',
             amount: data.amount,
-            status: data.status,
+            status: data.status || 'pending',
             date: date,
           };
         }).filter(Boolean);
 
         const withdrawals = withdrawalsSnapshot.docs.map(doc => {
           const data = doc.data();
-          if (!data.createdAt || typeof data.createdAt.toDate !== 'function') return null;
+          let date;
+          if (data.createdAt) {
+            if (typeof data.createdAt.toDate === 'function') {
+              date = data.createdAt.toDate();
+            } else if (data.createdAt instanceof Date) {
+              date = data.createdAt;
+            } else if (typeof data.createdAt === 'string') {
+              date = new Date(data.createdAt);
+            } else {
+              return null;
+            }
+          } else {
+            return null;
+          }
+
+          if (isNaN(date.getTime())) return null;
+
           return {
             id: doc.id,
             type: 'withdrawal',
             amount: data.amount,
-            status: data.status,
-            date: data.createdAt.toDate(),
+            status: data.status || 'pending',
+            date: date,
+            method: data.method,
+            upiId: data.upiId,
+            accountNumber: data.accountNumber,
+            bankName: data.bankName,
           };
         }).filter(Boolean);
 
@@ -218,15 +238,15 @@ const History = () => {
         amountColor = 'text-green-500';
         sign = '+';
         statusText = item.status;
-        statusColor = item.status === 'approved' ? 'text-green-400' : item.status === 'pending' ? 'text-yellow-400' : 'text-red-400';
+        statusColor = item.status === 'approved' ? 'text-green-400' : item.status === 'rejected' ? 'text-red-400' : 'text-yellow-400';
         break;
       case 'withdrawal':
         Icon = <ArrowUpCircle className="text-red-500" />;
-        title = 'Withdrawal';
+        title = item.method === 'upi' ? 'Withdrawal (UPI)' : item.method === 'bank' ? 'Withdrawal (Bank)' : 'Withdrawal';
         amountColor = 'text-red-500';
         sign = '-';
         statusText = item.status;
-        statusColor = item.status === 'approved' ? 'text-green-400' : item.status === 'pending' ? 'text-yellow-400' : 'text-red-400';
+        statusColor = item.status === 'approved' ? 'text-green-400' : item.status === 'rejected' ? 'text-red-400' : 'text-yellow-400';
         break;
       case 'win':
         Icon = <Trophy className="text-yellow-500" />;
@@ -270,6 +290,18 @@ const History = () => {
           <div>
             <p className="font-semibold capitalize">{title}</p>
             <p className="text-xs text-gray-400">{item.date.toLocaleString()}</p>
+            {item.type === 'withdrawal' && (
+              <>
+                <p className="text-[10px] text-gray-500 mt-0.5">
+                  {item.method === 'upi' ? item.upiId : `${item.bankName} - ${item.accountNumber}`}
+                </p>
+                {item.status === 'pending' && (
+                  <p className="text-[9px] text-yellow-500/70 mt-0.5 italic">
+                    Credits within 10-24 hours
+                  </p>
+                )}
+              </>
+            )}
           </div>
         </div>
         <div className="text-right">
