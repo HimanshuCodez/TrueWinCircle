@@ -7,6 +7,7 @@ import { doc, getDoc, runTransaction, collection, query, where, orderBy, limit, 
 import { db } from "../firebase";
 import { toast } from "react-toastify";
 import { ArrowLeft, IndianRupee } from "lucide-react";
+import SocialButtons from '../components/Soical';
 
 const Withdraw = () => {
   const navigate = useNavigate();
@@ -313,6 +314,7 @@ const Withdraw = () => {
           </form>
         </div>
       )}
+      <SocialButtons/>
     </div>
   );
 };
