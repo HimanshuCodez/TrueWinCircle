@@ -24,11 +24,12 @@ const Marquee = () => {
 
   return (
     <div className="marquee-container">
-        <Volume2 className="absolute left-3 z-10 h-6 w-6"/>
+        <div className="absolute left-0 z-20 h-full w-12 flex items-center justify-center bg-[#042346] px-2">
+          <Volume2 className="h-6 w-6"/>
+        </div>
         <div className="marquee-text">
-            <span className="mx-12">{text}</span>
-            <span className="mx-12">{text}</span>
-            <span className="mx-12">{text}</span>
+            <span className="pr-12">{text}</span>
+            <span className="pr-12">{text}</span>
         </div>
     </div>
   );
