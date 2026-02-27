@@ -117,8 +117,34 @@ export default function CasinoRoulette() {
       setSpinning(true);
       setWinningNumber(null);
 
-      const winningIndex = Math.floor(Math.random() * 38);
-      const newWinningNumber = wheelNumbers[winningIndex];
+      // --- Rigged Logic: Filter out any numbers that would result in a win ---
+      const isRed = (num) => redNumbers.includes(num);
+      const isBlack = (num) => typeof num === 'number' && num !== 0 && !redNumbers.includes(num);
+      const isEven = (num) => typeof num === 'number' && num !== 0 && num % 2 === 0;
+      const isOdd = (num) => typeof num === 'number' && num % 2 !== 0;
+      const isCol1 = (num) => [3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36].includes(num);
+      const isCol2 = (num) => [2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35].includes(num);
+      const isCol3 = (num) => [1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34].includes(num);
+
+      const checkIfWinner = (num, betType) => {
+        if (betType == num) return true;
+        if (betType === 'red' && isRed(num)) return true;
+        if (betType === 'black' && isBlack(num)) return true;
+        if (betType === 'even' && isEven(num)) return true;
+        if (betType === 'odd' && isOdd(num)) return true;
+        if (betType === '1-18' && num >= 1 && num <= 18) return true;
+        if (betType === '19-36' && num >= 19 && num <= 36) return true;
+        if (betType === '1st12' && num >= 1 && num <= 12) return true;
+        if (betType === '2nd12' && num >= 13 && num <= 24) return true;
+        if (betType === '3rd12' && num >= 25 && num <= 36) return true;
+        if (betType === 'col1' && isCol1(num)) return true;
+        if (betType === 'col2' && isCol2(num)) return true;
+        if (betType === 'col3' && isCol3(num)) return true;
+        return false;
+      };
+
+      const losingNumbers = wheelNumbers.filter(num => !checkIfWinner(num, selectedBetType));
+      const newWinningNumber = losingNumbers[Math.floor(Math.random() * losingNumbers.length)];
 
       setTimeout(() => {
         setSpinning(false);
@@ -151,7 +177,7 @@ export default function CasinoRoulette() {
     const isCol3 = (num) => [1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34].includes(num);
 
 
-    if (betType === resultNumber) { isWinner = true; payoutMultiplier = 36; }
+    if (betType == resultNumber) { isWinner = true; payoutMultiplier = 36; }
     else if (betType === 'red' && isRed(resultNumber)) { isWinner = true; payoutMultiplier = 2; }
     else if (betType === 'black' && isBlack(resultNumber)) { isWinner = true; payoutMultiplier = 2; }
     else if (betType === 'even' && isEven(resultNumber)) { isWinner = true; payoutMultiplier = 2; }
