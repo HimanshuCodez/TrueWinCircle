@@ -5,6 +5,8 @@ import { toast } from "react-toastify";
 import { auth, db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
 import useAuthStore from "../store/authStore";
+import PhoneInput from "react-phone-input-2";
+import "react-phone-input-2/lib/style.css";
 
 const PhoneSignIn = () => {
   const [phone, setPhone] = useState("");
@@ -16,24 +18,42 @@ const PhoneSignIn = () => {
   const login = useAuthStore((state) => state.login);
 
   useEffect(() => {
-    if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(
-        auth,
-        "recaptcha-container",
-        {
-          size: "invisible",
-          callback: () => console.log("reCAPTCHA solved"),
-          "expired-callback": () => console.warn("reCAPTCHA expired"),
-        }
-      );
-    }
+    const verifier = new RecaptchaVerifier(
+      auth,
+      "recaptcha-container",
+      {
+        size: "invisible",
+        callback: () => console.log("reCAPTCHA solved"),
+        "expired-callback": () => console.warn("reCAPTCHA expired"),
+      }
+    );
+    window.recaptchaVerifier = verifier;
+
+    return () => {
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+        window.recaptchaVerifier = null;
+      }
+    };
   }, []);
 
   const sendOtp = async () => {
     if (!phone) return toast.error("Enter phone number");
     setLoading(true);
+
     try {
-      const formattedPhone = phone.startsWith("+") ? phone : `+91${phone}`;
+      // Ensure reCAPTCHA is initialized
+      if (!window.recaptchaVerifier) {
+        window.recaptchaVerifier = new RecaptchaVerifier(
+          auth,
+          "recaptcha-container",
+          {
+            size: "invisible",
+          }
+        );
+      }
+
+      const formattedPhone = phone.startsWith("+") ? phone : `+${phone}`;
       const result = await signInWithPhoneNumber(
         auth,
         formattedPhone,
@@ -44,7 +64,14 @@ const PhoneSignIn = () => {
       toast.success("OTP Sent Successfully!");
     } catch (err) {
       console.error("OTP send error:", err);
-      toast.error(err.message);
+      if (err.code === "auth/invalid-app-credential") {
+        toast.error("Please sign up first.");
+        navigate("/testphonesignup");
+      } else if (err.code === "auth/too-many-requests") {
+        toast.error("Too many attempts. Please try again after some time.");
+      } else {
+        toast.error(err.message || "An error occurred while sending OTP.");
+      }
     } finally {
       setLoading(false);
     }
@@ -92,12 +119,28 @@ const PhoneSignIn = () => {
 
         {step === 1 ? (
           <div className="space-y-4">
-            <input
-              type="tel"
-              placeholder="Enter Phone Number"
+            <PhoneInput
+              country={"in"}
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="w-full px-4 py-3 bg-[#042346] border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+              onChange={(value) => setPhone(value)}
+              inputStyle={{
+                width: "100%",
+                height: "50px",
+                backgroundColor: "#042346",
+                color: "white",
+                border: "1px solid #4b5563",
+                borderRadius: "0.5rem",
+                paddingLeft: "50px",
+              }}
+              buttonStyle={{
+                backgroundColor: "#042346",
+                border: "1px solid #4b5563",
+                borderRadius: "0.5rem 0 0 0.5rem",
+              }}
+              dropdownStyle={{
+                backgroundColor: "#042346",
+                color: "white",
+              }}
             />
             <button
               onClick={sendOtp}

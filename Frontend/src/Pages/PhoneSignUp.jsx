@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, query, collection, where, getDocs } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { auth, db } from "../firebase";
+import PhoneInput from "react-phone-input-2";
+import "react-phone-input-2/lib/style.css";
 
 const PhoneSignUp = () => {
   const [phone, setPhone] = useState("");
@@ -16,19 +18,25 @@ const PhoneSignUp = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // ✅ Create reCAPTCHA only once
+  // ✅ Create reCAPTCHA on mount and clear on unmount
   useEffect(() => {
-    if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(
-        auth, // first arg → auth (modular v9)
-        "recaptcha-container", // div id
-        {
-          size: "invisible",
-          callback: () => console.log("reCAPTCHA solved"),
-          "expired-callback": () => console.warn("reCAPTCHA expired"),
-        }
-      );
-    }
+    const verifier = new RecaptchaVerifier(
+      auth, // first arg → auth (modular v9)
+      "recaptcha-container", // div id
+      {
+        size: "invisible",
+        callback: () => console.log("reCAPTCHA solved"),
+        "expired-callback": () => console.warn("reCAPTCHA expired"),
+      }
+    );
+    window.recaptchaVerifier = verifier;
+
+    return () => {
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+        window.recaptchaVerifier = null;
+      }
+    };
   }, []);
 
   const generateReferralCode = () => {
@@ -44,11 +52,23 @@ const PhoneSignUp = () => {
     if (!name) return toast.error("Enter your name");
     if (!phone) return toast.error("Enter phone number");
     setLoading(true);
+
     try {
+      // Ensure reCAPTCHA is initialized
+      if (!window.recaptchaVerifier) {
+        window.recaptchaVerifier = new RecaptchaVerifier(
+          auth,
+          "recaptcha-container",
+          {
+            size: "invisible",
+          }
+        );
+      }
+
       const newReferralCode = generateReferralCode();
       setGeneratedReferralCode(newReferralCode); // Store the generated code
 
-      const formattedPhone = phone.startsWith("+") ? phone : `+91${phone}`;
+      const formattedPhone = phone.startsWith("+") ? phone : `+${phone}`;
       const result = await signInWithPhoneNumber(
         auth,
         formattedPhone,
@@ -59,7 +79,13 @@ const PhoneSignUp = () => {
       toast.success("OTP Sent Successfully!");
     } catch (err) {
       console.error("OTP send error:", err);
-      toast.error(err.message);
+      if (err.code === "auth/invalid-app-credential") {
+        toast.error("Invalid registration request. Please try again later.");
+      } else if (err.code === "auth/too-many-requests") {
+        toast.error("Too many attempts. Please try again after some time.");
+      } else {
+        toast.error(err.message || "An error occurred while sending OTP.");
+      }
     } finally {
       setLoading(false);
     }
@@ -137,13 +163,30 @@ const PhoneSignUp = () => {
               className="w-full px-4 py-3 bg-[#042346] border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
             />
 
-            <input
-              type="tel"
-              placeholder="Enter Phone Number"
+            <PhoneInput
+              country={"in"}
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="w-full px-4 py-3 bg-[#042346] border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+              onChange={(value) => setPhone(value)}
+              inputStyle={{
+                width: "100%",
+                height: "50px",
+                backgroundColor: "#042346",
+                color: "white",
+                border: "1px solid #4b5563",
+                borderRadius: "0.5rem",
+                paddingLeft: "50px",
+              }}
+              buttonStyle={{
+                backgroundColor: "#042346",
+                border: "1px solid #4b5563",
+                borderRadius: "0.5rem 0 0 0.5rem",
+              }}
+              dropdownStyle={{
+                backgroundColor: "#042346",
+                color: "white",
+              }}
             />
+            
             <input
               type="text"
               placeholder="Referral Code (Optional)"
