@@ -135,7 +135,11 @@ const PhoneSignUp = () => {
       navigate("/");
     } catch (err) {
       console.error("OTP verify error:", err);
-      toast.error(err.message);
+      if (err.code === "auth/invalid-verification-code") {
+        toast.error("Invalid OTP. Please check and try again.");
+      } else {
+        toast.error(err.message || "An error occurred while verifying OTP.");
+      }
     } finally {
       setLoading(false);
     }
