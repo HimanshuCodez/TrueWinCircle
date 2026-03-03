@@ -150,16 +150,16 @@ const MarketCard = ({ marketName }) => {
         date: doc.data().date?.toDate() || new Date()
       }));
 
-      // Sort by date descending
+      // Sort by date descending (latest first)
       allResults.sort((a, b) => b.date - a.date);
 
-      // Find latest today
-      const todayDoc = allResults.find(r => r.date >= today && r.date < tomorrow);
-      setTodayResult(todayDoc ? todayDoc.number : "..");
+      // Latest result goes to the right [ todayResult ]
+      // Second latest result goes to the left { yesterdayResult }
+      const latest = allResults[0];
+      const secondLatest = allResults[1];
 
-      // Find latest yesterday
-      const yesterdayDoc = allResults.find(r => r.date >= yesterday && r.date < today);
-      setYesterdayResult(yesterdayDoc ? yesterdayDoc.number : "..");
+      setTodayResult(latest ? latest.number : "..");
+      setYesterdayResult(secondLatest ? secondLatest.number : "..");
       
       setLoading(false);
     }, (error) => {
