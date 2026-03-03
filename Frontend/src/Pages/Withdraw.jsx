@@ -216,8 +216,8 @@ const Withdraw = () => {
   };
 
   return (
-    <div className="font-roboto min-h-screen bg-[#042346] text-white p-4">
-      <div className="flex items-center mb-6">
+    <div className="font-roboto min-h-screen bg-[#042346] text-white p-4 lg:p-8">
+      <div className="max-w-6xl mx-auto flex items-center mb-6">
         <button
           onClick={() => navigate("/Wallet")}
           className="p-2 rounded-full hover:bg-white/10 transition-colors"
@@ -236,90 +236,79 @@ const Withdraw = () => {
           <p>{error}</p>
         </div>
       ) : (
-        <div className="space-y-6">
-          {/* Recent Withdrawals List */}
-          {withdrawals.length > 0 && (
-            <div className="space-y-4">
-              {withdrawals.map((w) => (
-                <div key={w.id} className="bg-[#0a2d55] rounded-xl p-5 shadow-lg space-y-2 border-l-4 border-yellow-500">
-                  <h3 className="text-lg font-bold">Withdrawal ({w.method === 'upi' ? 'UPI' : 'Bank'})</h3>
-                  <p className="text-sm text-gray-400">{w.createdAt?.toDate().toLocaleString()}</p>
-                  <p className="text-sm font-medium">{w.method === 'upi' ? w.upiId : `${w.accountNumber} (${w.bankName})`}</p>
-                  <p className="text-xs text-blue-400">Credits within 10-24 hours</p>
-                  <div className="flex justify-between items-center pt-2">
-                    <p className="text-xl font-bold text-red-400">-₹{w.amount.toFixed(2)}</p>
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
-                      w.status === 'approved' ? 'bg-green-100 text-green-800' : 
-                      w.status === 'rejected' ? 'bg-red-100 text-red-800' : 
-                      'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {w.status}
-                    </span>
-                  </div>
+        <main className="max-w-6xl mx-auto w-full pt-4">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            {/* Withdrawal Form - Left side on PC */}
+            <div className="lg:col-span-7 xl:col-span-8 order-1">
+              <div className="bg-[#0a2d55] rounded-xl p-6 lg:p-10 shadow-lg space-y-6 border border-white/5">
+                <div className="text-center lg:text-left mb-4">
+                  <h2 className="text-xl lg:text-2xl font-semibold text-yellow-500 mb-2">Make a Withdrawal</h2>
+                  <p className="text-lg text-gray-300">Available Winning Money:</p>
+                  <p className="text-4xl lg:text-5xl font-bold text-yellow-500 flex items-center justify-center lg:justify-start">
+                    <IndianRupee className="w-8 h-8 lg:w-10 lg:h-10 mr-2" />
+                    {winningMoney.toFixed(2)}
+                  </p>
                 </div>
-              ))}
-            </div>
-          )}
 
-          {/* Withdrawal Form */}
-          <div className="bg-[#0a2d55] rounded-xl p-6 shadow-lg space-y-6">
-            <div className="text-center mb-4">
-              <h2 className="text-xl font-semibold text-yellow-500 mb-2">Make Another Withdrawal</h2>
-              <p className="text-lg text-gray-300">Your Winning Money:</p>
-              <p className="text-4xl font-bold text-yellow-500 flex items-center justify-center">
-                <IndianRupee className="w-8 h-8 mr-2" />
-                {winningMoney.toFixed(2)}
-              </p>
-            </div>
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label htmlFor="amount" className="block text-sm font-medium text-gray-300 mb-2">Amount to Withdraw</label>
+                      <input
+                        id="amount"
+                        type="number"
+                        placeholder="Min ₹200"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        required
+                        className="w-full bg-[#042346] border border-gray-600 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white text-lg"
+                      />
+                    </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div>
-                  <label htmlFor="amount" className="block text-sm font-medium text-gray-300 mb-2">Amount to Withdraw</label>
-                  <input
-                    id="amount"
-                    type="number"
-                    placeholder="Enter amount"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    required
-                    className="w-full bg-[#042346] border border-gray-600 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-                  />
-              </div>
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-300">Method</label>
+                      <div className="flex gap-4">
+                        <button type="button" onClick={() => setMethod('upi')} className={`flex-1 py-3 rounded-lg font-semibold transition-colors ${method === 'upi' ? 'bg-yellow-500 text-black' : 'bg-gray-700 text-white hover:bg-gray-600'}`}>UPI</button>
+                        <button type="button" onClick={() => setMethod('bank')} className={`flex-1 py-3 rounded-lg font-semibold transition-colors ${method === 'bank' ? 'bg-yellow-500 text-black' : 'bg-gray-700 text-white hover:bg-gray-600'}`}>Bank</button>
+                      </div>
+                    </div>
+                  </div>
 
-              <div className="flex justify-center gap-4">
-                  <button type="button" onClick={() => setMethod('upi')} className={`px-6 py-2 rounded-full font-semibold transition-colors ${method === 'upi' ? 'bg-yellow-500 text-black' : 'bg-gray-700 text-white hover:bg-gray-600'}`}>UPI</button>
-                  <button type="button" onClick={() => setMethod('bank')} className={`px-6 py-2 rounded-full font-semibold transition-colors ${method === 'bank' ? 'bg-yellow-500 text-black' : 'bg-gray-700 text-white hover:bg-gray-600'}`}>Bank Transfer</button>
-              </div>
-
-              {method === 'upi' && (
-                  <input
-                    type="text"
-                    placeholder="Enter your UPI ID (e.g., user@upi)"
-                    value={upiId}
-                    onChange={(e) => setUpiId(e.target.value)}
-                    required={method === 'upi'}
-                    className="w-full bg-[#042346] border border-gray-600 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-                  />
-              )}
-
-              {method === 'bank' && (
-                  <div className="space-y-4">
+                  {method === 'upi' && (
+                    <div className="animate-in fade-in slide-in-from-top-2">
+                      <label className="block text-sm font-medium text-gray-300 mb-2">UPI ID</label>
                       <input
                         type="text"
-                        placeholder="Bank Account Number"
-                        value={accountNumber}
-                        onChange={(e) => setAccountNumber(e.target.value)}
-                        required={method === 'bank'}
+                        placeholder="Enter your UPI ID (e.g., user@upi)"
+                        value={upiId}
+                        onChange={(e) => setUpiId(e.target.value)}
+                        required={method === 'upi'}
                         className="w-full bg-[#042346] border border-gray-600 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
                       />
-                      <input
-                        type="text"
-                        placeholder="IFSC Code"
-                        value={ifscCode}
-                        onChange={(e) => setIfscCode(e.target.value)}
-                        required={method === 'bank'}
-                        className="w-full bg-[#042346] border border-gray-600 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-                      />
+                    </div>
+                  )}
+
+                  {method === 'bank' && (
+                    <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input
+                          type="text"
+                          placeholder="Bank Account Number"
+                          value={accountNumber}
+                          onChange={(e) => setAccountNumber(e.target.value)}
+                          required={method === 'bank'}
+                          className="w-full bg-[#042346] border border-gray-600 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                        />
+                        <input
+                          type="text"
+                          placeholder="IFSC Code"
+                          value={ifscCode}
+                          onChange={(e) => setIfscCode(e.target.value)}
+                          required={method === 'bank'}
+                          className="w-full bg-[#042346] border border-gray-600 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                        />
+                      </div>
                       <input
                         type="text"
                         placeholder="Bank Name"
@@ -328,21 +317,63 @@ const Withdraw = () => {
                         required={method === 'bank'}
                         className="w-full bg-[#042346] border border-gray-600 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
                       />
-                  </div>
-              )}
+                    </div>
+                  )}
 
-              <button
-                type="submit"
-                disabled={submitLoading}
-                className="w-full bg-yellow-500 text-black font-bold py-3 rounded-full hover:bg-yellow-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                {submitLoading ? 'Submitting...' : 'Submit Withdrawal Request'}
-              </button>
-            </form>
+                  <button
+                    type="submit"
+                    disabled={submitLoading}
+                    className="w-full bg-yellow-500 text-black font-bold py-4 rounded-lg hover:bg-yellow-600 transition-all text-lg shadow-lg shadow-yellow-500/20 disabled:bg-gray-500"
+                  >
+                    {submitLoading ? 'Processing...' : 'Request Withdrawal'}
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            {/* Recent Withdrawals - Sidebar on PC, Bottom on Mobile */}
+            <div className="lg:col-span-5 xl:col-span-4 order-2 space-y-4">
+              {withdrawals.length > 0 ? (
+                <>
+                  <h2 className="text-yellow-400 font-bold text-lg lg:text-xl px-1">Recent Withdrawals</h2>
+                  <div className="space-y-4">
+                    {withdrawals.map((w) => (
+                      <div key={w.id} className="bg-[#0a2d55] rounded-xl p-5 shadow-lg space-y-2 border-l-4 border-yellow-500 hover:border-white transition-colors">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="font-bold text-gray-100">Withdrawal ({w.method?.toUpperCase()})</h3>
+                            <p className="text-[10px] text-gray-400">{w.createdAt?.toDate().toLocaleString()}</p>
+                          </div>
+                          <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
+                            w.status === 'approved' ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 
+                            w.status === 'rejected' ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 
+                            'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                          }`}>
+                            {w.status}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-300 truncate">{w.method === 'upi' ? w.upiId : `${w.accountNumber} (${w.bankName})`}</p>
+                        <p className="text-[10px] text-blue-400 italic">Credits within 10-24 hours</p>
+                        <div className="pt-1">
+                          <p className="text-xl font-bold text-red-400">-₹{w.amount.toFixed(2)}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="hidden lg:block bg-[#0a2d55]/50 border border-dashed border-gray-700 rounded-xl p-8 text-center text-gray-500">
+                  <p>No recent withdrawal activity</p>
+                </div>
+              )}
+            </div>
+
           </div>
-        </div>
+        </main>
       )}
-      <SocialButtons/>
+      <div className="mt-8">
+        <SocialButtons/>
+      </div>
     </div>
   );
 };

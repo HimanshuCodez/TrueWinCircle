@@ -9,36 +9,44 @@ import { ArrowLeft, Wallet as WalletIcon, IndianRupee } from "lucide-react";
 export function MyWallet() {
   const navigate = useNavigate();
   const auth = getAuth();
-  const user = auth.currentUser;
-  const [walletBalance, setWalletBalance] = useState(0); // Renamed from depositChips for clarity
-  const [winningMoney, setWinningMoney] = useState(0); // Renamed from winningChips for clarity
+  const [user, setUser] = useState(null);
+  const [walletBalance, setWalletBalance] = useState(0); 
+  const [winningMoney, setWinningMoney] = useState(0); 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchWallet = async () => {
-      if (user) {
-        try {
-          const userRef = doc(db, "users", user.uid);
-          const userSnap = await getDoc(userRef);
-          if (userSnap.exists()) {
-            setWalletBalance(parseFloat(userSnap.data().balance) || 0); // Assuming 'balance' is the field for wallet balance
-            setWinningMoney(parseFloat(userSnap.data().winningMoney) || 0); // Assuming 'winningMoney' is the field for winning money
-          } else {
-            setError("User data not found.");
-          }
-        } catch (err) {
-          console.error("Error fetching wallet data:", err);
-          setError("Failed to load wallet data.");
-        } finally {
-          setLoading(false);
-        }
-      }
-      else {
+    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+      setUser(currentUser);
+      if (!currentUser) {
         setLoading(false);
         setError("Please log in to view your wallet.");
       }
+    });
+    return () => unsubscribe();
+  }, [auth]);
+
+  useEffect(() => {
+    const fetchWallet = async () => {
+      if (!user) return;
+      
+      try {
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          setWalletBalance(parseFloat(userSnap.data().balance) || 0);
+          setWinningMoney(parseFloat(userSnap.data().winningMoney) || 0);
+        } else {
+          setError("User data not found.");
+        }
+      } catch (err) {
+        console.error("Error fetching wallet data:", err);
+        setError("Failed to load wallet data.");
+      } finally {
+        setLoading(false);
+      }
     };
+
     fetchWallet();
   }, [user]);
 

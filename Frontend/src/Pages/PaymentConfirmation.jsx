@@ -149,7 +149,8 @@ export default function PaymentConfirmation() {
       
       setTopUpId(topUpRef.id);
       localStorage.setItem('currentPendingTopUpId', topUpRef.id);
-      // paymentStatus is already 'pending', no need to set again
+      toast.success("Payment request submitted successfully!");
+      navigate('/AddCash');
       
     } catch (err) {
       setError('Failed to submit request. Please check your connection and try again.');
