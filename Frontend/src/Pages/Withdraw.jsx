@@ -28,10 +28,7 @@ const Withdraw = () => {
   const [error, setError] = useState('');
   const [winningMoney, setWinningMoney] = useState(0);
 
-  const [lastWithdrawal, setLastWithdrawal] = useState(null);
-  const [hasPendingWithdrawal, setHasPendingWithdrawal] = useState(false);
-
-
+  const [withdrawals, setWithdrawals] = useState([]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -75,37 +72,37 @@ const Withdraw = () => {
 
   useEffect(() => {
     if (!user) {
-        setHasPendingWithdrawal(false);
-        setLastWithdrawal(null); // Ensure lastWithdrawal is cleared if user logs out
+        setWithdrawals([]);
         return;
     }
 
     const q = query(
         collection(db, "withdrawals"),
         where("userId", "==", user.uid),
-        where("status", "==", "pending") // Filter for pending withdrawals
+        orderBy("createdAt", "desc"),
+        limit(5)
     );
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        if (!querySnapshot.empty) {
-            setHasPendingWithdrawal(true);
-            const pendingDoc = querySnapshot.docs[0]; // Get the first pending withdrawal
-            setLastWithdrawal({ ...pendingDoc.data(), id: pendingDoc.id });
-        } else {
-            setHasPendingWithdrawal(false);
-            setLastWithdrawal(null);
-        }
+        const now = new Date();
+        const fetchedWithdrawals = querySnapshot.docs
+            .map(doc => ({
+                ...doc.data(),
+                id: doc.id
+            }))
+            .filter(w => {
+                const createdAt = w.createdAt?.toDate();
+                const diffInHours = createdAt ? (now - createdAt) / (1000 * 60 * 60) : 0;
+                // Show if it's pending OR if it's less than 24 hours old
+                return w.status === 'pending' || diffInHours < 24;
+            });
+        setWithdrawals(fetchedWithdrawals);
     }, (err) => {
-        console.error("Error fetching pending withdrawal:", err);
-        toast.error("Could not fetch withdrawal status.");
+        console.error("Error fetching withdrawals:", err);
     });
 
     return () => unsubscribe();
   }, [user]);
-
-
-
-
 
   const validateUPI = (upi) => {
     const upiRegex = /^[\w.-]+@[\w.-]+$/;
@@ -126,7 +123,7 @@ const Withdraw = () => {
         toast.error('Insufficient winning money.');
         return;
     }
-    if (withdrawalAmount < 200) { // Changed from 100 to 200
+    if (withdrawalAmount < 200) {
         toast.error('Minimum withdrawal amount is ₹200.');
         return;
     }
@@ -158,7 +155,7 @@ const Withdraw = () => {
         }
 
         const currentWinningMoney = userSnap.data().winningMoney || 0;
-        const userName = userSnap.data().name || 'Anonymous'; // Get user's name, default to 'Anonymous'
+        const userName = userSnap.data().name || 'Anonymous';
 
         if (currentWinningMoney < withdrawalAmount) {
           throw new Error("Insufficient winning money for withdrawal.");
@@ -171,14 +168,14 @@ const Withdraw = () => {
         const withdrawalsCollectionRef = collection(db, 'withdrawals');
         transaction.set(doc(withdrawalsCollectionRef), {
           userId: user.uid,
-          name: userName, // Corrected: Add name to the withdrawal request
+          name: userName,
           amount: withdrawalAmount,
           method,
           upiId: method === 'upi' ? upiId : '',
           accountNumber: method === 'bank' ? accountNumber : '',
           ifscCode: method === 'bank' ? ifscCode : '',
           bankName: method === 'bank' ? bankName : '',
-          status: 'pending', // pending, approved, rejected
+          status: 'pending',
           createdAt: new Date(),
         });
       });
@@ -217,101 +214,111 @@ const Withdraw = () => {
         <div className="text-center text-red-500 h-64 flex items-center justify-center">
           <p>{error}</p>
         </div>
-      ) : hasPendingWithdrawal ? (
-        <div className="bg-[#0a2d55] rounded-xl p-6 shadow-lg text-center space-y-4">
-          <h2 className="text-xl font-semibold text-yellow-500">Withdrawal Request Pending!</h2>
-          <p className="text-lg">Status: <span className={`font-semibold capitalize ${
-            lastWithdrawal?.status === 'approved' ? 'text-green-400' :
-            lastWithdrawal?.status === 'rejected' ? 'text-red-400' :
-            'text-yellow-400'
-        }`}>
-            {lastWithdrawal?.status || 'pending'}
-        </span></p>
-          
-          <div className="text-sm text-gray-200 space-y-2 my-4 p-4 bg-[#042346] rounded-lg border border-gray-700">
-            <p>Your payment will be credited to your account within 10 to 24 hours.</p>
-            <p>आपका भुगतान 10 से 24 घंटों के अंदर आपके खाते में पहुँचा दिया जाएगा।</p>
-          </div>
-
-          <p className="text-sm text-gray-400">You have a pending withdrawal request. Please wait for it to be processed.</p>
-        </div>
       ) : (
-        <div className="bg-[#0a2d55] rounded-xl p-6 shadow-lg space-y-6">
-          <div className="text-center mb-4">
-            <p className="text-lg text-gray-300">Your Winning Money:</p>
-            <p className="text-4xl font-bold text-yellow-500 flex items-center justify-center">
-              <IndianRupee className="w-8 h-8 mr-2" />
-              {winningMoney.toFixed(2)}
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-                <label htmlFor="amount" className="block text-sm font-medium text-gray-300 mb-2">Amount to Withdraw</label>
-                <input
-                  id="amount"
-                  type="number"
-                  placeholder="Enter amount"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  required
-                  className="w-full bg-[#042346] border border-gray-600 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-                />
-            </div>
-
-            <div className="flex justify-center gap-4">
-                <button type="button" onClick={() => setMethod('upi')} className={`px-6 py-2 rounded-full font-semibold transition-colors ${method === 'upi' ? 'bg-yellow-500 text-black' : 'bg-gray-700 text-white hover:bg-gray-600'}`}>UPI</button>
-                <button type="button" onClick={() => setMethod('bank')} className={`px-6 py-2 rounded-full font-semibold transition-colors ${method === 'bank' ? 'bg-yellow-500 text-black' : 'bg-gray-700 text-white hover:bg-gray-600'}`}>Bank Transfer</button>
-            </div>
-
-            {method === 'upi' && (
-                <input
-                  type="text"
-                  placeholder="Enter your UPI ID (e.g., user@upi)"
-                  value={upiId}
-                  onChange={(e) => setUpiId(e.target.value)}
-                  required={method === 'upi'}
-                  className="w-full bg-[#042346] border border-gray-600 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-                />
-            )}
-
-            {method === 'bank' && (
-                <div className="space-y-4">
-                    <input
-                      type="text"
-                      placeholder="Bank Account Number"
-                      value={accountNumber}
-                      onChange={(e) => setAccountNumber(e.target.value)}
-                      required={method === 'bank'}
-                      className="w-full bg-[#042346] border border-gray-600 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-                    />
-                    <input
-                      type="text"
-                      placeholder="IFSC Code"
-                      value={ifscCode}
-                      onChange={(e) => setIfscCode(e.target.value)}
-                      required={method === 'bank'}
-                      className="w-full bg-[#042346] border border-gray-600 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Bank Name"
-                      value={bankName}
-                      onChange={(e) => setBankName(e.target.value)}
-                      required={method === 'bank'}
-                      className="w-full bg-[#042346] border border-gray-600 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-                    />
+        <div className="space-y-6">
+          {/* Recent Withdrawals List */}
+          {withdrawals.length > 0 && (
+            <div className="space-y-4">
+              {withdrawals.map((w) => (
+                <div key={w.id} className="bg-[#0a2d55] rounded-xl p-5 shadow-lg space-y-2 border-l-4 border-yellow-500">
+                  <h3 className="text-lg font-bold">Withdrawal ({w.method === 'upi' ? 'UPI' : 'Bank'})</h3>
+                  <p className="text-sm text-gray-400">{w.createdAt?.toDate().toLocaleString()}</p>
+                  <p className="text-sm font-medium">{w.method === 'upi' ? w.upiId : `${w.accountNumber} (${w.bankName})`}</p>
+                  <p className="text-xs text-blue-400">Credits within 10-24 hours</p>
+                  <div className="flex justify-between items-center pt-2">
+                    <p className="text-xl font-bold text-red-400">-₹{w.amount.toFixed(2)}</p>
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
+                      w.status === 'approved' ? 'bg-green-100 text-green-800' : 
+                      w.status === 'rejected' ? 'bg-red-100 text-red-800' : 
+                      'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {w.status}
+                    </span>
+                  </div>
                 </div>
-            )}
+              ))}
+            </div>
+          )}
 
-            <button
-              type="submit"
-              disabled={submitLoading || hasPendingWithdrawal}
-              className="w-full bg-yellow-500 text-black font-bold py-3 rounded-full hover:bg-yellow-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-            >
-              {submitLoading ? 'Submitting...' : 'Submit Withdrawal Request'}
-            </button>
-          </form>
+          {/* Withdrawal Form */}
+          <div className="bg-[#0a2d55] rounded-xl p-6 shadow-lg space-y-6">
+            <div className="text-center mb-4">
+              <h2 className="text-xl font-semibold text-yellow-500 mb-2">Make Another Withdrawal</h2>
+              <p className="text-lg text-gray-300">Your Winning Money:</p>
+              <p className="text-4xl font-bold text-yellow-500 flex items-center justify-center">
+                <IndianRupee className="w-8 h-8 mr-2" />
+                {winningMoney.toFixed(2)}
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div>
+                  <label htmlFor="amount" className="block text-sm font-medium text-gray-300 mb-2">Amount to Withdraw</label>
+                  <input
+                    id="amount"
+                    type="number"
+                    placeholder="Enter amount"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    required
+                    className="w-full bg-[#042346] border border-gray-600 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                  />
+              </div>
+
+              <div className="flex justify-center gap-4">
+                  <button type="button" onClick={() => setMethod('upi')} className={`px-6 py-2 rounded-full font-semibold transition-colors ${method === 'upi' ? 'bg-yellow-500 text-black' : 'bg-gray-700 text-white hover:bg-gray-600'}`}>UPI</button>
+                  <button type="button" onClick={() => setMethod('bank')} className={`px-6 py-2 rounded-full font-semibold transition-colors ${method === 'bank' ? 'bg-yellow-500 text-black' : 'bg-gray-700 text-white hover:bg-gray-600'}`}>Bank Transfer</button>
+              </div>
+
+              {method === 'upi' && (
+                  <input
+                    type="text"
+                    placeholder="Enter your UPI ID (e.g., user@upi)"
+                    value={upiId}
+                    onChange={(e) => setUpiId(e.target.value)}
+                    required={method === 'upi'}
+                    className="w-full bg-[#042346] border border-gray-600 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                  />
+              )}
+
+              {method === 'bank' && (
+                  <div className="space-y-4">
+                      <input
+                        type="text"
+                        placeholder="Bank Account Number"
+                        value={accountNumber}
+                        onChange={(e) => setAccountNumber(e.target.value)}
+                        required={method === 'bank'}
+                        className="w-full bg-[#042346] border border-gray-600 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                      />
+                      <input
+                        type="text"
+                        placeholder="IFSC Code"
+                        value={ifscCode}
+                        onChange={(e) => setIfscCode(e.target.value)}
+                        required={method === 'bank'}
+                        className="w-full bg-[#042346] border border-gray-600 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Bank Name"
+                        value={bankName}
+                        onChange={(e) => setBankName(e.target.value)}
+                        required={method === 'bank'}
+                        className="w-full bg-[#042346] border border-gray-600 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                      />
+                  </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={submitLoading}
+                className="w-full bg-yellow-500 text-black font-bold py-3 rounded-full hover:bg-yellow-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                {submitLoading ? 'Submitting...' : 'Submit Withdrawal Request'}
+              </button>
+            </form>
+          </div>
         </div>
       )}
       <SocialButtons/>
