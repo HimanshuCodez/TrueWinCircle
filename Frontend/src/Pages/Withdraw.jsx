@@ -79,8 +79,7 @@ const Withdraw = () => {
     const q = query(
         collection(db, "withdrawals"),
         where("userId", "==", user.uid),
-        orderBy("createdAt", "desc"),
-        limit(5)
+        limit(20) // Fetch a larger batch to ensure we get recent ones
     );
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -90,15 +89,37 @@ const Withdraw = () => {
                 ...doc.data(),
                 id: doc.id
             }))
+            // Sort client-side to avoid requiring a Firestore composite index
+            .sort((a, b) => {
+                const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
+                const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
+                return dateB - dateA;
+            })
             .filter(w => {
-                const createdAt = w.createdAt?.toDate();
-                const diffInHours = createdAt ? (now - createdAt) / (1000 * 60 * 60) : 0;
-                // Show if it's pending OR if it's less than 24 hours old
+                // Safely handle both Timestamp and Date objects
+                let createdAtDate = null;
+                if (w.createdAt?.toDate) {
+                    createdAtDate = w.createdAt.toDate();
+                } else if (w.createdAt instanceof Date) {
+                    createdAtDate = w.createdAt;
+                } else if (typeof w.createdAt === 'string') {
+                    createdAtDate = new Date(w.createdAt);
+                }
+
+                if (!createdAtDate) return w.status === 'pending';
+
+                const diffInHours = (now - createdAtDate) / (1000 * 60 * 60);
                 return w.status === 'pending' || diffInHours < 24;
-            });
+            })
+            .slice(0, 5); // Only show the latest 5 after sorting and filtering
         setWithdrawals(fetchedWithdrawals);
     }, (err) => {
         console.error("Error fetching withdrawals:", err);
+        if (err.code === 'failed-precondition') {
+            toast.error("Query index missing. Check console for link to create it.");
+        } else {
+            toast.error("Could not load recent withdrawals.");
+        }
     });
 
     return () => unsubscribe();
