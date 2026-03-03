@@ -131,60 +131,43 @@ const MarketCard = ({ marketName }) => {
 
 
   useEffect(() => {
-    const fetchResults = async () => {
-      setLoading(true);
+    if (!marketName) return;
 
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
 
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
+    const resultsRef = collection(db, "results");
+    const q = query(resultsRef, where("marketName", "==", marketName));
 
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const allResults = snapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data(),
+        date: doc.data().date?.toDate() || new Date()
+      }));
 
-      try {
-        const resultsRef = collection(db, "results");
-        const allResultsSnapshot = await getDocs(resultsRef); // Fetch all documents
-        const allResults = allResultsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      // Sort by date descending
+      allResults.sort((a, b) => b.date - a.date);
 
-        // Filter for today's result
-        const todayResultDoc = allResults.find(result =>
-          result.marketName === marketName &&
-          result.date.toDate() >= today &&
-          result.date.toDate() < tomorrow
-        );
+      // Find latest today
+      const todayDoc = allResults.find(r => r.date >= today && r.date < tomorrow);
+      setTodayResult(todayDoc ? todayDoc.number : "..");
 
-        if (todayResultDoc) {
-          setTodayResult(todayResultDoc.number);
-        } else {
-          setTodayResult("..");
-        }
+      // Find latest yesterday
+      const yesterdayDoc = allResults.find(r => r.date >= yesterday && r.date < today);
+      setYesterdayResult(yesterdayDoc ? yesterdayDoc.number : "..");
+      
+      setLoading(false);
+    }, (error) => {
+      console.error(`Error listening to results for ${marketName}:`, error);
+      setLoading(false);
+    });
 
-        // Filter for yesterday's result
-        const yesterdayResultDoc = allResults.find(result =>
-          result.marketName === marketName &&
-          result.date.toDate() >= yesterday &&
-          result.date.toDate() < today
-        );
-
-        if (!yesterdayResultDoc) {
-          setYesterdayResult('..');
-        } else {
-          setYesterdayResult(yesterdayResultDoc.number);
-        }
-      } catch (error) {
-        console.error(`Error fetching results for ${marketName}:`, error);
-        setTodayResult("..");
-        setYesterdayResult('..');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (marketName) {
-      fetchResults();
-    }
+    return () => unsubscribe();
   }, [marketName]);
 
   if (showChart) {
