@@ -75,6 +75,13 @@ const PaymentApproval = ({ payments, userDetails, handlePaymentApproval, handleD
   const [messageModal, setMessageModal] = useState({ isOpen: false, message: '' });
   const [rejectionModal, setRejectionModal] = useState({ isOpen: false, payment: null });
   const [userInfoModal, setUserInfoModal] = useState({ isOpen: false, user: null });
+  const [processingIds, setProcessingIds] = useState({});
+
+  const handleApproveClick = (payment) => {
+    if (processingIds[payment.id]) return;
+    setProcessingIds(prev => ({ ...prev, [payment.id]: true }));
+    handlePaymentApproval(payment.id, 'approved', payment.userId, payment.amount);
+  };
 
   const handleRejectClick = (payment) => {
     setRejectionModal({ isOpen: true, payment });
@@ -151,8 +158,9 @@ const PaymentApproval = ({ payments, userDetails, handlePaymentApproval, handleD
                     {payment.status === 'pending' && (
                       <div className="flex space-x-2">
                         <button 
-                          onClick={() => handlePaymentApproval(payment.id, 'approved', payment.userId, payment.amount)}
-                          className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
+                          onClick={() => handleApproveClick(payment)}
+                          disabled={processingIds[payment.id]}
+                          className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:bg-green-300 disabled:cursor-not-allowed"
                         >
                           <Check className="h-4 w-4" />
                         </button>
