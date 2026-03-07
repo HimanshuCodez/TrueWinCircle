@@ -24,7 +24,15 @@ const ResultChart = ({ marketName, onClose }) => {
         });
 
         // Client-side filtering
-        allResults = allResults.filter(result => result.marketName === marketName);
+        const now = new Date();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+
+        allResults = allResults.filter(result => {
+            const isSameMarket = result.marketName === marketName;
+            const isCurrentMonth = result.date.getMonth() === currentMonth && result.date.getFullYear() === currentYear;
+            return isSameMarket && isCurrentMonth;
+        });
 
         // Client-side sorting by date in descending order
         allResults.sort((a, b) => b.date.getTime() - a.date.getTime());

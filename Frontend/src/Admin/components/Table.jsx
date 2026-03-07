@@ -45,6 +45,10 @@ const Table = () => {
       });
 
 
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const tomorrow = new Date(today);
@@ -55,22 +59,25 @@ const Table = () => {
       let foundToday = false;
       let foundYesterday = false;
 
-      for (const result of marketResults) {
-        if (result.date) { // Ensure date exists
-            const resultDate = result.date.toDate();
-            if (!foundToday && resultDate >= today && resultDate < tomorrow) {
-                setCurrentTodayResult(result.number);
-                foundToday = true;
-            }
-            if (!foundYesterday && resultDate >= yesterday && resultDate < today) {
-                setCurrentYesterdayResult(result.number);
-                foundYesterday = true;
-            }
+      const currentMonthResults = marketResults.filter(result => {
+        if (!result.date) return false;
+        const resultDate = result.date.toDate();
+        
+        // Also find today/yesterday results while we are at it
+        if (!foundToday && resultDate >= today && resultDate < tomorrow) {
+            setCurrentTodayResult(result.number);
+            foundToday = true;
         }
-      }
+        if (!foundYesterday && resultDate >= yesterday && resultDate < today) {
+            setCurrentYesterdayResult(result.number);
+            foundYesterday = true;
+        }
 
-      // Set history, limited to the last 30 results for display
-      setHistory(marketResults.slice(0, 30));
+        return resultDate.getMonth() === currentMonth && resultDate.getFullYear() === currentYear;
+      });
+
+      // Set history, limited to the results of the current month
+      setHistory(currentMonthResults);
 
     } catch (error) {
       console.error("Error fetching results:", error);
